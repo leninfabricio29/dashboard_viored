@@ -30,7 +30,7 @@ const authService = {
   // Login de usuario
   login: async (credentials: LoginCredentials): Promise<LoginResponse> => {
     try {
-      const response = await api.post<LoginResponse>('/auth/login', credentials);
+      const response = await api.post<LoginResponse>('/api/auth/login', credentials);
       
       // Guardar el token en localStorage para mantener la sesión
       if (response.data.token) {
@@ -62,7 +62,7 @@ const authService = {
   // Solicitar restablecimiento de contraseña
   resetPassword: async (data: ResetPasswordData): Promise<ResetPasswordResponse> => {
     try {
-      const response = await api.post<ResetPasswordResponse>('/auth/reset-password', data);
+      const response = await api.post<ResetPasswordResponse>('/api/auth/reset-password', data);
       return response.data;
     } catch (error) {
       console.error('Error al restablecer contraseña:', error);
@@ -73,7 +73,7 @@ const authService = {
   // Actualizar contraseña
   updatePassword: async (data: UpdatePasswordData): Promise<{ message: string }> => {
     try {
-      const response = await api.put<{ message: string }>('/auth/update-password', data);
+      const response = await api.put<{ message: string }>('/api/auth/update-password', data);
       return response.data;
     } catch (error) {
       console.error('Error al actualizar contraseña:', error);

@@ -26,7 +26,7 @@ const neighborhoodService = {
   // Obtener todos los barrios
   getAllNeighborhoods: async (): Promise<Neighborhood[]> => {
     try {
-      const response = await api.get('/neighborhood/all-neighborhood');
+      const response = await api.get('/api/neighborhood/all-neighborhood');
       return response.data.data;
     } catch (error) {
       console.error('Error fetching neighborhoods:', error);
@@ -37,7 +37,7 @@ const neighborhoodService = {
   // Obtener barrio por ID
   getNeighborhoodById: async (id: string): Promise<Neighborhood> => {
     try {
-      const response = await api.get(`/neighborhoods/${id}`);
+      const response = await api.get(`/api/neighborhoods/${id}`);
       return response.data.neighborhood;
     } catch (error) {
       console.error(`Error fetching neighborhood ${id}:`, error);
@@ -48,7 +48,7 @@ const neighborhoodService = {
   // Crear un nuevo barrio
   createNeighborhood: async (neighborhoodData: Partial<Neighborhood>): Promise<Neighborhood> => {
     try {
-      const response = await api.post('/neighborhoods/register', neighborhoodData);
+      const response = await api.post('/api/neighborhoods/register', neighborhoodData);
       return response.data.neighborhood;
     } catch (error) {
       console.error('Error creating neighborhood:', error);
@@ -59,7 +59,7 @@ const neighborhoodService = {
   // Eliminar un barrio
   deleteNeighborhood: async (id: string): Promise<boolean> => {
     try {
-      await api.delete(`/neighborhood/${id}`);
+      await api.delete(`/api/neighborhood/${id}`);
       return true;
     } catch (error) {
       console.error(`Error deleting neighborhood ${id}:`, error);
@@ -70,7 +70,7 @@ const neighborhoodService = {
   // Obtener usuarios de un barrio
   getNeighborhoodUsers: async (id: string): Promise<any[]> => {
     try {
-      const response = await api.get(`/neighborhood/${id}/users`);
+      const response = await api.get(`/api/neighborhood/${id}/users`);
       return response.data.users;
     } catch (error) {
       console.error(`Error fetching users for neighborhood ${id}:`, error);
@@ -81,7 +81,7 @@ const neighborhoodService = {
   // Agregar usuario a un barrio
   addUserToNeighborhood: async (neighborhoodId: string, userId: string): Promise<boolean> => {
     try {
-      await api.post(`/neighborhood/${neighborhoodId}/users`, { userId });
+      await api.post(`/api/neighborhood/${neighborhoodId}/users`, { userId });
       return true;
     } catch (error) {
       console.error(`Error adding user to neighborhood:`, error);
@@ -92,7 +92,7 @@ const neighborhoodService = {
   // Eliminar usuario de un barrio
   removeUserFromNeighborhood: async (neighborhoodId: string, userId: string): Promise<boolean> => {
     try {
-      await api.delete(`/neighborhood/${neighborhoodId}/users/${userId}`);
+      await api.delete(`/api/neighborhood/${neighborhoodId}/users/${userId}`);
       return true;
     } catch (error) {
       console.error(`Error removing user from neighborhood:`, error);
@@ -103,7 +103,7 @@ const neighborhoodService = {
   // Obtener estadísticas de barrios
   getNeighborhoodStats: async (): Promise<NeighborhoodStats[]> => {
     try {
-      const response = await api.get('/neighborhood/stats');
+      const response = await api.get('/api/neighborhood/stats');
       return response.data.data;
     } catch (error) {
       console.error('Error fetching neighborhood stats:', error);

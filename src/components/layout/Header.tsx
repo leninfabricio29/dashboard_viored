@@ -3,12 +3,18 @@ import { useNavigate, Link } from 'react-router-dom'
 import { FiHome, FiMenu, FiLogOut, FiSettings, FiUser, FiX, FiMap } from 'react-icons/fi'
 import authService from '../../services/auth-service'
 import userService from '../../services/user-service'
+import { getAllNotifications } from '../../services/notifications-service'
+import { FiBell } from 'react-icons/fi'
+
+
 
 const Header = () => {
   const navigate = useNavigate()
   const [isMenuOpen, setIsMenuOpen] = useState(false)
   const [user, setUser] = useState<{ name: string; role: string }>({ name: '', role: '' })
   const [loading, setLoading] = useState(true)
+  const [notifications, setNotifications] = useState<any[]>([])
+  const [showNotifications, setShowNotifications] = useState(false)
 
   useEffect(() => {
     const fetchUserData = async () => {
@@ -32,6 +38,22 @@ const Header = () => {
     }
 
     fetchUserData()
+  }, [])
+
+  useEffect(() => {
+    const fetchNotifications = async () => {
+      try {
+        const userId = authService.getUserIdFromToken()
+        if (userId) {
+          const notificationsData = await getAllNotifications(userId)
+          setNotifications(notificationsData)
+        }
+      } catch (error) {
+        console.error('Error al obtener notificaciones:', error)
+      }
+    }
+
+    fetchNotifications()
   }, [])
 
   const handleLogout = () => {
@@ -67,6 +89,53 @@ const Header = () => {
 
           {/* Información de usuario y menú para desktop */}
           <div className="hidden md:flex items-center space-x-4">
+          
+          <div className="relative">
+  <button
+    className="relative"
+    onClick={() => setShowNotifications(!showNotifications)}
+  >
+    <FiBell className="h-6 w-6 text-white" />
+    {notifications.length > 0 && (
+      <span className="absolute -top-2 -right-2 bg-red-600 text-white rounded-full text-xs px-1.5">
+        {notifications.length}
+      </span>
+    )}
+  </button>
+
+  {showNotifications && (
+    <div className="absolute right-0 mt-2 w-96 max-h-[400px] bg-white text-black rounded-lg shadow-2xl z-50 overflow-y-auto ">
+      <div className="p-4 font-semibold  bg-gray-100">Notificaciones</div>
+      <ul className="divide-y divide-gray-200 ">
+        {notifications.slice(0, 4).map((notif) => (
+          <li key={notif._id} className="px-4 py-3 hover:bg-blue-200 cursor-pointer">
+            <div className="flex justify-between items-start">
+              <div>
+                <div className="text-sm font-medium text-gray-800">{notif.title}</div>
+                <div className="text-xs text-gray-500 mt-1">{notif.message}</div>
+              </div>
+              <Link
+                to={`/notificaciones/${notif._id}`}
+                className="text-xs text-blue-600 hover:underline ml-2"
+              >
+                Ver
+              </Link>
+            </div>
+          </li>
+        ))}
+      </ul>
+      <div className="text-center p-3 text-sm">
+        <Link
+          to="/notificaciones"
+          className="text-blue-700 font-medium hover:underline"
+        >
+          Ver todas
+        </Link>
+      </div>
+    </div>
+  )}
+</div>
+
             <div className="text-sm text-right">
               {loading ? (
                 <span className="animate-pulse">Cargando...</span>

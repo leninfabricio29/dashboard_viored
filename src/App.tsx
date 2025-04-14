@@ -6,6 +6,7 @@ import UserDetail from './pages/modules/Users/UserDetail'
 import ResetPassword from './pages/ResetPassword'
 import Login from './pages/Login'
 import MapIndicator from './pages/modules/Maps/MapsIndicator'
+import NotificationDetail from './pages/modules/Notifications/NotificationDetail'
 
 // Función para verificar si el usuario está autenticado
 const isAuthenticated = (): boolean => {
@@ -47,6 +48,8 @@ function App() {
 
          {/* Rutas para el modulo maps */}
       <Route path="maps" element={<MapIndicator />} />
+      <Route path="/notificaciones/:id" element={<NotificationDetail />} />
+
       </Route>
 
 
