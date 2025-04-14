@@ -36,7 +36,18 @@ getUserById: async (id: string): Promise<User> => {
       console.error(`Error deleting user ${id}:`, error);
       throw error;
     }
-  }
+  },
+
+  validateUser: async (userId: string): Promise<boolean> => {
+    try {
+      const response = await api.post('/api/users/validate', { userId })
+      return response.status === 200
+    } catch (error) {
+      console.error(`Error al validar usuario ${userId}:`, error)
+      throw error
+    }
+  },
+  
 };
 
 export default userService;
