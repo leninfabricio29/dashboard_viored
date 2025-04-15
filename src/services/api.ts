@@ -3,7 +3,7 @@ import axios from 'axios';
 
 // Creamos una instancia de axios con la URL base
 const api = axios.create({
-  baseURL: 'http://3.148.85.5:5050',
+  baseURL: 'https://softkilla.es',
   headers: {
     'Content-Type': 'application/json',
   },
