@@ -1,23 +1,26 @@
-import { FiUsers, FiRadio, FiSettings, FiPieChart, FiMapPin, } from 'react-icons/fi'
+import {
+  FiUsers, FiRadio, FiSettings, FiPieChart, FiMapPin,
+  FiBell, FiClock
+} from 'react-icons/fi'
 import ModuleCard from '../components/UI/ModuleCard'
 
 const Dashboard = () => {
   // Definición de los módulos
   const modules = [
     {
-        title: 'Mapas',
-        path: '/maps',
-        icon: <FiMapPin className="h-8 w-8" />,
-        bgColor: 'bg-indigo-500',
-        iconColor: 'text-white'
-      },
-      {
-        title: 'Estadisticas',
-        path: '/statistics',
-        icon: <FiPieChart className="h-8 w-8" />,
-        bgColor: 'bg-orange-500',
-        iconColor: 'text-white'
-      },
+      title: 'Mapas',
+      path: '/maps',
+      icon: <FiMapPin className="h-8 w-8" />,
+      bgColor: 'bg-indigo-500',
+      iconColor: 'text-white'
+    },
+    {
+      title: 'Estadísticas',
+      path: '/statistics',
+      icon: <FiPieChart className="h-8 w-8" />,
+      bgColor: 'bg-orange-500',
+      iconColor: 'text-white'
+    },
     {
       title: 'Usuarios',
       path: '/users',
@@ -33,13 +36,28 @@ const Dashboard = () => {
       iconColor: 'text-white'
     },
     {
+      title: 'Notificaciones',
+      path: '/notifications',
+      icon: <FiBell className="h-8 w-8" />,
+      bgColor: 'bg-yellow-500',
+      iconColor: 'text-white'
+    },
+    {
+      title: 'Historial',
+      path: '/history',
+      icon: <FiClock className="h-8 w-8" />,
+      bgColor: 'bg-gray-600',
+      iconColor: 'text-white'
+    },
+    {
       title: 'Configuración',
       path: '/settings',
       icon: <FiSettings className="h-8 w-8" />,
       bgColor: 'bg-purple-500',
       iconColor: 'text-white'
     }
-  ]
+  ];
+  
 
   return (
     <div className="max-w-5xl mx-auto">
