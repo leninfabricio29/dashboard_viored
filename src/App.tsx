@@ -7,6 +7,7 @@ import ResetPassword from './pages/ResetPassword'
 import Login from './pages/Login'
 import MapIndicator from './pages/modules/Maps/MapsIndicator'
 import NotificationDetail from './pages/modules/Notifications/NotificationDetail'
+import Notifications from './pages/modules/Notifications/Notifications'
 import StatisticsPage from './pages/modules/Statistics/StatisticsPage'
 
 // Función para verificar si el usuario está autenticado
@@ -50,6 +51,7 @@ function App() {
          {/* Rutas para el modulo maps */}
       <Route path="maps" element={<MapIndicator />} />
       <Route path="/notificaciones/:id" element={<NotificationDetail />} />
+      <Route path= "/notifications"element={<Notifications/>}/>
 
       <Route path="statistics" element={<StatisticsPage />} />
 

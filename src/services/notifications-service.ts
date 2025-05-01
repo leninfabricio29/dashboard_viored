@@ -19,3 +19,13 @@ export const getNotificationById = async (notificationId: string) => {
     throw error;
   }
 };
+
+export const markNotificationAsRead = async (notificationId: string) => {
+  try {
+    const response = await api.post(`/api/notify/readCheck/${notificationId}`);
+    return response.data;
+  } catch (error) {
+    console.error('Error al marcar notificación como leída:', error);
+    throw error;
+  }
+};
