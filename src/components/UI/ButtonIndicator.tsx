@@ -24,7 +24,7 @@ const ButtonIndicator: React.FC = () => {
 
   return (
     <div className="flex flex-col items-start">
-      <div className="text-sm text-gray-500 mb-2 bg-green-200 p-2 rounded ">
+      <div className="text-xl text-gray-500 mb-2 bg-green-200 p-2 rounded ">
         Te encuentras en la página: <span className="font-medium">{getPathName()}</span>
       </div>
 
