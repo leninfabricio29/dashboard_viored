@@ -1,34 +1,31 @@
 import { useState, useEffect } from "react";
-import { useParams, Link, useNavigate } from "react-router-dom";
+import { useParams } from "react-router-dom";
 import {
-  FiTrash2,
   FiUser,
   FiMail,
   FiPhone,
   FiMapPin,
   FiCalendar,
-  FiMap,
   FiCheck,
+  FiMap,
   FiSearch,
 } from "react-icons/fi";
 import userService from "../../../services/user-service";
-import { User } from "../../../types/user.types";
-import ButtonIndicator from "../../../components/UI/ButtonIndicator";
-import Modal from "../../../components/UI/Modal";
-import Map from "../../../components/UI/Map";
-import ButtonHome from "../../../components/UI/ButtonHome";
 import neighborhoodService, {
   Neighborhood,
 } from "../../../services/neighborhood-service";
+import ButtonIndicator from "../../../components/UI/ButtonIndicator";
+import ButtonHome from "../../../components/UI/ButtonHome";
+import Map from "../../../components/UI/Map";
+import { getNotificationById } from "../../../services/notifications-service";
+import Modal from "../../../components/UI/Modal";
 
-const UserDetail = () => {
-  const { id } = useParams<{ id: string }>();
-  const navigate = useNavigate();
-  const [user, setUser] = useState<User | null>(null);
+const NotificationRequest = () => {
+  const { id } = useParams();
+  //const navigate = useNavigate();
+  const [notification, setNotification] = useState(null);
+  const [emitter, setEmitter] = useState<any>(null);
   const [loading, setLoading] = useState(true);
-  const [error, setError] = useState("");
-  const [isMapModalOpen, setIsMapModalOpen] = useState(false);
-  const [isBarrioModalOpen, setIsBarrioModalOpen] = useState(false);
   const [neighborhoods, setNeighborhoods] = useState<Neighborhood[]>([]);
   const [selectedNeighborhood, setSelectedNeighborhood] = useState<string>("");
   const [loadingNeighborhoods, setLoadingNeighborhoods] = useState(false);
@@ -37,31 +34,44 @@ const UserDetail = () => {
     Neighborhood[]
   >([]);
   const [searchTerm, setSearchTerm] = useState("");
+  const [isMapModalOpen, setIsMapModalOpen] = useState(false);
+  const [isBarrioModalOpen, setIsBarrioModalOpen] = useState(false);
 
   useEffect(() => {
     const fetchData = async () => {
-      // Cargar datos del usuario si hay un ID
-      if (id) {
-        try {
-          setLoading(true);
-          const userData = await userService.getUserById(id);
-          setUser(userData);
-        } catch (err) {
-          console.error(`Error al cargar usuario con ID ${id}:`, err);
-          setError("No se pudo cargar la información del usuario");
-        } finally {
-          setLoading(false);
-        }
+      try {
+        const notif = await getNotificationById(id as string);
+        setNotification(notif);
+
+        const user = await userService.getUserById(notif.notification.emitter);
+        setEmitter(user);
+      } catch (error) {
+        console.error("Error cargando detalle de notificación:", error);
+      } finally {
+        setLoading(false);
       }
 
-      // Cargar barrios si el modal está abierto
       if (isBarrioModalOpen) {
         await fetchNeighborhoods();
       }
     };
 
     fetchData();
-  }, [id, isBarrioModalOpen]); // Dependencias combinadas
+  }, [id, isBarrioModalOpen]);
+
+  /* useEffect(() => {
+    if (emitter?.neighborhood && neighborhoods.length > 0) {
+      console.log("Comparando IDs:", {
+        emitterNeighborhood: emitter.neighborhood,
+        neighborhoods: neighborhoods.map((n) => n._id),
+        found: neighborhoods.find(
+          (n) =>
+            n._id?.toString() === emitter.neighborhood?.toString() ||
+            n._id?.toString() === emitter.neighborhood?._id?.toString()
+        ),
+      });
+    }
+  }, [neighborhoods, emitter?.neighborhood]); */
 
   useEffect(() => {
     if (searchTerm.trim() === "") {
@@ -73,24 +83,6 @@ const UserDetail = () => {
       setNeighborhoodsFiltered(filtered);
     }
   }, [searchTerm, neighborhoods]);
-
-  const handleDeleteUser = async () => {
-    if (!user) return;
-
-    if (
-      window.confirm(
-        `¿Estás seguro de que deseas eliminar al usuario ${user.name}?`
-      )
-    ) {
-      try {
-        await userService.deleteUser(user._id);
-        navigate("/users");
-      } catch (err) {
-        console.error("Error al eliminar usuario:", err);
-        setError("Error al eliminar el usuario. Intente nuevamente.");
-      }
-    }
-  };
 
   const formatDate = (dateString: string) => {
     const options: Intl.DateTimeFormatOptions = {
@@ -108,32 +100,126 @@ const UserDetail = () => {
       setLoadingNeighborhoods(true);
       const data = await neighborhoodService.getAllNeighborhoods();
       setNeighborhoods(data);
-      setLoadingNeighborhoods(false);
     } catch (err) {
       console.error("Error al cargar barrios:", err);
+    } finally {
       setLoadingNeighborhoods(false);
     }
   };
 
+  const getNeighborhoodName = () => {
+    // Si no hay barrio asignado
+    if (!emitter?.neighborhood) {
+      return (
+        <div className="flex items-center">
+          <p className="font-medium text-amber-600">No asignado</p>
+          <button
+            onClick={() => setIsBarrioModalOpen(true)}
+            className="ml-2 px-2 py-1 text-xs bg-blue-500 text-white rounded hover:bg-blue-600 transition-colors flex items-center"
+          >
+            <FiMapPin className="mr-1" /> Asignar ahora
+          </button>
+        </div>
+      );
+    }
+
+    // Si está cargando
+    if (loadingNeighborhoods) {
+      return <p className="text-sm text-gray-500">Cargando barrios...</p>;
+    }
+
+    // Buscar el barrio - comparación segura de IDs
+    const neighborhoodId =
+      typeof emitter.neighborhood === "object"
+        ? emitter.neighborhood._id || emitter.neighborhood.id
+        : emitter.neighborhood;
+
+    const foundNeighborhood = neighborhoods.find((n) => {
+      const nId = n._id?.toString() || n.id?.toString();
+      return nId === neighborhoodId?.toString();
+    });
+
+    // Si se encontró el barrio
+    if (foundNeighborhood) {
+      return (
+        <div className="flex items-center">
+          <p className="font-medium text-gray-800">{foundNeighborhood.name}</p>
+          <button
+            onClick={() => setIsBarrioModalOpen(true)}
+            className="ml-2 px-2 py-1 text-xs bg-blue-500 text-white rounded hover:bg-blue-600 transition-colors flex items-center"
+          >
+            <FiMapPin className="mr-1" /> Cambiar
+          </button>
+        </div>
+      );
+    }
+
+    // Si no se encontró
+    return (
+      <div className="flex items-center">
+        <p className="font-medium text-red-500">
+          Barrio no encontrado (ID:{" "}
+          {typeof emitter.neighborhood === "object"
+            ? emitter.neighborhood._id || emitter.neighborhood.id
+            : emitter.neighborhood}
+          )
+        </p>
+        <button
+          onClick={() => setIsBarrioModalOpen(true)}
+          className="ml-2 px-2 py-1 text-xs bg-blue-500 text-white rounded hover:bg-blue-600 transition-colors flex items-center"
+        >
+          <FiMapPin className="mr-1" /> Reasignar
+        </button>
+      </div>
+    );
+  };
+
+  useEffect(() => {
+    const fetchData = async () => {
+      try {
+        setLoading(true);
+        const notif = await getNotificationById(id as string);
+        setNotification(notif);
+
+        const user = await userService.getUserById(notif.notification.emitter);
+        setEmitter(user);
+
+        // Cargar neighborhoods independientemente de si el modal está abierto
+        await fetchNeighborhoods();
+      } catch (error) {
+        console.error("Error cargando detalle de notificación:", error);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchData();
+  }, [id]);
+
+  // Modifica la función assignNeighborhood para actualizar correctamente después de asignar
   const assignNeighborhood = async () => {
-    if (!selectedNeighborhood || !user) return;
+    if (!selectedNeighborhood || !emitter) return;
 
     try {
       setAssigningNeighborhood(true);
       await neighborhoodService.addUserToNeighborhood(
         selectedNeighborhood,
-        user._id
+        emitter._id
       );
 
       // Actualizar la información del usuario después de asignar
-      const updatedUser = await userService.getUserById(user._id);
-      setUser(updatedUser);
+      const updatedUser = await userService.getUserById(emitter._id);
+      setEmitter(updatedUser);
 
+      // Recargar los barrios para asegurar datos actualizados
+      await fetchNeighborhoods();
+
+      // Cerrar el modal después de asignar exitosamente
       setIsBarrioModalOpen(false);
       setSelectedNeighborhood("");
-      setAssigningNeighborhood(false);
     } catch (err) {
       console.error("Error al asignar barrio:", err);
+    } finally {
       setAssigningNeighborhood(false);
     }
   };
@@ -146,80 +232,49 @@ const UserDetail = () => {
     );
   }
 
-  if (error) {
-    return (
-      <div className="max-w-3xl mx-auto mt-8 bg-red-100 border-l-4 border-red-500 p-4 rounded shadow">
-        <p className="text-red-700">{error}</p>
-        <Link
-          to="/users"
-          className="mt-2 inline-block text-blue-600 hover:underline"
-        >
-          Volver a la lista de usuarios
-        </Link>
-      </div>
-    );
-  }
-
-  if (!user) {
-    return (
-      <div className="max-w-3xl mx-auto mt-8 text-center">
-        <div className="bg-gray-100 p-8 rounded-lg shadow">
-          <h2 className="text-xl font-semibold mb-4">Usuario no encontrado</h2>
-          <Link to="/users" className="text-blue-600 hover:underline">
-            Volver a la lista de usuarios
-          </Link>
-        </div>
-      </div>
-    );
-  }
-
   return (
-    <div className="max-w-3xl mx-auto px-4 py-6">
-      <div className="mb-4">
-        <ButtonIndicator />
-        <ButtonHome/>
-      </div>
+    <div className="max-w-3xl mx-auto px-4 py-6 space-y-6">
+      <ButtonIndicator />
+      <ButtonHome />
 
-      {/* Card de Usuario */}
-      <div className="bg-white rounded-lg shadow-lg overflow-hidden">
+      {/* Tarjeta principal */}
+      <div className="bg-white shadow-lg rounded-xl border border-gray-100 overflow-hidden">
         {/* Encabezado */}
-        <div className="bg-gradient-to-r from-blue-300 to-blue-500 text-white p-6">
-          <div className="flex items-center">
-            <div className="bg-white/20 p-3 rounded-full mr-4">
-              <FiUser className="h-10 w-10" />
-            </div>
-            <div>
-              <h1 className="text-2xl font-bold">{user.name}</h1>
-              <div className="flex items-center mt-1">
-                <span
-                  className={`px-2 py-1 text-xs font-semibold rounded-full ${
-                    user.isActive ? "bg-green-500" : "bg-red-500"
-                  }`}
-                >
-                  {user.isActive ? "Activo" : "Inactivo"}
-                </span>
-                <span className="ml-2 text-sm opacity-90">
-                  {user.role.charAt(0).toUpperCase() + user.role.slice(1)}
-                </span>
-              </div>
-            </div>
-          </div>
+        <div className="bg-gradient-to-r from-yellow-600 to-yellow-700 px-6 py-4">
+          <h2 className="text-xl font-bold text-white">
+            Petición de Unión a Comunidad
+          </h2>
         </div>
 
-        {/* Contenido */}
+        {/* Cuerpo */}
         <div className="p-6">
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-            {/* Columna 1: Información de contacto */}
+          <div className="mb-6 p-4 bg-yellow-50 rounded-lg border border-yellow-100">
+            <p className="text-yellow-800 font-medium">
+              El usuario {emitter?.name} ha solicitado unirse a un
+              barrio/comunidad.
+            </p>
+          </div>
+
+          {/* Información del usuario */}
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
             <div className="space-y-4">
-              <h2 className="font-medium text-lg border-b pb-2 text-gray-700">
-                Información personal
-              </h2>
+              <h3 className="font-medium text-lg border-b pb-2 text-gray-700">
+                Información del Usuario
+              </h3>
+
+              <div className="flex items-center">
+                <FiUser className="text-gray-500 mr-3 flex-shrink-0" />
+                <div>
+                  <p className="text-xs text-gray-500">Nombre</p>
+                  <p className="font-medium text-gray-800"> {emitter?.name} </p>
+                </div>
+              </div>
 
               <div className="flex items-center">
                 <FiMail className="text-gray-500 mr-3 flex-shrink-0" />
                 <div>
                   <p className="text-xs text-gray-500">Email</p>
-                  <p className="font-medium text-gray-800">{user.email}</p>
+                  <p className="font-medium text-gray-800">{emitter?.email}</p>
                 </div>
               </div>
 
@@ -227,103 +282,33 @@ const UserDetail = () => {
                 <FiPhone className="text-gray-500 mr-3 flex-shrink-0" />
                 <div>
                   <p className="text-xs text-gray-500">Teléfono</p>
-                  <p className="font-medium text-gray-800">{user.phone}</p>
+                  <p className="font-medium text-gray-800">
+                    {emitter?.phone ? emitter.phone : "No registrado"}
+                  </p>
                 </div>
               </div>
 
               <div className="flex items-center">
-                <FiCalendar className="text-blue-500 mr-3 flex-shrink-0" />
+                <FiCalendar className="text-gray-500 mr-3 flex-shrink-0" />
                 <div>
-                  <p className="text-xs text-gray-500">Se unió</p>
-                  <p className="text-sm font-medium text-indigo-600">
-                    {(() => {
-                      const joinDate = new Date(user.createdAt);
-                      const now = new Date();
-                      const diffTime = Math.abs(
-                        now.getTime() - joinDate.getTime()
-                      );
-                      const diffDays = Math.ceil(
-                        diffTime / (1000 * 60 * 60 * 24)
-                      );
-
-                      if (diffDays < 30) {
-                        return `Hace ${diffDays} días`;
-                      } else if (diffDays < 365) {
-                        const months = Math.floor(diffDays / 30);
-                        return `Hace ${months} ${
-                          months === 1 ? "mes" : "meses"
-                        }`;
-                      } else {
-                        const years = Math.floor(diffDays / 365);
-                        return `Hace ${years} ${years === 1 ? "año" : "años"}`;
-                      }
-                    })()}
-                    <span className="text-xs text-gray-500 ml-1">
-                      ({formatDate(user.createdAt)})
-                    </span>
+                  <p className="text-xs text-gray-500">Fecha de solicitud</p>
+                  <p className="text-sm font-medium text-gray-800">
+                    {formatDate(new Date().toISOString())}
                   </p>
                 </div>
               </div>
             </div>
 
-            {/* Columna 2: Información de ubicación */}
             <div className="space-y-4">
-              <h2 className="font-medium text-lg border-b pb-2 text-gray-700">
-                Ubicación
-              </h2>
+              <h3 className="font-medium text-lg border-b pb-2 text-gray-700">
+                Ubicación Actual
+              </h3>
 
               <div className="flex items-center">
                 <FiMapPin className="text-gray-500 mr-3 flex-shrink-0" />
                 <div>
                   <p className="text-xs text-gray-500">Barrio</p>
-                  {user.neighborhood ? (
-                    <p className="font-medium text-gray-800">
-                      {user.neighborhood}
-                    </p>
-                  ) : (
-                    <div className="flex items-center">
-                      <p className="font-medium text-amber-600">No asignado</p>
-                      <button
-                        onClick={() => setIsBarrioModalOpen(true)}
-                        className="ml-2 px-2 py-1 text-xs bg-blue-500 text-white rounded hover:bg-blue-600 transition-colors flex items-center"
-                      >
-                        <FiMapPin className="mr-1" /> Asignar ahora
-                      </button>
-                    </div>
-                  )}
-                </div>
-              </div>
-
-              <div className="flex items-start">
-                <FiMap className="text-gray-500 mr-3 flex-shrink-0 mt-1" />
-                <div>
-                  <p className="text-xs text-gray-500">Última ubicación</p>
-                  {user.lastLocation && user.lastLocation.coordinates ? (
-                    <div>
-                      <div className="flex items-center mt-1">
-                        <span className="text-sm text-gray-700">
-                          [{user.lastLocation.coordinates[0].toFixed(4)},{" "}
-                          {user.lastLocation.coordinates[1].toFixed(4)}]
-                        </span>
-                        {user.lastLocation.coordinates[0] !== 0 && (
-                          <button
-                            className="ml-2 px-2 py-1 text-xs bg-blue-500 text-white rounded hover:bg-blue-600 transition-colors"
-                            onClick={() => setIsMapModalOpen(true)}
-                          >
-                            Ver mapa
-                          </button>
-                        )}
-                      </div>
-                      {user.lastLocation.lastUpdated && (
-                        <p className="text-xs text-gray-500 mt-1">
-                          Actualizado:{" "}
-                          {formatDate(user.lastLocation.lastUpdated)}
-                        </p>
-                      )}
-                    </div>
-                  ) : (
-                    <p className="font-medium text-gray-800">No disponible</p>
-                  )}
+                  {getNeighborhoodName()}
                 </div>
               </div>
             </div>
@@ -331,13 +316,19 @@ const UserDetail = () => {
         </div>
 
         {/* Acciones */}
-        <div className="bg-gray-50 p-4 border-t border-gray-200">
-          <div className="flex flex-wrap gap-2 justify-end">
+        <div className="border-t border-gray-200 px-6 py-4 bg-gray-50">
+          <div className="flex flex-col sm:flex-row justify-end gap-3">
             <button
-              onClick={handleDeleteUser}
-              className="flex items-center px-4 py-2 bg-red-500 text-white rounded hover:bg-red-700 transition-colors"
+              /*  onClick={handleApprove} */
+              disabled={!selectedNeighborhood}
+              className={`flex items-center justify-center px-6 py-2 rounded-lg transition-colors ${
+                !selectedNeighborhood
+                  ? "bg-gray-300 text-gray-500 cursor-not-allowed"
+                  : "bg-yellow-600 hover:bg-yellow-700 text-white"
+              }`}
             >
-              <FiTrash2 className="mr-2" /> Eliminar usuario
+              <FiCheck className="mr-2" />
+              Aprobar Unión
             </button>
           </div>
         </div>
@@ -347,20 +338,18 @@ const UserDetail = () => {
       <Modal
         isOpen={isMapModalOpen}
         onClose={() => setIsMapModalOpen(false)}
-        title={`Ubicación de ${user.name}`}
+        title={`Ubicación de ${emitter.name}`}
       >
-        {user.lastLocation && user.lastLocation.coordinates && (
+        {emitter.lastLocation && emitter.lastLocation.coordinates && (
           <Map
             coordinates={[
-              user.lastLocation.coordinates[0], // Longitud
-              user.lastLocation.coordinates[1], // Latitud
+              emitter.lastLocation.coordinates[0], // Longitud
+              emitter.lastLocation.coordinates[1], // Latitud
             ]}
           />
         )}
       </Modal>
 
-      {/* Modal para asignar barrio */}
-      {/* Modal para asignar barrio */}
       <Modal
         isOpen={isBarrioModalOpen}
         onClose={() => {
@@ -368,7 +357,7 @@ const UserDetail = () => {
           setSearchTerm("");
           setSelectedNeighborhood("");
         }}
-        title={`Asignar barrio a ${user.name}`}
+        title={`Asignar barrio a ${emitter.name}`}
       >
         <div className="p-4">
           <p className="mb-4">
@@ -499,4 +488,4 @@ const UserDetail = () => {
   );
 };
 
-export default UserDetail;
+export default NotificationRequest;

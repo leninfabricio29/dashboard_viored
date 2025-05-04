@@ -6,7 +6,9 @@ import UserDetail from './pages/modules/Users/UserDetail'
 import ResetPassword from './pages/ResetPassword'
 import Login from './pages/Login'
 import MapIndicator from './pages/modules/Maps/MapsIndicator'
-import NotificationDetail from './pages/modules/Notifications/NotificationDetail'
+import NotificationRegister from './pages/modules/Notifications/NotificationRegister'
+import NotificationReset from './pages/modules/Notifications/NotificationReset'
+import NotificationRequest from './pages/modules/Notifications/NotificationRequest'
 import Notifications from './pages/modules/Notifications/Notifications'
 import StatisticsPage from './pages/modules/Statistics/StatisticsPage'
 
@@ -50,7 +52,9 @@ function App() {
 
          {/* Rutas para el modulo maps */}
       <Route path="maps" element={<MapIndicator />} />
-      <Route path="/notificaciones/:id" element={<NotificationDetail />} />
+      <Route path="/notificaciones/register/:id" element={<NotificationRegister />} />
+      <Route path="/notificaciones/reset/:id" element={<NotificationReset />} />
+      <Route path="/notificaciones/request/:id" element={<NotificationRequest />} />
       <Route path= "/notifications"element={<Notifications/>}/>
 
       <Route path="statistics" element={<StatisticsPage />} />
