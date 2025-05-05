@@ -30,7 +30,7 @@ const Dashboard = () => {
     },
     {
       title: 'Barrios',
-      path: '/barrios',
+      path: '/neighborhood',
       icon: <FiRadio className="h-8 w-8" />,
       bgColor: 'bg-green-500',
       iconColor: 'text-white'

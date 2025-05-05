@@ -1,30 +1,31 @@
-import { Routes, Route, Navigate } from 'react-router-dom'
-import MainLayout from './components/layout/MainLayout'
-import Dashboard from './pages/Dashboard'
-import UsersList from './pages/modules/Users/UsersList'
-import UserDetail from './pages/modules/Users/UserDetail'
-import ResetPassword from './pages/ResetPassword'
-import Login from './pages/Login'
-import MapIndicator from './pages/modules/Maps/MapsIndicator'
-import NotificationRegister from './pages/modules/Notifications/NotificationRegister'
-import NotificationReset from './pages/modules/Notifications/NotificationReset'
-import NotificationRequest from './pages/modules/Notifications/NotificationRequest'
-import Notifications from './pages/modules/Notifications/Notifications'
-import StatisticsPage from './pages/modules/Statistics/StatisticsPage'
+import { Routes, Route, Navigate } from "react-router-dom";
+import MainLayout from "./components/layout/MainLayout";
+import Dashboard from "./pages/Dashboard";
+import UsersList from "./pages/modules/Users/UsersList";
+import UserDetail from "./pages/modules/Users/UserDetail";
+import ResetPassword from "./pages/ResetPassword";
+import Login from "./pages/Login";
+import MapIndicator from "./pages/modules/Maps/MapsIndicator";
+import NotificationRegister from "./pages/modules/Notifications/NotificationRegister";
+import NotificationReset from "./pages/modules/Notifications/NotificationReset";
+import NotificationRequest from "./pages/modules/Notifications/NotificationRequest";
+import Notifications from "./pages/modules/Notifications/Notifications";
+import StatisticsPage from "./pages/modules/Statistics/StatisticsPage";
+import Neighborhood from "./pages/modules/Neighborhood/Neighborhood";
 
 // Función para verificar si el usuario está autenticado
 const isAuthenticated = (): boolean => {
   // En una aplicación real, verificaría el token JWT, la sesión, etc.
-  return localStorage.getItem('token') !== null
-}
+  return localStorage.getItem("token") !== null;
+};
 
 // Componente para rutas protegidas
 const ProtectedRoute = ({ children }: { children: JSX.Element }) => {
   if (!isAuthenticated()) {
-    return <Navigate to="/login" replace />
+    return <Navigate to="/login" replace />;
   }
-  return children
-}
+  return children;
+};
 
 function App() {
   return (
@@ -32,7 +33,7 @@ function App() {
       {/* Ruta pública */}
       <Route path="/login" element={<Login />} />
       <Route path="/reset-password" element={<ResetPassword />} />
-      
+
       {/* Rutas protegidas con MainLayout */}
       <Route
         path="/"
@@ -43,34 +44,40 @@ function App() {
         }
       >
         <Route index element={<Dashboard />} />
-        
+
         {/* Rutas para módulo de usuarios */}
         <Route path="users">
           <Route index element={<UsersList />} />
           <Route path=":id" element={<UserDetail />} />
         </Route>
 
-         {/* Rutas para el modulo maps */}
-      <Route path="maps" element={<MapIndicator />} />
-      <Route path="/notificaciones/register/:id" element={<NotificationRegister />} />
-      <Route path="/notificaciones/reset/:id" element={<NotificationReset />} />
-      <Route path="/notificaciones/request/:id" element={<NotificationRequest />} />
-      <Route path= "/notifications"element={<Notifications/>}/>
+        {/* Rutas para el modulo maps */}
+        <Route path="maps" element={<MapIndicator />} />
+        <Route
+          path="/notificaciones/register/:id"
+          element={<NotificationRegister />}
+        />
+        <Route
+          path="/notificaciones/reset/:id"
+          element={<NotificationReset />}
+        />
+        <Route
+          path="/notificaciones/request/:id"
+          element={<NotificationRequest />}
+        />
+        <Route path="/notifications" element={<Notifications />} />
 
-      <Route path="statistics" element={<StatisticsPage />} />
+        <Route path="statistics" element={<StatisticsPage />} />
 
 
+        {/* Rutas para el módulo de barrios */}
+        <Route path="/neighborhood" element={<Neighborhood />} />
       </Route>
 
-
-     
-
-      
       {/* Redireccionar cualquier ruta no encontrada al dashboard */}
       <Route path="*" element={<Navigate to="/" replace />} />
     </Routes>
-  )
+  );
 }
 
-export default App
-
+export default App;

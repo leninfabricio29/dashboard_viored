@@ -48,7 +48,7 @@ const neighborhoodService = {
   // Crear un nuevo barrio
   createNeighborhood: async (neighborhoodData: Partial<Neighborhood>): Promise<Neighborhood> => {
     try {
-      const response = await api.post('/api/neighborhoods/register', neighborhoodData);
+      const response = await api.post('/api/neighborhood/register', neighborhoodData);
       return response.data.neighborhood;
     } catch (error) {
       console.error('Error creating neighborhood:', error);
