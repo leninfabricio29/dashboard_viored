@@ -174,7 +174,7 @@ const Neighborhood = () => {
       </div>
 
       {/* Modal para crear/editar barrio */}
-      {showCreateModal && (
+      {showCreateModal && import.meta.env.VITE_GOOGLE_MAPS_API_KEY && (
         <div className="fixed inset-0 bg-gray-600 bg-opacity-50 flex items-center justify-center p-4 z-50">
           <div className="bg-white rounded-lg shadow-xl max-w-4xl w-full max-h-[90vh] flex flex-col">
             <div className="px-6 py-4 border-b border-gray-200 flex justify-between items-center">
@@ -242,6 +242,10 @@ const Neighborhood = () => {
                       <li>Haz clic en "Reiniciar" para empezar de nuevo</li>
                       <li>
                         Al menos 3 puntos son necesarios para formar un área
+                      </li>
+                      <li>
+                        La forma de ser cuadrada, no se puede hacer un poligono
+                        con forma de estrella o de cualquier otra figura.
                       </li>
                     </ul>
                   </div>

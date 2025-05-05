@@ -43,9 +43,16 @@ const NeighborhoodMapEditor = ({
     setPolygonPath(newPath);
     
     if (newPath.length >= 3 && onPolygonComplete) {
-      const coordinates = newPath.map(latLng => [latLng.lng(), latLng.lat()] as [number, number]);
+      let coordinates = newPath.map(latLng => [latLng.lng(), latLng.lat()] as [number, number]);
+    
+      const isClosed = JSON.stringify(coordinates[0]) === JSON.stringify(coordinates[coordinates.length - 1]);
+      if (!isClosed) {
+        coordinates.push(coordinates[0]); // Cierra el polígono
+      }
+    
       onPolygonComplete(coordinates);
     }
+    
   }, [polygonPath, onPolygonComplete]);
 
   const resetDrawing = useCallback(() => {
