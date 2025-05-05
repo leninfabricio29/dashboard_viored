@@ -59,19 +59,6 @@ const NotificationRequest = () => {
     fetchData();
   }, [id, isBarrioModalOpen]);
 
-  /* useEffect(() => {
-    if (emitter?.neighborhood && neighborhoods.length > 0) {
-      console.log("Comparando IDs:", {
-        emitterNeighborhood: emitter.neighborhood,
-        neighborhoods: neighborhoods.map((n) => n._id),
-        found: neighborhoods.find(
-          (n) =>
-            n._id?.toString() === emitter.neighborhood?.toString() ||
-            n._id?.toString() === emitter.neighborhood?._id?.toString()
-        ),
-      });
-    }
-  }, [neighborhoods, emitter?.neighborhood]); */
 
   useEffect(() => {
     if (searchTerm.trim() === "") {
@@ -315,23 +302,7 @@ const NotificationRequest = () => {
           </div>
         </div>
 
-        {/* Acciones */}
-        <div className="border-t border-gray-200 px-6 py-4 bg-gray-50">
-          <div className="flex flex-col sm:flex-row justify-end gap-3">
-            <button
-              /*  onClick={handleApprove} */
-              disabled={!selectedNeighborhood}
-              className={`flex items-center justify-center px-6 py-2 rounded-lg transition-colors ${
-                !selectedNeighborhood
-                  ? "bg-gray-300 text-gray-500 cursor-not-allowed"
-                  : "bg-yellow-600 hover:bg-yellow-700 text-white"
-              }`}
-            >
-              <FiCheck className="mr-2" />
-              Aprobar Unión
-            </button>
-          </div>
-        </div>
+
       </div>
 
       {/* Modal del mapa */}

@@ -47,6 +47,19 @@ const Notifications = () => {
     );
   };
 
+  // Función para determinar la ruta de redirección según el tipo de notificación
+  const getNotificationRoute = (notification) => {
+    // Mapeo de tipos de notificación a rutas
+    const routeMap = {
+      'registro': `/notificaciones/register/${notification._id}`,
+      'reseteo': `/notificaciones/reset/${notification._id}`,
+      'peticion': `/notificaciones/request/${notification._id}`,
+    };
+
+    // Obtener la ruta del mapa, o usar una ruta por defecto
+    return routeMap[notification.type] || `/notificaciones/detalle/${notification._id}`;
+  };
+
   const getNotificationStyle = (type: string) => {
     switch (type) {
       case "registro":
@@ -116,8 +129,6 @@ const Notifications = () => {
         };
     }
   };
-
-  
 
   const paginate = (pageNumber: number) => setCurrentPage(pageNumber);
 
@@ -266,7 +277,7 @@ const Notifications = () => {
                         )}
                       </span>
                       <Link
-                        to={`/notificaciones/request/${notification._id}`}
+                        to={getNotificationRoute(notification)}
                         className="text-md font-medium text-blue-600 hover:text-blue-800"
                       >
                         Ver detalles →

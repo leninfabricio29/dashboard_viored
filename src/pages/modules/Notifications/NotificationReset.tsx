@@ -10,6 +10,9 @@ const NotificationDetail = () => {
   const [notification, setNotification] = useState<any>(null);
   const [emitter, setEmitter] = useState<any>(null);
   const [loading, setLoading] = useState(true);
+  const [successMessage, setSuccessMessage] = useState<string | null>(null);
+  const [errorMessage, setErrorMessage] = useState<string | null>(null);
+
 
   useEffect(() => {
     const fetchData = async () => {
@@ -35,14 +38,18 @@ const NotificationDetail = () => {
     try {
       await userService.validateUser(emitter._id);
 
-      alert(
-        `✅ Registro validado correctamente.\n\n📧 Correo: ${emitter.email}\n🔐 Contraseña: ${emitter.ci}`
+      setSuccessMessage(
+        `✅ Reseteo validado correctamente.\n\n📧 Correo: ${emitter.email}\n🔐 Contraseña: ${emitter.ci}`
       );
+      setErrorMessage(null);
 
       // Puedes actualizar el estado del usuario si deseas mostrar que ya está activo
       setEmitter({ ...emitter, isActive: true });
     } catch (error) {
-      alert("❌ Hubo un error al validar el usuario. Inténtalo nuevamente.");
+      setErrorMessage(
+        "❌ Hubo un error al resetear la contraseña. Inténtalo nuevamente."
+      );
+      setSuccessMessage(null);
       console.error("Error al validar usuario:", error);
     }
   };
@@ -68,6 +75,51 @@ const NotificationDetail = () => {
     <div className="max-w-2xl mx-auto px-4 py-6 space-y-6">
       <ButtonIndicator />
       <ButtonHome />
+
+            {/* Alertas */}
+            {successMessage && (
+        <div className="bg-green-50 border-l-4 border-green-500 text-green-700 p-4 rounded mb-6">
+          <div className="flex items-start">
+            <svg
+              xmlns="http://www.w3.org/2000/svg"
+              className="h-5 w-5 mr-2 mt-0.5 flex-shrink-0"
+              viewBox="0 0 20 20"
+              fill="currentColor"
+            >
+              <path
+                fillRule="evenodd"
+                d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z"
+                clipRule="evenodd"
+              />
+            </svg>
+            <div>
+              <div className="font-bold mb-1">¡Operación exitosa!</div>
+              <div className="whitespace-pre-line">{successMessage}</div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {errorMessage && (
+        <div className="bg-red-50 border-l-4 border-red-500 text-red-700 p-4 rounded mb-6 flex items-start">
+          <svg
+            xmlns="http://www.w3.org/2000/svg"
+            className="h-5 w-5 mr-2 mt-0.5 flex-shrink-0"
+            viewBox="0 0 20 20"
+            fill="currentColor"
+          >
+            <path
+              fillRule="evenodd"
+              d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7 4a1 1 0 11-2 0 1 1 0 012 0zm-1-9a1 1 0 00-1 1v4a1 1 0 102 0V6a1 1 0 00-1-1z"
+              clipRule="evenodd"
+            />
+          </svg>
+          <div>
+            <div className="font-bold mb-1">Error</div>
+            <div>{errorMessage}</div>
+          </div>
+        </div>
+      )}
 
       {/* Tarjeta principal de notificación */}
       <div className="bg-white shadow-lg rounded-xl border border-gray-100 overflow-hidden">
