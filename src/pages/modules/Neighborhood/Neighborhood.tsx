@@ -1,8 +1,7 @@
 import { useEffect, useState } from "react";
 import { FiPlus, FiSave, FiX } from "react-icons/fi";
-import neighborhoodService, {
-  Neighborhood,
-} from "../../../services/neighborhood-service";
+import neighborhoodService from "../../../services/neighborhood-service";
+import type { Neighborhood } from "../../../services/neighborhood-service";
 import ButtonIndicator from "../../../components/UI/ButtonIndicator";
 import ButtonHome from "../../../components/UI/ButtonHome";
 import NeighborhoodMapEditor from "../../../components/layout/NeighborhoodMapEditor";

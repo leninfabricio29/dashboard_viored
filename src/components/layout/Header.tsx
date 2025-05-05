@@ -14,6 +14,15 @@ import userService from "../../services/user-service";
 import { getAllNotifications, markNotificationAsRead } from "../../services/notifications-service";
 import NotificationsDropdown from "./NotificationDropdown";
 
+interface Notification {
+  _id: string;
+  title: string;
+  message: string;
+  isRead: boolean;
+  createdAt: string;
+  type: "registro" | "peticion" | "reseteo";
+}
+
 const Header = () => {
   const navigate = useNavigate();
   const [isMenuOpen, setIsMenuOpen] = useState(false);
@@ -22,7 +31,7 @@ const Header = () => {
     role: "",
   });
   const [loading, setLoading] = useState(true);
-  const [notifications, setNotifications] = useState<any[]>([]);
+  const [notifications, setNotifications] = useState<Notification[]>([]);
 
   useEffect(() => {
     const fetchUserData = async () => {
@@ -54,7 +63,7 @@ const Header = () => {
         const userId = authService.getUserIdFromToken();
         if (userId) {
           const notificationsData = await getAllNotifications(userId);
-          setNotifications(notificationsData.map(notif => ({
+          setNotifications(notificationsData.map((notif: Notification) => ({
             ...notif,
             isRead: notif.isRead || false
           })));

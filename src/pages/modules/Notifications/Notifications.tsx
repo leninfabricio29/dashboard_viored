@@ -5,8 +5,24 @@ import { getAllNotifications } from "../../../services/notifications-service";
 import authService from "../../../services/auth-service";
 import ButtonIndicator from "../../../components/UI/ButtonIndicator";
 
+interface Notification {
+  _id: string;
+  title: string;
+  message: string;
+  type: "registro" | "peticion" | "reseteo" | "emergencia";
+  isRead: boolean;
+  createdAt: string;
+  emitter?: string;
+}
+
+interface NotificationStyle {
+  borderColor: string;
+  textColor: string;
+  icon: JSX.Element;
+}
+
 const Notifications = () => {
-  const [notifications, setNotifications] = useState<any[]>([]);
+  const [notifications, setNotifications] = useState<Notification[]>([]);
   const [loading, setLoading] = useState(true);
   const [currentPage, setCurrentPage] = useState(1);
   const [notificationsPerPage] = useState(5); // Número de notificaciones por página
@@ -48,19 +64,20 @@ const Notifications = () => {
   };
 
   // Función para determinar la ruta de redirección según el tipo de notificación
-  const getNotificationRoute = (notification) => {
+  const getNotificationRoute = (notification: Notification) => {
     // Mapeo de tipos de notificación a rutas
-    const routeMap = {
+    const routeMap: Record<Notification['type'], string> = {
       'registro': `/notificaciones/register/${notification._id}`,
       'reseteo': `/notificaciones/reset/${notification._id}`,
       'peticion': `/notificaciones/request/${notification._id}`,
+      'emergencia': `/notificaciones/emergency/${notification._id}`
     };
 
     // Obtener la ruta del mapa, o usar una ruta por defecto
     return routeMap[notification.type] || `/notificaciones/detalle/${notification._id}`;
   };
 
-  const getNotificationStyle = (type: string) => {
+  const getNotificationStyle = (type: Notification['type']): NotificationStyle => {
     switch (type) {
       case "registro":
         return {
@@ -122,9 +139,30 @@ const Notifications = () => {
             </svg>
           ),
         };
+      case "emergencia":
+        return {
+          borderColor: "border-red-500",
+          textColor: "text-red-500",
+          icon: (
+            <svg
+              className="w-4 h-4 mr-1 text-red-500"
+              fill="none"
+              stroke="currentColor"
+              viewBox="0 0 24 24"
+            >
+              <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                strokeWidth="2"
+                d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"
+              />
+            </svg>
+          ),
+        };
       default:
         return {
           borderColor: "border-gray-500",
+          textColor: "text-gray-500",
           icon: <FiBell className="w-4 h-4 mr-1 text-gray-500" />,
         };
     }
