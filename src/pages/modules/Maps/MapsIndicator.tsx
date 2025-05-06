@@ -68,7 +68,11 @@ const MapIndicator = () => {
 
   return (
     <div className="max-w-5xl mx-auto px-4 py-6">
-        <ButtonIndicator></ButtonIndicator>
+        <div className="flex justify-between items-center mb-6">
+  <ButtonIndicator />
+  <ButtonHome />
+</div>
+
       
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mt-4">
         {/* Card para Mapa de Usuarios */}
@@ -123,11 +127,7 @@ const MapIndicator = () => {
           </div>
         </div>
       </div>
-      <div className="mt-4">
-      <ButtonHome></ButtonHome>
-
-
-        </div>
+     
 
 
       

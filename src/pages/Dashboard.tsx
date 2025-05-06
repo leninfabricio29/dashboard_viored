@@ -1,5 +1,5 @@
 import {
-  FiUsers, FiRadio, FiSettings, FiPieChart, FiMapPin,
+  FiUsers, FiRadio, FiPieChart, FiMapPin,
   FiBell, FiClock
 } from 'react-icons/fi'
 import ModuleCard from '../components/UI/ModuleCard'
@@ -49,13 +49,6 @@ const Dashboard = () => {
       bgColor: 'bg-gray-600',
       iconColor: 'text-white'
     },
-    {
-      title: 'Configuración',
-      path: '/settings',
-      icon: <FiSettings className="h-8 w-8" />,
-      bgColor: 'bg-purple-500',
-      iconColor: 'text-white'
-    }
   ];
   
 
