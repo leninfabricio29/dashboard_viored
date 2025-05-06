@@ -3,10 +3,8 @@ import {
   FiPlus,
   FiSave,
   FiX,
-  FiTrash2,
   FiUsers,
   FiInfo,
-  FiEye,
 } from "react-icons/fi";
 import neighborhoodService from "../../../services/neighborhood-service";
 import type { Neighborhood } from "../../../services/neighborhood-service";
