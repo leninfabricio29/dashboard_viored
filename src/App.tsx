@@ -12,7 +12,7 @@ import NotificationRequest from "./pages/modules/Notifications/NotificationReque
 import Notifications from "./pages/modules/Notifications/Notifications";
 import StatisticsPage from "./pages/modules/Statistics/StatisticsPage";
 import Neighborhood from "./pages/modules/Neighborhood/Neighborhood";
-import LogsComponent from "./components/logs/LogsComponent";
+//import LogsComponent from "./components/logs/LogsComponent";
 
 // Función para verificar si el usuario está autenticado
 const isAuthenticated = (): boolean => {
@@ -74,12 +74,11 @@ function App() {
         {/* Rutas para el módulo de barrios */}
         <Route path="/neighborhood" element={<Neighborhood />} />
 
-        {/* Rutas para el módulo de logs */}
-        <Route path="/history" element={<LogsComponent />} />
+        {/* Rutas para el módulo de logs        //<Route path="/history" element={<LogsComponent />} />
+ */}
       </Route>
 
-              {/* Rutas para el módulo de logs */}
-              <Route path="/history" element={<LogsComponent />} />
+             
 
       {/* Redireccionar cualquier ruta no encontrada al dashboard */}
       <Route path="*" element={<Navigate to="/" replace />} />

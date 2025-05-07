@@ -38,10 +38,12 @@ getUserById: async (id: string): Promise<User> => {
     }
   },
 
-  validateUser: async (userId: string): Promise<boolean> => {
+  validateUser: async (userId: string, type_suscription: string): Promise<boolean> => {
     try {
-      const response = await api.post('/api/users/validate', { userId })
-      return response.status === 200
+      const response = await api.post('/api/users/validate', {
+        newuserId: userId,
+        type_suscription,
+      });      return response.status === 200
     } catch (error) {
       console.error(`Error al validar usuario ${userId}:`, error)
       throw error
