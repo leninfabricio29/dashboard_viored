@@ -4,6 +4,7 @@ import { FiChevronLeft, FiBell, FiChevronRight } from "react-icons/fi";
 import { getAllNotifications } from "../../../services/notifications-service";
 import authService from "../../../services/auth-service";
 import ButtonIndicator from "../../../components/UI/ButtonIndicator";
+import ButtonHome from "../../../components/UI/ButtonHome";
 
 const Notifications = () => {
   const [notifications, setNotifications] = useState<any[]>([]);
@@ -137,6 +138,9 @@ const Notifications = () => {
       {/* Header */}
       <div className="max-w-4xl mx-auto px-4 py-4 flex items-center">
         <ButtonIndicator />
+      </div>
+      <div className="max-w-4xl mx-auto px-4 py-4 flex items-center">
+        <ButtonHome />
       </div>
 
       {/* Contenido principal */}

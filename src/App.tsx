@@ -12,6 +12,7 @@ import NotificationRequest from "./pages/modules/Notifications/NotificationReque
 import Notifications from "./pages/modules/Notifications/Notifications";
 import StatisticsPage from "./pages/modules/Statistics/StatisticsPage";
 import Neighborhood from "./pages/modules/Neighborhood/Neighborhood";
+import HistoryLogs from "./pages/modules/History/HistoryLogs";
 
 // Función para verificar si el usuario está autenticado
 const isAuthenticated = (): boolean => {
@@ -72,6 +73,9 @@ function App() {
 
         {/* Rutas para el módulo de barrios */}
         <Route path="/neighborhood" element={<Neighborhood />} />
+
+        {/* Rutas para el módulo de historial */}
+        <Route path="/history" element={<HistoryLogs />} />
       </Route>
 
       {/* Redireccionar cualquier ruta no encontrada al dashboard */}
