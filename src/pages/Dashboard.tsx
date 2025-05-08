@@ -1,10 +1,11 @@
 import {
   FiUsers, FiRadio, FiPieChart, FiMapPin,
-  FiBell, FiClock
+  FiBell, FiClock, FiImage
 } from 'react-icons/fi'
 import ModuleCard from '../components/UI/ModuleCard'
 
 const Dashboard = () => {
+  // Definición de los módulos
   // Definición de los módulos
   const modules = [
       {
@@ -51,6 +52,15 @@ const Dashboard = () => {
         bgColor: 'bg-gradient-to-br from-yellow-500 to-yellow-600',
         iconColor: 'text-white',
         hoverEffect: 'hover:shadow-yellow-200'
+      },
+      {
+        title: 'Gest. Multimedia',
+        description: 'Gestión de contenido multimedia',
+        path: '/multimedia',
+        icon: <FiImage className="h-6 w-6" />,
+        bgColor: 'bg-gradient-to-br from-purple-500 to-purple-600',
+        iconColor: 'text-white',
+        hoverEffect: 'hover:shadow-purple-200'
       },
       {
         title: 'Historial',
