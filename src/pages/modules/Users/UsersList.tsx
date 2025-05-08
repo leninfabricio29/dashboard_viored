@@ -49,7 +49,10 @@ const UsersList = () => {
 
   return (
     <div className="max-w-5xl mx-auto"> {/* Contenedor con ancho máximo centrado */}
-    <ButtonIndicator></ButtonIndicator>
+    <div className="flex justify-between items-center mb-6">
+  <ButtonIndicator />
+  <ButtonHome />
+</div>
    <div className="mb-6">
   <div className="relative w-96">
     <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
@@ -145,7 +148,6 @@ const UsersList = () => {
       </div>
     )}
   
-    <ButtonHome></ButtonHome>
   </div>
   );
 };

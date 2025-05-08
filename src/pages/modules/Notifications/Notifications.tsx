@@ -1,24 +1,44 @@
 import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
-import { FiChevronLeft, FiBell, FiChevronRight } from "react-icons/fi";
+import {
+  FiChevronLeft,
+  FiBell,
+  FiChevronRight
+} from "react-icons/fi";
 import { getAllNotifications } from "../../../services/notifications-service";
 import authService from "../../../services/auth-service";
 import ButtonIndicator from "../../../components/UI/ButtonIndicator";
-import ButtonHome from "../../../components/UI/ButtonHome";
+11|import ButtonHome from "../../../components/UI/ButtonHome";
+
+interface Notification {
+  _id: string;
+  title: string;
+  message: string;
+  type: "registro" | "peticion" | "reseteo" | "emergencia";
+  isRead: boolean;
+  createdAt: string;
+  emitter?: string;
+}
+
+interface NotificationStyle {
+  borderColor: string;
+  textColor: string;
+  icon: JSX.Element;
+}
 
 const Notifications = () => {
-  const [notifications, setNotifications] = useState<any[]>([]);
+  const [notifications, setNotifications] = useState<Notification[]>([]);
   const [loading, setLoading] = useState(true);
   const [currentPage, setCurrentPage] = useState(1);
-  const [notificationsPerPage] = useState(5); // Número de notificaciones por página
+  const [notificationsPerPage] = useState(5);
 
   useEffect(() => {
     const fetchNotifications = async () => {
       try {
         const userId = authService.getUserIdFromToken();
         if (userId) {
-          const notificationsData = await getAllNotifications(userId);
-          setNotifications(notificationsData);
+          const data = await getAllNotifications(userId);
+          setNotifications(data);
         }
       } catch (error) {
         console.error("Error al obtener notificaciones:", error);
@@ -26,177 +46,185 @@ const Notifications = () => {
         setLoading(false);
       }
     };
-
     fetchNotifications();
   }, []);
 
-  // Calcular notificaciones para la página actual
-  const indexOfLastNotification = currentPage * notificationsPerPage;
-  const indexOfFirstNotification =
-    indexOfLastNotification - notificationsPerPage;
-  const currentNotifications = notifications.slice(
-    indexOfFirstNotification,
-    indexOfLastNotification
-  );
+  const indexOfLast = currentPage * notificationsPerPage;
+  const indexOfFirst = indexOfLast - notificationsPerPage;
+  const currentNotifications = notifications.slice(indexOfFirst, indexOfLast);
   const totalPages = Math.ceil(notifications.length / notificationsPerPage);
 
-  const markAsRead = (notificationId: string) => {
+  const markAsRead = (id: string) => {
     setNotifications((prev) =>
-      prev.map((notif) =>
-        notif._id === notificationId ? { ...notif, isRead: true } : notif
+      prev.map((n) =>
+        n._id === id ? { ...n, isRead: true } : n
       )
     );
   };
 
-  // Función para determinar la ruta de redirección según el tipo de notificación
-  const getNotificationRoute = (notification) => {
-    // Mapeo de tipos de notificación a rutas
-    const routeMap = {
-      'registro': `/notificaciones/register/${notification._id}`,
-      'reseteo': `/notificaciones/reset/${notification._id}`,
-      'peticion': `/notificaciones/request/${notification._id}`,
+  const getNotificationRoute = (notif: Notification) => {
+    const routeMap: Record<Notification["type"], string> = {
+      registro: `/notificaciones/register/${notif._id}`,
+      reseteo: `/notificaciones/reset/${notif._id}`,
+      peticion: `/notificaciones/request/${notif._id}`,
+      emergencia: `/notificaciones/emergency/${notif._id}`
     };
-
-    // Obtener la ruta del mapa, o usar una ruta por defecto
-    return routeMap[notification.type] || `/notificaciones/detalle/${notification._id}`;
+    return routeMap[notif.type] || `/notificaciones/detalle/${notif._id}`;
   };
 
-  const getNotificationStyle = (type: string) => {
+  const getNotificationStyle = (type: Notification["type"]): NotificationStyle => {
+    const base = "w-4 h-4 mr-1";
     switch (type) {
       case "registro":
         return {
           borderColor: "border-blue-500",
           textColor: "text-blue-500",
-          icon: (
-            <svg
-              className="w-4 h-4 mr-1 text-blue-500"
-              fill="none"
-              stroke="currentColor"
-              viewBox="0 0 24 24"
-            >
-              <path
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                strokeWidth="2"
-                d="M18 9v3m0 0v3m0-3h3m-3 0h-3m-2-5a4 4 0 11-8 0 4 4 0 018 0zM3 20a6 6 0 0112 0v1H3v-1z"
-              />
-            </svg>
-          ),
+          icon: <FiBell className={`${base} text-blue-500`} />
         };
       case "peticion":
         return {
           borderColor: "border-yellow-500",
           textColor: "text-yellow-500",
-          icon: (
-            <svg
-              className="w-4 h-4 mr-1 text-yellow-500"
-              fill="none"
-              stroke="currentColor"
-              viewBox="0 0 24 24"
-            >
-              <path
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                strokeWidth="2"
-                d="M8 10h.01M12 10h.01M16 10h.01M9 16H5a2 2 0 01-2-2V6a2 2 0 012-2h14a2 2 0 012 2v8a2 2 0 01-2 2h-5l-5 5v-5z"
-              />
-            </svg>
-          ),
+          icon: <FiBell className={`${base} text-yellow-500`} />
         };
       case "reseteo":
         return {
           borderColor: "border-purple-500",
           textColor: "text-purple-500",
-          icon: (
-            <svg
-              className="w-4 h-4 mr-1 text-purple-500"
-              fill="none"
-              stroke="currentColor"
-              viewBox="0 0 24 24"
-            >
-              <path
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                strokeWidth="2"
-                d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"
-              />
-            </svg>
-          ),
+          icon: <FiBell className={`${base} text-purple-500`} />
+        };
+      case "emergencia":
+        return {
+          borderColor: "border-red-500",
+          textColor: "text-red-500",
+          icon: <FiBell className={`${base} text-red-500`} />
         };
       default:
         return {
-          borderColor: "border-gray-500",
-          icon: <FiBell className="w-4 h-4 mr-1 text-gray-500" />,
+          borderColor: "border-gray-400",
+          textColor: "text-gray-600",
+          icon: <FiBell className={`${base} text-gray-400`} />
         };
     }
   };
 
-  const paginate = (pageNumber: number) => setCurrentPage(pageNumber);
-
   return (
-    <div className="min-h-screen">
-      {/* Header */}
-      <div className="max-w-4xl mx-auto px-4 py-4 flex items-center">
-        <ButtonIndicator />
-      </div>
-      <div className="max-w-4xl mx-auto px-4 py-4 flex items-center">
-        <ButtonHome />
-      </div>
+    <div className="min-h-screen px-4 py-6">
+      <div className="max-w-5xl mx-auto rounded-2xl shadow p-6">
 
-      {/* Contenido principal */}
-      <main className="max-w-4xl mx-auto px-4 py-6 bg-gray-100 w-full sm:w-3/4 md:w-2/3 lg:w-1/2 rounded-2xl">
-        {/* Filtros y contadores */}
+        {/* Top bar */}
         <div className="flex justify-between items-center mb-6">
+          <ButtonIndicator />
+          <ButtonHome />
+        </div>
+
+       
+
+        {/* Filtros */}
+        <div className="flex justify-between items-center mb-4">
           <div className="flex space-x-3">
-            <span className="inline-flex items-center px-3 py-1 rounded-full bg-blue-100 text-blue-800 text-md font-medium">
+            <span className="inline-flex items-center px-3 py-1 rounded-full bg-blue-100 text-blue-800 font-medium text-sm">
               <FiBell className="mr-1.5" />
               {notifications.filter((n) => !n.isRead).length} Sin leer
             </span>
-            <span className="inline-flex items-center px-3 py-1 rounded-full bg-gray-100 text-gray-800 text-md font-medium">
+            <span className="inline-flex items-center px-3 py-1 rounded-full bg-gray-200 text-gray-800 font-medium text-sm">
               Total: {notifications.length}
             </span>
           </div>
         </div>
 
+        {/* Lista */}
+        {loading ? (
+          <div className="text-center py-20 text-gray-400 animate-pulse">Cargando...</div>
+        ) : notifications.length === 0 ? (
+          <div className="bg-white rounded-xl shadow-sm p-8 text-center">
+            <FiBell className="mx-auto h-12 w-12 text-gray-400 mb-4" />
+            <h3 className="text-lg font-medium text-gray-900">No hay notificaciones</h3>
+            <p className="mt-1 text-sm text-gray-500">Cuando tengas nuevas notificaciones, aparecerán aquí.</p>
+          </div>
+        ) : (
+          <div className="space-y-4">
+            {currentNotifications.map((n) => {
+              const { borderColor, textColor, icon } = getNotificationStyle(n.type);
+              return (
+                <div
+                  key={n._id}
+                  className={`p-5 bg-white rounded-xl shadow-sm border transition-all hover:shadow-md ${borderColor} ${
+                    !n.isRead ? "border-l-4" : ""
+                  }`}
+                  onClick={() => markAsRead(n._id)}
+                >
+                  <div className="flex justify-between items-start">
+                    <div className="flex items-start gap-3">
+                      <span className={`inline-flex items-center px-3 py-1 text-xs font-medium rounded-full ${borderColor}`}>
+                        {icon}
+                        <span className={`ml-1 capitalize ${textColor}`}>{n.type}</span>
+                      </span>
+                      <div>
+                        <h3 className="text-base font-semibold text-gray-800">{n.title}</h3>
+                        <p className="text-sm text-gray-600">{n.message}</p>
+                      </div>
+                    </div>
+                    {!n.isRead && (
+                      <span className="h-2.5 w-2.5 mt-1.5 rounded-full bg-blue-500"></span>
+                    )}
+                  </div>
+                  <div className="mt-3 flex justify-between text-sm text-gray-400">
+                    <span>
+                      {new Date(n.createdAt).toLocaleDateString("es-ES", {
+                        day: "numeric",
+                        month: "long",
+                        year: "numeric",
+                        hour: "2-digit",
+                        minute: "2-digit",
+                      })}
+                    </span>
+                    <Link
+                      to={getNotificationRoute(n)}
+                      className="text-blue-600 hover:text-blue-800 font-medium"
+                    >
+                      Ver detalles →
+                    </Link>
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+        )}
+
         {/* Paginación */}
-        {notifications.length > notificationsPerPage && (
-          <div className="flex justify-between items-center m-2">
+        {totalPages > 1 && (
+          <div className="flex justify-between items-center mt-6">
             <button
               onClick={() => setCurrentPage((prev) => Math.max(prev - 1, 1))}
               disabled={currentPage === 1}
-              className={`flex items-center px-4 py-2 rounded-md cursor-pointer ${
-                currentPage === 1
-                  ? "text-gray-400 cursor-not-allowed"
-                  : "text-blue-600 hover:bg-blue-50"
+              className={`flex items-center px-4 py-2 rounded-md ${
+                currentPage === 1 ? "text-gray-400 cursor-not-allowed" : "text-blue-600 hover:bg-blue-50"
               }`}
             >
               <FiChevronLeft className="mr-1" /> Anterior
             </button>
 
             <div className="flex space-x-1">
-              {Array.from({ length: totalPages }, (_, i) => i + 1).map(
-                (number) => (
-                  <button
-                    key={number}
-                    onClick={() => paginate(number)}
-                    className={`w-10 h-10 rounded-md flex items-center justify-center cursor-pointer ${
-                      currentPage === number
-                        ? "bg-blue-600 text-white"
-                        : "text-gray-700 hover:bg-gray-100"
-                    }`}
-                  >
-                    {number}
-                  </button>
-                )
-              )}
+              {Array.from({ length: totalPages }, (_, i) => (
+                <button
+                  key={i + 1}
+                  onClick={() => setCurrentPage(i + 1)}
+                  className={`w-10 h-10 rounded-md flex items-center justify-center ${
+                    currentPage === i + 1
+                      ? "bg-blue-600 text-white"
+                      : "text-gray-700 hover:bg-gray-200"
+                  }`}
+                >
+                  {i + 1}
+                </button>
+              ))}
             </div>
 
             <button
-              onClick={() =>
-                setCurrentPage((prev) => Math.min(prev + 1, totalPages))
-              }
+              onClick={() => setCurrentPage((prev) => Math.min(prev + 1, totalPages))}
               disabled={currentPage === totalPages}
-              className={`flex items-center px-4 py-2 rounded-md cursor-pointer ${
+              className={`flex items-center px-4 py-2 rounded-md ${
                 currentPage === totalPages
                   ? "text-gray-400 cursor-not-allowed"
                   : "text-blue-600 hover:bg-blue-50"
@@ -206,94 +234,7 @@ const Notifications = () => {
             </button>
           </div>
         )}
-
-        {/* Lista de notificaciones */}
-        {loading ? (
-          <div className="flex justify-center items-center h-64">
-            <div className="animate-pulse text-gray-500">Cargando...</div>
-          </div>
-        ) : notifications.length === 0 ? (
-          <div className="bg-white rounded-xl shadow-sm p-8 text-center">
-            <FiBell className="mx-auto h-12 w-12 text-gray-400 mb-4" />
-            <h3 className="text-lg font-medium text-gray-900">
-              No hay notificaciones
-            </h3>
-            <p className="mt-1 text-sm text-gray-500">
-              Cuando tengas nuevas notificaciones, aparecerán aquí.
-            </p>
-          </div>
-        ) : (
-          <>
-            <div className="space-y-3">
-              {currentNotifications.map((notification) => {
-                const { borderColor, icon, textColor } = getNotificationStyle(
-                  notification.type
-                );
-
-                return (
-                  <div
-                    key={notification._id}
-                    className={`p-5 bg-white rounded-xl shadow-sm border transition-all hover:shadow-md ${borderColor} ${
-                      !notification.isRead ? "border-l-4" : ""
-                    }`}
-                    onClick={() => markAsRead(notification._id)}
-                  >
-                    <div className="flex justify-between">
-                      <div className="flex items-center space-x-3">
-                        <span
-                          className={`inline-flex items-center mt-2 px-3 py-1 text-xs font-medium text-white rounded-full ${borderColor}`}
-                        >
-                          {icon}
-                          <span className={`ml-1 capitalize ${textColor}`}>
-                            {notification.type}
-                          </span>
-                        </span>
-                        <div>
-                          <h3
-                            className={`text-base font-medium ${
-                              !notification.isRead
-                                ? "text-gray-900"
-                                : "text-gray-700"
-                            }`}
-                          >
-                            {notification.title}
-                          </h3>
-                          <p className="mt-1 text-md text-gray-600">
-                            {notification.message}
-                          </p>
-                        </div>
-                      </div>
-                      {!notification.isRead && (
-                        <span className="h-2.5 w-2.5 rounded-full bg-blue-500 self-start mt-1.5"></span>
-                      )}
-                    </div>
-                    <div className="mt-3 flex justify-between items-center">
-                      <span className="text-base text-gray-400">
-                        {new Date(notification.createdAt).toLocaleDateString(
-                          "es-ES",
-                          {
-                            day: "numeric",
-                            month: "long",
-                            year: "numeric",
-                            hour: "2-digit",
-                            minute: "2-digit",
-                          }
-                        )}
-                      </span>
-                      <Link
-                        to={getNotificationRoute(notification)}
-                        className="text-md font-medium text-blue-600 hover:text-blue-800"
-                      >
-                        Ver detalles →
-                      </Link>
-                    </div>
-                  </div>
-                );
-              })}
-            </div>
-          </>
-        )}
-      </main>
+      </div>
     </div>
   );
 };

@@ -1,24 +1,23 @@
 import React, { useEffect, useState } from "react";
 import {
-  BarChart,
-  Bar,
-  XAxis,
-  YAxis,
   Tooltip,
   ResponsiveContainer,
-  CartesianGrid,
-  LabelList,
-  Cell,
   PieChart,
   Pie,
+  PieLabelRenderProps,
+  Cell,
 } from "recharts";
 import statisticsService, {
   EmergencyAlertStat,
 } from "../../services/statis-service";
-import { FiAlertTriangle, FiCalendar, FiDownload } from "react-icons/fi";
+import { FiAlertTriangle, FiCalendar } from "react-icons/fi";
+
+interface FormattedEmergencyAlertStat extends EmergencyAlertStat {
+  label: string;
+}
 
 const TopEmergencyDaysChart: React.FC = () => {
-  const [topDays, setTopDays] = useState<EmergencyAlertStat[]>([]);
+  const [topDays, setTopDays] = useState<FormattedEmergencyAlertStat[]>([]);
 
   useEffect(() => {
     const fetchData = async () => {
@@ -42,6 +41,12 @@ const TopEmergencyDaysChart: React.FC = () => {
     fetchData();
   }, []);
 
+  const renderCustomizedLabel = ({ name, value }: PieLabelRenderProps) => {
+    return `${name}: ${value}`;
+  };
+
+  const formatTooltipValue = (value: number) => [`${value} alertas`, "Cantidad"];
+
   return (
     <div>
       <div className="flex justify-between items-start mb-6">
@@ -62,44 +67,40 @@ const TopEmergencyDaysChart: React.FC = () => {
       <div className="w-full h-[300px]">
         <ResponsiveContainer width="100%" height="100%">
           <PieChart>
-        <Tooltip
-          contentStyle={{
-            background: "white",
-            borderRadius: "6px",
-            boxShadow: "0 4px 6px -1px rgba(0, 0, 0, 0.1)",
-            border: "1px solid #e5e7eb",
-            padding: "12px",
-          }}
-          formatter={(value) => [`${value} alertas`, "Cantidad"]}
-          labelStyle={{
-            fontWeight: 600,
-            color: "#1f2937",
-            marginBottom: "4px",
-          }}
-          itemStyle={{ color: "#3b82f6" }} // Cambiado a azul
-        />
-        <Pie
-          data={topDays}
-          dataKey="count"
-          nameKey="label"
-          cx="50%"
-          cy="50%"
-          outerRadius={100}
-          fill="#3b82f6" // Cambiado a azul
-          label={({ name, value }) => `${name}: ${value}`}
-          labelStyle={{
-            fontSize: 12,
-            fontWeight: 500,
-            fill: "#1e3a8a", // Cambiado a azul oscuro
-          }}
-        >
-          {topDays.map((entry, index) => (
-            <Cell
-          key={`cell-${index}`}
-          fill={`hsl(${200 + index * 20}, 70%, 50%)`} // Degradado de azul
+            <Tooltip
+              contentStyle={{
+                background: "white",
+                borderRadius: "6px",
+                boxShadow: "0 4px 6px -1px rgba(0, 0, 0, 0.1)",
+                border: "1px solid #e5e7eb",
+                padding: "12px",
+              }}
+              formatter={formatTooltipValue}
+              labelStyle={{
+                fontWeight: 600,
+                color: "#1f2937",
+                marginBottom: "4px",
+              }}
+              itemStyle={{ color: "#3b82f6" }}
             />
-          ))}
-        </Pie>
+            <Pie
+              data={topDays}
+              dataKey="count"
+              nameKey="label"
+              cx="50%"
+              cy="50%"
+              outerRadius={100}
+              fill="#3b82f6"
+              label={renderCustomizedLabel}
+              labelLine={false}
+            >
+              {topDays.map((_, index) => (
+                <Cell
+                  key={`cell-${index}`}
+                  fill={`hsl(${200 + index * 20}, 70%, 50%)`}
+                />
+              ))}
+            </Pie>
           </PieChart>
         </ResponsiveContainer>
       </div>

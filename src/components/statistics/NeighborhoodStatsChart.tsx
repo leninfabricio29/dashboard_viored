@@ -12,7 +12,7 @@ import {
 } from "recharts";
 
 import neighborhoodService from "../../services/neighborhood-service";
-import { FiDownload, FiInfo, FiMapPin } from "react-icons/fi";
+import { FiInfo, FiMapPin } from "react-icons/fi";
 
 interface NeighborhoodStat {
   _id: string;
@@ -31,6 +31,8 @@ const NeighborhoodStatsChart: React.FC = () => {
 
     fetchData();
   }, []);
+
+  const formatTooltipValue = (value: number) => [value.toLocaleString(), "Clientes"];
 
   return (
     <div>
@@ -55,7 +57,7 @@ const NeighborhoodStatsChart: React.FC = () => {
         <ResponsiveContainer width="100%" height="100%">
           <BarChart
             data={data}
-            layout="horizontal" // Cambio a gráfico vertical
+            layout="horizontal"
             margin={{ top: 5, right: 30, left: 20, bottom: 20 }}
           >
             <CartesianGrid
@@ -76,7 +78,7 @@ const NeighborhoodStatsChart: React.FC = () => {
               tick={{ fontSize: 12, fill: "#6b7280" }}
               tickLine={false}
               axisLine={{ stroke: "#e5e7eb" }}
-              tickFormatter={(value) => value.toLocaleString()}
+              tickFormatter={(value: number) => value.toLocaleString()}
             />
             <Tooltip
               contentStyle={{
@@ -86,7 +88,7 @@ const NeighborhoodStatsChart: React.FC = () => {
                 border: "1px solid #e5e7eb",
                 padding: "12px",
               }}
-              formatter={(value) => [value.toLocaleString(), "Clientes"]}
+              formatter={formatTooltipValue}
               labelStyle={{
                 fontWeight: 600,
                 color: "#111827",
@@ -97,19 +99,19 @@ const NeighborhoodStatsChart: React.FC = () => {
             <Bar
               dataKey="userCount"
               name="Clientes"
-              radius={[4, 4, 0, 0]} // Bordes redondeados solo en la parte superior
+              radius={[4, 4, 0, 0]}
               animationDuration={1500}
             >
-              {data.map((entry, index) => (
+              {data.map((_, index) => (
                 <Cell
                   key={`cell-${index}`}
-                  fill={`hsl(${index * 70}, 70%, 45%)`} // Variación de color
+                  fill={`hsl(${index * 70}, 70%, 45%)`}
                 />
               ))}
               <LabelList
                 dataKey="userCount"
                 position="top"
-                formatter={(value) => value.toLocaleString()}
+                formatter={(value: number) => value.toLocaleString()}
                 style={{ fill: "#374151", fontSize: 12 }}
               />
             </Bar>

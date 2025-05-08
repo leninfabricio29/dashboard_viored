@@ -9,7 +9,7 @@ interface Notification {
   message: string;
   isRead: boolean;
   createdAt: string;
-  type: "registro" | "peticion" | "reseteo";
+  type: "registro" | "peticion" | "reseteo" | "emergencia";
 }
 
 interface NotificationsDropdownProps {
@@ -126,9 +126,32 @@ const NotificationsDropdown = ({
             </svg>
           ),
         };
+      case "emergencia":
+        return {
+          borderColor: "border-red-500",
+          textColor: "text-red-500",
+          bgColor: "bg-red-500",
+          icon: (
+            <svg
+              className="w-4 h-4 mr-1 text-red-500"
+              fill="none"
+              stroke="currentColor"
+              viewBox="0 0 24 24"
+            >
+              <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                strokeWidth="2"
+                d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"
+              />
+            </svg>
+          ),
+        };
       default:
         return {
           borderColor: "border-gray-500",
+          textColor: "text-gray-500",
+          bgColor: "bg-gray-500",
           icon: <FiBell className="w-4 h-4 mr-1 text-gray-500" />,
         };
     }
@@ -171,9 +194,10 @@ const NotificationsDropdown = ({
                 {displayedNotifications.slice(0, 5).map((notif) => {
                   const style = getNotificationStyle(notif.type);
                   const typePathMap: Record<string, string> = {
-                  registro: "register",
-                  peticion: "request",
-                  reseteo: "reset",
+                    registro: "register",
+                    peticion: "request",
+                    reseteo: "reset",
+                    emergencia: "emergency"
                   };
                   const notificationPath = typePathMap[notif.type] || "unknown";
 

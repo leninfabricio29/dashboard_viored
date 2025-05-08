@@ -10,8 +10,11 @@ import ButtonHome from "../../../components/UI/ButtonHome";
 const StatisticsPage: React.FC = () => {
   return (
     <div className="max-w-5xl mx-auto px-4 py-6">
-      <ButtonIndicator></ButtonIndicator>
-      <ButtonHome></ButtonHome>
+     <div className="flex justify-between items-center mb-6">
+  <ButtonIndicator />
+  <ButtonHome />
+</div>
+
 
       <div className="p-6 max-w-6xl mx-auto">
         <h1 className="text-2xl font-bold mb-6">Estadísticas del Sistema</h1>

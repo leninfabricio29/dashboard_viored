@@ -11,6 +11,7 @@ export interface Neighborhood {
     coordinates: number[][][];
   };
   userCount: number;
+  isActive: boolean,
   createdAt: string;
   updatedAt: string;
 }
@@ -109,7 +110,18 @@ const neighborhoodService = {
       console.error('Error fetching neighborhood stats:', error);
       throw error;
     }
-  }
+  },
+
+  disableNeighborhood: async (id: string): Promise<any[]> => {
+    try {
+      const response = await api.delete(`/api/neighborhood/${id}`);
+      return response.data;
+    } catch (error) {
+      console.error(`Error al borrar el barrio  ${id}:`, error);
+      throw error;
+    }
+  }, 
+  
 };
 
 export default neighborhoodService;

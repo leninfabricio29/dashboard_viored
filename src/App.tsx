@@ -78,6 +78,8 @@ function App() {
         <Route path="/history" element={<HistoryLogs />} />
       </Route>
 
+             
+
       {/* Redireccionar cualquier ruta no encontrada al dashboard */}
       <Route path="*" element={<Navigate to="/" replace />} />
     </Routes>

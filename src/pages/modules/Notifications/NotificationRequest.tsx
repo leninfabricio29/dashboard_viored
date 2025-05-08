@@ -16,33 +16,25 @@ import neighborhoodService, {
 } from "../../../services/neighborhood-service";
 import ButtonIndicator from "../../../components/UI/ButtonIndicator";
 import ButtonHome from "../../../components/UI/ButtonHome";
-import Map from "../../../components/UI/Map";
 import { getNotificationById } from "../../../services/notifications-service";
 import Modal from "../../../components/UI/Modal";
 
 const NotificationRequest = () => {
   const { id } = useParams();
-  //const navigate = useNavigate();
-  const [notification, setNotification] = useState(null);
   const [emitter, setEmitter] = useState<any>(null);
   const [loading, setLoading] = useState(true);
   const [neighborhoods, setNeighborhoods] = useState<Neighborhood[]>([]);
   const [selectedNeighborhood, setSelectedNeighborhood] = useState<string>("");
   const [loadingNeighborhoods, setLoadingNeighborhoods] = useState(false);
   const [assigningNeighborhood, setAssigningNeighborhood] = useState(false);
-  const [neighborhoodsFiltered, setNeighborhoodsFiltered] = useState<
-    Neighborhood[]
-  >([]);
+  const [neighborhoodsFiltered, setNeighborhoodsFiltered] = useState<Neighborhood[]>([]);
   const [searchTerm, setSearchTerm] = useState("");
-  const [isMapModalOpen, setIsMapModalOpen] = useState(false);
   const [isBarrioModalOpen, setIsBarrioModalOpen] = useState(false);
 
   useEffect(() => {
     const fetchData = async () => {
       try {
         const notif = await getNotificationById(id as string);
-        setNotification(notif);
-
         const user = await userService.getUserById(notif.notification.emitter);
         setEmitter(user);
       } catch (error) {
@@ -58,7 +50,6 @@ const NotificationRequest = () => {
 
     fetchData();
   }, [id, isBarrioModalOpen]);
-
 
   useEffect(() => {
     if (searchTerm.trim() === "") {
@@ -95,7 +86,6 @@ const NotificationRequest = () => {
   };
 
   const getNeighborhoodName = () => {
-    // Si no hay barrio asignado
     if (!emitter?.neighborhood) {
       return (
         <div className="flex items-center">
@@ -110,23 +100,17 @@ const NotificationRequest = () => {
       );
     }
 
-    // Si está cargando
     if (loadingNeighborhoods) {
       return <p className="text-sm text-gray-500">Cargando barrios...</p>;
     }
 
-    // Buscar el barrio - comparación segura de IDs
     const neighborhoodId =
       typeof emitter.neighborhood === "object"
-        ? emitter.neighborhood._id || emitter.neighborhood.id
+        ? emitter.neighborhood._id
         : emitter.neighborhood;
 
-    const foundNeighborhood = neighborhoods.find((n) => {
-      const nId = n._id?.toString() || n.id?.toString();
-      return nId === neighborhoodId?.toString();
-    });
+    const foundNeighborhood = neighborhoods.find((n) => n._id === neighborhoodId);
 
-    // Si se encontró el barrio
     if (foundNeighborhood) {
       return (
         <div className="flex items-center">
@@ -141,13 +125,12 @@ const NotificationRequest = () => {
       );
     }
 
-    // Si no se encontró
     return (
       <div className="flex items-center">
         <p className="font-medium text-red-500">
           Barrio no encontrado (ID:{" "}
           {typeof emitter.neighborhood === "object"
-            ? emitter.neighborhood._id || emitter.neighborhood.id
+            ? emitter.neighborhood._id
             : emitter.neighborhood}
           )
         </p>
@@ -161,29 +144,6 @@ const NotificationRequest = () => {
     );
   };
 
-  useEffect(() => {
-    const fetchData = async () => {
-      try {
-        setLoading(true);
-        const notif = await getNotificationById(id as string);
-        setNotification(notif);
-
-        const user = await userService.getUserById(notif.notification.emitter);
-        setEmitter(user);
-
-        // Cargar neighborhoods independientemente de si el modal está abierto
-        await fetchNeighborhoods();
-      } catch (error) {
-        console.error("Error cargando detalle de notificación:", error);
-      } finally {
-        setLoading(false);
-      }
-    };
-
-    fetchData();
-  }, [id]);
-
-  // Modifica la función assignNeighborhood para actualizar correctamente después de asignar
   const assignNeighborhood = async () => {
     if (!selectedNeighborhood || !emitter) return;
 
@@ -194,14 +154,11 @@ const NotificationRequest = () => {
         emitter._id
       );
 
-      // Actualizar la información del usuario después de asignar
       const updatedUser = await userService.getUserById(emitter._id);
       setEmitter(updatedUser);
 
-      // Recargar los barrios para asegurar datos actualizados
       await fetchNeighborhoods();
 
-      // Cerrar el modal después de asignar exitosamente
       setIsBarrioModalOpen(false);
       setSelectedNeighborhood("");
     } catch (err) {
@@ -224,16 +181,13 @@ const NotificationRequest = () => {
       <ButtonIndicator />
       <ButtonHome />
 
-      {/* Tarjeta principal */}
       <div className="bg-white shadow-lg rounded-xl border border-gray-100 overflow-hidden">
-        {/* Encabezado */}
         <div className="bg-gradient-to-r from-yellow-600 to-yellow-700 px-6 py-4">
           <h2 className="text-xl font-bold text-white">
             Petición de Unión a Comunidad
           </h2>
         </div>
 
-        {/* Cuerpo */}
         <div className="p-6">
           <div className="mb-6 p-4 bg-yellow-50 rounded-lg border border-yellow-100">
             <p className="text-yellow-800 font-medium">
@@ -242,7 +196,6 @@ const NotificationRequest = () => {
             </p>
           </div>
 
-          {/* Información del usuario */}
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
             <div className="space-y-4">
               <h3 className="font-medium text-lg border-b pb-2 text-gray-700">
@@ -301,25 +254,7 @@ const NotificationRequest = () => {
             </div>
           </div>
         </div>
-
-
       </div>
-
-      {/* Modal del mapa */}
-      <Modal
-        isOpen={isMapModalOpen}
-        onClose={() => setIsMapModalOpen(false)}
-        title={`Ubicación de ${emitter.name}`}
-      >
-        {emitter.lastLocation && emitter.lastLocation.coordinates && (
-          <Map
-            coordinates={[
-              emitter.lastLocation.coordinates[0], // Longitud
-              emitter.lastLocation.coordinates[1], // Latitud
-            ]}
-          />
-        )}
-      </Modal>
 
       <Modal
         isOpen={isBarrioModalOpen}
@@ -335,7 +270,6 @@ const NotificationRequest = () => {
             Selecciona el barrio al que deseas asignar a este usuario:
           </p>
 
-          {/* Buscador */}
           <div className="mb-6">
             <div className="relative w-96">
               <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
@@ -351,7 +285,6 @@ const NotificationRequest = () => {
             </div>
           </div>
 
-          {/* Lista de tarjetas */}
           <div className="max-h-[400px] overflow-y-auto">
             {loadingNeighborhoods ? (
               <div className="flex justify-center py-8">
@@ -369,17 +302,14 @@ const NotificationRequest = () => {
                     }`}
                     onClick={() => setSelectedNeighborhood(neighborhood._id)}
                   >
-                    {/* Checkmark para selección */}
                     {selectedNeighborhood === neighborhood._id && (
                       <div className="absolute top-2 right-2 bg-green-500 text-white rounded-full p-1">
                         <FiCheck className="h-3 w-3" />
                       </div>
                     )}
 
-                    {/* Icono del mapa */}
                     <FiMap className="text-gray-400 w-8 h-8 mb-2" />
 
-                    {/* Nombre del barrio */}
                     <h3 className="font-bold text-sm text-gray-800 text-center">
                       {neighborhood.name}
                     </h3>
@@ -415,7 +345,6 @@ const NotificationRequest = () => {
             )}
           </div>
 
-          {/* Botones de acción */}
           <div className="flex justify-end mt-6 space-x-3">
             <button
               onClick={() => {
