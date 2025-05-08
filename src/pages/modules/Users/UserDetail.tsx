@@ -20,6 +20,8 @@ import ButtonHome from "../../../components/UI/ButtonHome";
 import neighborhoodService, {
   Neighborhood,
 } from "../../../services/neighborhood-service";
+import DeleteConfirmationModal from "../../../components/layout/DeleteConfirmationModal";
+
 
 const UserDetail = () => {
   const { id } = useParams<{ id: string }>();
@@ -37,6 +39,28 @@ const UserDetail = () => {
     Neighborhood[]
   >([]);
   const [searchTerm, setSearchTerm] = useState("");
+  const [showDeleteModal, setShowDeleteModal] = useState(false);
+
+
+  const handleDeleteClick = () => {
+    setShowDeleteModal(true);
+  };
+
+  const handleDeleteConfirm = async () => {
+    try {
+      await userService.deleteUser(user._id);
+      navigate("/users");
+    } catch (err) {
+      console.error("Error al eliminar usuario:", err);
+      setError("Error al eliminar el usuario. Intente nuevamente.");
+    } finally {
+      setShowDeleteModal(false);
+    }
+  };
+
+  const handleDeleteCancel = () => {
+    setShowDeleteModal(false);
+  };
 
   useEffect(() => {
     const fetchData = async () => {
@@ -74,23 +98,7 @@ const UserDetail = () => {
     }
   }, [searchTerm, neighborhoods]);
 
-  const handleDeleteUser = async () => {
-    if (!user) return;
-
-    if (
-      window.confirm(
-        `¿Estás seguro de que deseas eliminar al usuario ${user.name}?`
-      )
-    ) {
-      try {
-        await userService.deleteUser(user._id);
-        navigate("/users");
-      } catch (err) {
-        console.error("Error al eliminar usuario:", err);
-        setError("Error al eliminar el usuario. Intente nuevamente.");
-      }
-    }
-  };
+  
 
   const formatDate = (dateString: string) => {
     const options: Intl.DateTimeFormatOptions = {
@@ -174,31 +182,40 @@ const UserDetail = () => {
   }
 
   return (
-    <div className="max-w-3xl mx-auto px-4 py-6">
-      <div className="mb-4">
+    <div className="max-w-5xl mx-auto">
+      <div className="flex justify-between items-center mb-6">
         <ButtonIndicator />
-        <ButtonHome/>
+        <ButtonHome />
       </div>
 
       {/* Card de Usuario */}
-      <div className="bg-white rounded-lg shadow-lg overflow-hidden">
-        {/* Encabezado */}
-        <div className="bg-gradient-to-r from-blue-300 to-blue-500 text-white p-6">
+      <div className="bg-white rounded-xl shadow-lg overflow-hidden border border-gray-100">
+        {/* Encabezado con gradiente sutil */}
+        <div className="bg-gradient-to-r from-blue-50 to-blue-100 p-6 border-b border-gray-200">
           <div className="flex items-center">
-            <div className="bg-white/20 p-3 rounded-full mr-4">
-              <FiUser className="h-10 w-10" />
+            <div className="relative">
+              <div className="bg-white p-3 rounded-xl shadow-sm border border-gray-200 mr-4">
+                <FiUser className="h-10 w-10 text-blue-600" />
+              </div>
+              {user.isActive && (
+                <div className="absolute -bottom-1 -right-1 bg-green-500 rounded-full p-1.5 border-2 border-white">
+                  <div className="w-3 h-3"></div>
+                </div>
+              )}
             </div>
             <div>
-              <h1 className="text-2xl font-bold">{user.name}</h1>
-              <div className="flex items-center mt-1">
+              <h1 className="text-2xl font-bold text-gray-800">{user.name}</h1>
+              <div className="flex items-center mt-2 space-x-3">
                 <span
-                  className={`px-2 py-1 text-xs font-semibold rounded-full ${
-                    user.isActive ? "bg-green-500" : "bg-red-500"
+                  className={`px-3 py-1 text-xs font-semibold rounded-full ${
+                    user.isActive
+                      ? "bg-green-100 text-green-800"
+                      : "bg-red-100 text-red-800"
                   }`}
                 >
                   {user.isActive ? "Activo" : "Inactivo"}
                 </span>
-                <span className="ml-2 text-sm opacity-90">
+                <span className="px-3 py-1 bg-blue-100 text-blue-800 text-xs font-semibold rounded-full">
                   {user.role.charAt(0).toUpperCase() + user.role.slice(1)}
                 </span>
               </div>
@@ -208,139 +225,185 @@ const UserDetail = () => {
 
         {/* Contenido */}
         <div className="p-6">
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
             {/* Columna 1: Información de contacto */}
-            <div className="space-y-4">
-              <h2 className="font-medium text-lg border-b pb-2 text-gray-700">
-                Información personal
-              </h2>
-
+            <div className="space-y-6">
               <div className="flex items-center">
-                <FiMail className="text-gray-500 mr-3 flex-shrink-0" />
-                <div>
-                  <p className="text-xs text-gray-500">Email</p>
-                  <p className="font-medium text-gray-800">{user.email}</p>
+                <div className="bg-blue-50 p-3 rounded-lg mr-4">
+                  <FiUser className="h-5 w-5 text-blue-600" />
                 </div>
+                <h2 className="font-semibold text-lg text-gray-800">
+                  Información personal
+                </h2>
               </div>
 
-              <div className="flex items-center">
-                <FiPhone className="text-gray-500 mr-3 flex-shrink-0" />
-                <div>
-                  <p className="text-xs text-gray-500">Teléfono</p>
-                  <p className="font-medium text-gray-800">{user.phone}</p>
+              <div className="space-y-4 pl-14">
+                <div className="flex items-start">
+                  <FiMail className="text-gray-400 mr-3 mt-1 flex-shrink-0" />
+                  <div>
+                    <p className="text-xs text-gray-500 uppercase tracking-wider">
+                      Email
+                    </p>
+                    <p className="font-medium text-gray-800 break-all">
+                      {user.email}
+                    </p>
+                  </div>
                 </div>
-              </div>
 
-              <div className="flex items-center">
-                <FiCalendar className="text-blue-500 mr-3 flex-shrink-0" />
-                <div>
-                  <p className="text-xs text-gray-500">Se unió</p>
-                  <p className="text-sm font-medium text-indigo-600">
-                    {(() => {
-                      const joinDate = new Date(user.createdAt);
-                      const now = new Date();
-                      const diffTime = Math.abs(
-                        now.getTime() - joinDate.getTime()
-                      );
-                      const diffDays = Math.ceil(
-                        diffTime / (1000 * 60 * 60 * 24)
-                      );
+                <div className="flex items-start">
+                  <FiPhone className="text-gray-400 mr-3 mt-1 flex-shrink-0" />
+                  <div>
+                    <p className="text-xs text-gray-500 uppercase tracking-wider">
+                      Teléfono
+                    </p>
+                    <p className="font-medium text-gray-800">{user.phone}</p>
+                  </div>
+                </div>
 
-                      if (diffDays < 30) {
-                        return `Hace ${diffDays} días`;
-                      } else if (diffDays < 365) {
-                        const months = Math.floor(diffDays / 30);
-                        return `Hace ${months} ${
-                          months === 1 ? "mes" : "meses"
-                        }`;
-                      } else {
-                        const years = Math.floor(diffDays / 365);
-                        return `Hace ${years} ${years === 1 ? "año" : "años"}`;
-                      }
-                    })()}
-                    <span className="text-xs text-gray-500 ml-1">
-                      ({formatDate(user.createdAt)})
-                    </span>
-                  </p>
+                <div className="flex items-start">
+                  <FiCalendar className="text-blue-500 mr-3 mt-1 flex-shrink-0" />
+                  <div>
+                    <p className="text-xs text-gray-500 uppercase tracking-wider">
+                      Miembro desde
+                    </p>
+                    <div className="flex items-baseline">
+                      <p className="text-sm font-medium text-blue-600">
+                        {(() => {
+                          const joinDate = new Date(user.createdAt);
+                          const now = new Date();
+                          const diffTime = Math.abs(
+                            now.getTime() - joinDate.getTime()
+                          );
+                          const diffDays = Math.ceil(
+                            diffTime / (1000 * 60 * 60 * 24)
+                          );
+
+                          if (diffDays < 30) {
+                            return `Hace ${diffDays} días`;
+                          } else if (diffDays < 365) {
+                            const months = Math.floor(diffDays / 30);
+                            return `Hace ${months} ${
+                              months === 1 ? "mes" : "meses"
+                            }`;
+                          } else {
+                            const years = Math.floor(diffDays / 365);
+                            return `Hace ${years} ${
+                              years === 1 ? "año" : "años"
+                            }`;
+                          }
+                        })()}
+                      </p>
+                      <span className="text-xs text-gray-500 ml-2">
+                        ({formatDate(user.createdAt)})
+                      </span>
+                    </div>
+                  </div>
                 </div>
               </div>
             </div>
 
             {/* Columna 2: Información de ubicación */}
-            <div className="space-y-4">
-              <h2 className="font-medium text-lg border-b pb-2 text-gray-700">
-                Ubicación
-              </h2>
-
+            <div className="space-y-6">
               <div className="flex items-center">
-                <FiMapPin className="text-gray-500 mr-3 flex-shrink-0" />
-                <div>
-                  <p className="text-xs text-gray-500">Barrio</p>
-                  {user.neighborhood ? (
-                    <p className="font-medium text-gray-800">
-                      {user.neighborhood}
-                    </p>
-                  ) : (
-                    <div className="flex items-center">
-                      <p className="font-medium text-amber-600">No asignado</p>
-                      <button
-                        onClick={() => setIsBarrioModalOpen(true)}
-                        className="ml-2 px-2 py-1 text-xs bg-blue-500 text-white rounded hover:bg-blue-600 transition-colors flex items-center"
-                      >
-                        <FiMapPin className="mr-1" /> Asignar ahora
-                      </button>
-                    </div>
-                  )}
+                <div className="bg-blue-50 p-3 rounded-lg mr-4">
+                  <FiMapPin className="h-5 w-5 text-blue-600" />
                 </div>
+                <h2 className="font-semibold text-lg text-gray-800">
+                  Ubicación
+                </h2>
               </div>
 
-              <div className="flex items-start">
-                <FiMap className="text-gray-500 mr-3 flex-shrink-0 mt-1" />
-                <div>
-                  <p className="text-xs text-gray-500">Última ubicación</p>
-                  {user.lastLocation && user.lastLocation.coordinates ? (
-                    <div>
-                      <div className="flex items-center mt-1">
-                        <span className="text-sm text-gray-700">
-                          [{user.lastLocation.coordinates[0].toFixed(4)},{" "}
-                          {user.lastLocation.coordinates[1].toFixed(4)}]
-                        </span>
-                        {user.lastLocation.coordinates[0] !== 0 && (
-                          <button
-                            className="ml-2 px-2 py-1 text-xs bg-blue-500 text-white rounded hover:bg-blue-600 transition-colors"
-                            onClick={() => setIsMapModalOpen(true)}
-                          >
-                            Ver mapa
-                          </button>
+              <div className="space-y-4 pl-14">
+                <div className="flex items-start">
+                  <FiMapPin className="text-gray-400 mr-3 mt-1 flex-shrink-0" />
+                  <div className="w-full">
+                    <p className="text-xs text-gray-500 uppercase tracking-wider">
+                      Barrio
+                    </p>
+                    {user.neighborhood ? (
+                      <p className="font-medium text-gray-800">
+                        {user.neighborhood}
+                      </p>
+                    ) : (
+                      <div className="flex items-center justify-between">
+                        <p className="font-medium text-amber-600">
+                          No asignado
+                        </p>
+                        <button
+                          onClick={() => setIsBarrioModalOpen(true)}
+                          className="px-3 py-1 text-xs bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors flex items-center shadow-sm"
+                        >
+                          <FiMapPin className="mr-1.5" /> Asignar
+                        </button>
+                      </div>
+                    )}
+                  </div>
+                </div>
+
+                <div className="flex items-start">
+                  <FiMap className="text-gray-400 mr-3 mt-1 flex-shrink-0" />
+                  <div className="w-full">
+                    <p className="text-xs text-gray-500 uppercase tracking-wider">
+                      Última ubicación
+                    </p>
+                    {user.lastLocation && user.lastLocation.coordinates ? (
+                      <div>
+                        <div className="flex items-center justify-between mt-1">
+                          <span className="text-sm text-gray-700 font-medium">
+                            {user.lastLocation.coordinates[0].toFixed(4)},{" "}
+                            {user.lastLocation.coordinates[1].toFixed(4)}
+                          </span>
+                          {user.lastLocation.coordinates[0] !== 0 && (
+                            <button
+                              className="px-3 py-1 text-xs bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors shadow-sm"
+                              onClick={() => setIsMapModalOpen(true)}
+                            >
+                              Ver mapa
+                            </button>
+                          )}
+                        </div>
+                        {user.lastLocation.lastUpdated && (
+                          <p className="text-xs text-gray-500 mt-2">
+                            <span className="font-medium">Actualizado:</span>{" "}
+                            {formatDate(user.lastLocation.lastUpdated)}
+                          </p>
                         )}
                       </div>
-                      {user.lastLocation.lastUpdated && (
-                        <p className="text-xs text-gray-500 mt-1">
-                          Actualizado:{" "}
-                          {formatDate(user.lastLocation.lastUpdated)}
-                        </p>
-                      )}
-                    </div>
-                  ) : (
-                    <p className="font-medium text-gray-800">No disponible</p>
-                  )}
+                    ) : (
+                      <p className="font-medium text-gray-500">No disponible</p>
+                    )}
+                  </div>
                 </div>
               </div>
             </div>
           </div>
         </div>
 
-        {/* Acciones */}
-        <div className="bg-gray-50 p-4 border-t border-gray-200">
-          <div className="flex flex-wrap gap-2 justify-end">
+        {/* Pie de página con acciones */}
+        <div className="bg-gray-50 px-6 py-4 border-t border-gray-200">
+          <div className="flex justify-end space-x-3">
             <button
-              onClick={handleDeleteUser}
-              className="flex items-center px-4 py-2 bg-red-500 text-white rounded hover:bg-red-700 transition-colors"
+              onClick={handleDeleteClick}
+              className="flex items-center px-4 py-2 bg-white border border-red-500 text-red-600 rounded-lg hover:bg-red-50 transition-colors shadow-sm cursor-pointer"
             >
               <FiTrash2 className="mr-2" /> Eliminar usuario
             </button>
           </div>
         </div>
+         {/* Modal de confirmación */}
+      <DeleteConfirmationModal
+        isOpen={showDeleteModal}
+        onClose={handleDeleteCancel}
+        onConfirm={handleDeleteConfirm}
+        userName={user.name}
+      />
+      
+      {/* Mostrar error si existe */}
+      {error && (
+        <div className="fixed bottom-4 right-4 bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded">
+          {error}
+        </div>
+      )}
       </div>
 
       {/* Modal del mapa */}
@@ -359,7 +422,6 @@ const UserDetail = () => {
         )}
       </Modal>
 
-      {/* Modal para asignar barrio */}
       {/* Modal para asignar barrio */}
       <Modal
         isOpen={isBarrioModalOpen}

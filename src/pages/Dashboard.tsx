@@ -7,70 +7,91 @@ import ModuleCard from '../components/UI/ModuleCard'
 const Dashboard = () => {
   // Definición de los módulos
   const modules = [
-    {
-      title: 'Mapas',
-      path: '/maps',
-      icon: <FiMapPin className="h-8 w-8" />,
-      bgColor: 'bg-indigo-500',
-      iconColor: 'text-white'
-    },
-    {
-      title: 'Estadísticas',
-      path: '/statistics',
-      icon: <FiPieChart className="h-8 w-8" />,
-      bgColor: 'bg-orange-500',
-      iconColor: 'text-white'
-    },
-    {
-      title: 'Usuarios',
-      path: '/users',
-      icon: <FiUsers className="h-8 w-8" />,
-      bgColor: 'bg-blue-500',
-      iconColor: 'text-white'
-    },
-    {
-      title: 'Barrios',
-      path: '/neighborhood',
-      icon: <FiRadio className="h-8 w-8" />,
-      bgColor: 'bg-green-500',
-      iconColor: 'text-white'
-    },
-    {
-      title: 'Notificaciones',
-      path: '/notifications',
-      icon: <FiBell className="h-8 w-8" />,
-      bgColor: 'bg-yellow-500',
-      iconColor: 'text-white'
-    },
-    {
-      title: 'Historial',
-      path: '/history',
-      icon: <FiClock className="h-8 w-8" />,
-      bgColor: 'bg-gray-600',
-      iconColor: 'text-white'
-    },
+      {
+        title: 'Mapas',
+        description: 'Visualización de mapas interactivos',
+        path: '/maps',
+        icon: <FiMapPin className="h-6 w-6" />,
+        bgColor: 'bg-gradient-to-br from-indigo-500 to-indigo-600',
+        iconColor: 'text-white',
+        hoverEffect: 'hover:shadow-indigo-200'
+      },
+      {
+        title: 'Estadísticas',
+        description: 'Reportes y análisis de datos',
+        path: '/statistics',
+        icon: <FiPieChart className="h-6 w-6" />,
+        bgColor: 'bg-gradient-to-br from-orange-500 to-orange-600',
+        iconColor: 'text-white',
+        hoverEffect: 'hover:shadow-orange-200'
+      },
+      {
+        title: 'Usuarios',
+        description: 'Gestión de usuarios del sistema',
+        path: '/users',
+        icon: <FiUsers className="h-6 w-6" />,
+        bgColor: 'bg-gradient-to-br from-blue-500 to-blue-600',
+        iconColor: 'text-white',
+        hoverEffect: 'hover:shadow-blue-200'
+      },
+      {
+        title: 'Barrios',
+        description: 'Administración de barrios',
+        path: '/neighborhood',
+        icon: <FiRadio className="h-6 w-6" />,
+        bgColor: 'bg-gradient-to-br from-green-500 to-green-600',
+        iconColor: 'text-white',
+        hoverEffect: 'hover:shadow-green-200'
+      },
+      {
+        title: 'Notificaciones',
+        description: 'Gestión de alertas y avisos',
+        path: '/notifications',
+        icon: <FiBell className="h-6 w-6" />,
+        bgColor: 'bg-gradient-to-br from-yellow-500 to-yellow-600',
+        iconColor: 'text-white',
+        hoverEffect: 'hover:shadow-yellow-200'
+      },
+      {
+        title: 'Historial',
+        description: 'Registro de actividades',
+        path: '/history',
+        icon: <FiClock className="h-6 w-6" />,
+        bgColor: 'bg-gradient-to-br from-gray-600 to-gray-700',
+        iconColor: 'text-white',
+        hoverEffect: 'hover:shadow-gray-200'
+      },
   ];
   
 
   return (
-    <div className="max-w-5xl mx-auto">
-    <h1 className="text-2xl font-bold mb-8 text-center">Panel de Administración</h1>
-    
-    <div className="p-4 mb-8">
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 md:gap-6 auto-rows-auto">
-        {modules.map((module, index) => (
-          <ModuleCard
-            key={index}
-            title={module.title}
-            path={module.path}
-            icon={module.icon}
-            bgColor={module.bgColor}
-            iconColor={module.iconColor}
-          />
-        ))}
+    <div className="  py-8 px-4 sm:px-6 lg:px-8">
+      <div className="max-w-7xl mx-auto">
+        {/* Encabezado mejorado */}
+        <div className="text-center mb-12">
+          <h1 className="text-3xl font-bold text-gray-900 mb-2">Panel de Administración</h1>
+          <p className="text-lg text-gray-600 max-w-2xl mx-auto">
+            Gestión integral de todas las funcionalidades del sistema
+          </p>
+        </div>
+        
+        {/* Grid de módulos mejorado */}
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+          {modules.map((module, index) => (
+            <ModuleCard
+              key={index}
+              title={module.title}
+              description={module.description}
+              path={module.path}
+              icon={module.icon}
+              bgColor={module.bgColor}
+              iconColor={module.iconColor}
+              hoverEffect={module.hoverEffect}
+            />
+          ))}
+        </div>
       </div>
     </div>
-  </div>
   )
 }
 

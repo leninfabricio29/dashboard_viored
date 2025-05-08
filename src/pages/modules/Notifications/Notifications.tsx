@@ -8,7 +8,7 @@ import {
 import { getAllNotifications } from "../../../services/notifications-service";
 import authService from "../../../services/auth-service";
 import ButtonIndicator from "../../../components/UI/ButtonIndicator";
-11|import ButtonHome from "../../../components/UI/ButtonHome";
+import ButtonHome from "../../../components/UI/ButtonHome";
 
 interface Notification {
   _id: string;
@@ -198,7 +198,7 @@ const Notifications = () => {
             <button
               onClick={() => setCurrentPage((prev) => Math.max(prev - 1, 1))}
               disabled={currentPage === 1}
-              className={`flex items-center px-4 py-2 rounded-md ${
+              className={`flex items-center px-4 py-2 rounded-md cursor-pointer ${
                 currentPage === 1 ? "text-gray-400 cursor-not-allowed" : "text-blue-600 hover:bg-blue-50"
               }`}
             >
@@ -210,7 +210,7 @@ const Notifications = () => {
                 <button
                   key={i + 1}
                   onClick={() => setCurrentPage(i + 1)}
-                  className={`w-10 h-10 rounded-md flex items-center justify-center ${
+                  className={`w-10 h-10 rounded-md flex items-center justify-center cursor-pointer ${
                     currentPage === i + 1
                       ? "bg-blue-600 text-white"
                       : "text-gray-700 hover:bg-gray-200"
@@ -224,7 +224,7 @@ const Notifications = () => {
             <button
               onClick={() => setCurrentPage((prev) => Math.min(prev + 1, totalPages))}
               disabled={currentPage === totalPages}
-              className={`flex items-center px-4 py-2 rounded-md ${
+              className={`flex items-center px-4 py-2 rounded-md cursor-pointer ${
                 currentPage === totalPages
                   ? "text-gray-400 cursor-not-allowed"
                   : "text-blue-600 hover:bg-blue-50"
