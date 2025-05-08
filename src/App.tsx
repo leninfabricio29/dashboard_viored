@@ -13,6 +13,8 @@ import Notifications from "./pages/modules/Notifications/Notifications";
 import StatisticsPage from "./pages/modules/Statistics/StatisticsPage";
 import Neighborhood from "./pages/modules/Neighborhood/Neighborhood";
 import HistoryLogs from "./pages/modules/History/HistoryLogs";
+import PackageTable from "./pages/modules/Multimedia/PackageTable";
+//import LogsComponent from "./components/logs/LogsComponent";
 
 // Función para verificar si el usuario está autenticado
 const isAuthenticated = (): boolean => {
@@ -76,6 +78,12 @@ function App() {
 
         {/* Rutas para el módulo de historial */}
         <Route path="/history" element={<HistoryLogs />} />
+        {/* Rutas para el módulo de logs        //<Route path="/history" element={<LogsComponent />} />
+ */}
+
+  {/* Rutas para el módulo de multimedia */}
+  <Route path="/multimedia" element={<PackageTable />} />
+
       </Route>
 
              

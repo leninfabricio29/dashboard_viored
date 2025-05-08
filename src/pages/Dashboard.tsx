@@ -1,19 +1,13 @@
 import {
   FiUsers, FiRadio, FiPieChart, FiMapPin,
-  FiBell, FiClock
+  FiBell, FiClock, FiImage
 } from 'react-icons/fi'
 import ModuleCard from '../components/UI/ModuleCard'
 
 const Dashboard = () => {
   // Definición de los módulos
   const modules = [
-    {
-      title: 'Mapas',
-      path: '/maps',
-      icon: <FiMapPin className="h-8 w-8" />,
-      bgColor: 'bg-indigo-500',
-      iconColor: 'text-white'
-    },
+    
     {
       title: 'Estadísticas',
       path: '/statistics',
@@ -43,12 +37,27 @@ const Dashboard = () => {
       iconColor: 'text-white'
     },
     {
+      title: 'Mapas',
+      path: '/maps',
+      icon: <FiMapPin className="h-8 w-8" />,
+      bgColor: 'bg-indigo-500',
+      iconColor: 'text-white'
+    },
+    {
+      title: 'Gest. Multimedia',
+      path: '/multimedia',
+      icon: <FiImage className="h-8 w-8" />,
+      bgColor: 'bg-purple-600',
+      iconColor: 'text-white'
+    },
+    {
       title: 'Historial',
       path: '/history',
       icon: <FiClock className="h-8 w-8" />,
       bgColor: 'bg-gray-600',
       iconColor: 'text-white'
     },
+    
   ];
   
 
