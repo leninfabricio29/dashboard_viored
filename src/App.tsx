@@ -14,6 +14,7 @@ import StatisticsPage from "./pages/modules/Statistics/StatisticsPage";
 import Neighborhood from "./pages/modules/Neighborhood/Neighborhood";
 import HistoryLogs from "./pages/modules/History/HistoryLogs";
 import PackageTable from "./pages/modules/Multimedia/PackageTable";
+import PackageDetailView from "./pages/modules/Multimedia/PackageDetailView";
 //import LogsComponent from "./components/logs/LogsComponent";
 
 // Función para verificar si el usuario está autenticado
@@ -72,21 +73,20 @@ function App() {
 
         <Route path="statistics" element={<StatisticsPage />} />
 
-
         {/* Rutas para el módulo de barrios */}
         <Route path="/neighborhood" element={<Neighborhood />} />
 
         {/* Rutas para el módulo de historial */}
         <Route path="/history" element={<HistoryLogs />} />
         {/* Rutas para el módulo de logs        //<Route path="/history" element={<LogsComponent />} />
- */}
+         */}
 
-  {/* Rutas para el módulo de multimedia */}
-  <Route path="/multimedia" element={<PackageTable />} />
+        {/* Rutas para el módulo de multimedia */}
+        <Route path="/multimedia" element={<PackageTable />} />
+        <Route path="/multimedia/package/:id" element={<PackageDetailView />} />
 
+        {/* Rutas para el módulo de paquetes */}
       </Route>
-
-             
 
       {/* Redireccionar cualquier ruta no encontrada al dashboard */}
       <Route path="*" element={<Navigate to="/" replace />} />

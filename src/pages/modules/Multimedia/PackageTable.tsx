@@ -3,9 +3,12 @@ import {
   getAllPackages,
   createPackage,
   getImages,
+  activatePackage,
 } from "../../../services/media-service";
 import CreatePackageModal from "../../../components/layout/CreatePackageModal";
-import EditPackageModal from "../../../components/layout/EditPackageModal";
+import { useNavigate } from "react-router-dom";
+import ButtonHome from "../../../components/UI/ButtonHome";
+import ButtonIndicator from "../../../components/UI/ButtonIndicator";
 
 interface PackageImage {
   _id: string;
@@ -45,7 +48,7 @@ const PackageImageGallery = ({ images }: { images: PackageImage[] }) => {
               alt="Imagen de paquete"
               className="w-20 h-20 object-cover transition-transform duration-300 group-hover:scale-105"
             />
-            <div className="absolute inset-0 bg-opacity-0 group-hover:bg-opacity-30 flex items-center justify-center transition-all duration-300">
+            <div className="absolute inset-0 bg-black/20 opacity-0 group-hover:opacity-100 rounded-lg transition-opacity duration-300 flex items-center justify-center">
               <button
                 onClick={() => window.open(image.url, "_blank")}
                 className="opacity-0 group-hover:opacity-100 bg-white text-blue-600 hover:bg-blue-600 hover:text-white rounded-full p-1.5 transition-all cursor-pointer"
@@ -78,7 +81,7 @@ const PackageImageGallery = ({ images }: { images: PackageImage[] }) => {
         {images.length > 3 && !showAllImages && (
           <button
             onClick={() => setShowAllImages(true)}
-            className="w-20 h-20 bg-gray-100 hover:bg-gray-200 border border-gray-200 rounded-xl flex items-center justify-center text-gray-700 font-semibold transition "
+            className="w-20 h-20 bg-gray-100 hover:bg-gray-200 border border-gray-200 rounded-xl flex items-center justify-center text-gray-700 font-semibold transition cursor-pointer"
           >
             +{images.length - 3}
           </button>
@@ -103,11 +106,14 @@ const PackageImageGallery = ({ images }: { images: PackageImage[] }) => {
 
 // Componente principal para gestionar el contenido multimedia
 const MultimediaManager = () => {
+  const navigate = useNavigate();
   const [packages, setPackages] = useState<Package[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [activeCategory, setActiveCategory] = useState<string>("all");
   const [filteredPackages, setFilteredPackages] = useState<Package[]>([]);
   const [isModalOpen, setIsModalOpen] = useState(false);
+  const [activePackageId, setActivePackageId] = useState<string | null>(null);
+  const [error, setError] = useState<string | null>(null);
 
   // Obtener los paquetes de la API
   useEffect(() => {
@@ -119,19 +125,14 @@ const MultimediaManager = () => {
     try {
       const data = await getAllPackages();
       setPackages(data);
+      const activePkg = data.find((pkg) => pkg.status);
+      if (activePkg) {
+        setActivePackageId(activePkg._id);
+      }
     } catch (error) {
       console.error("Error al obtener los paquetes:", error);
     } finally {
       setIsLoading(false);
-    }
-  };
-
-  const fetchImages = async () => {
-    try {
-      const image = await getImages();
-      console.log(image);
-    } catch (error) {
-      console.error("Error al obtener las imagenes:", error);
     }
   };
 
@@ -152,10 +153,6 @@ const MultimediaManager = () => {
     ...Array.from(new Set(packages.map((pkg) => pkg.type))),
   ];
 
-  // Manejador para editar un paquete
-  const handleEditPackage = (pkg: Package) => {
-  };
-
   // Manejador para crear un nuevo paquete
   const handleCreatePackage = async (formData) => {
     try {
@@ -168,12 +165,46 @@ const MultimediaManager = () => {
     }
   };
 
+  const handleEditPackage = (pkgId: string) => {
+    navigate(`/multimedia/package/${pkgId}`);
+  };
+
+  const handleToggleStatus = async (pkgId: string) => {
+    try {
+      setError(null);
+      
+      // Si ya está activo, no hacer nada (o podrías desactivarlo si lo prefieres)
+      if (activePackageId === pkgId) return;
+
+      // Llamar a la API para activar el paquete
+      const updatedPackage = await activatePackage(pkgId);
+      
+      // Actualizar el estado local
+      setPackages(prev => 
+        prev.map(pkg => ({
+          ...pkg,
+          status: pkg._id === pkgId ? true : false
+        }))
+      );
+      
+      setActivePackageId(pkgId);
+      
+    } catch (err) {
+      setError(err.message || 'Error al cambiar el estado del paquete');
+      console.error(err);
+    }
+  };
+
   const PackageCard = ({
     pkg,
     onEdit,
+    onToggleStatus,
+    isActive,
   }: {
     pkg: Package;
     onEdit: (pkg: string) => void;
+    onToggleStatus: (pkg: string) => void;
+    isActive: boolean;
   }) => {
     return (
       <div
@@ -191,7 +222,25 @@ const MultimediaManager = () => {
                 <p className="text-sm text-gray-600">{pkg.description}</p>
               )}
             </div>
-            <div>
+
+            <div className="flex items-center gap-3">
+              {/* Toggle Switch */}
+              <label className="relative inline-flex items-center cursor-pointer">
+                <input
+                  type="checkbox"
+                  className="sr-only peer"
+                  checked={isActive}
+                  onChange={() => onToggleStatus(pkg._id)}
+                  disabled={isActive}
+                />
+                <div
+                  className={`w-11 h-6 bg-gray-200 peer-focus:outline-none rounded-full peer 
+                ${isActive ? "peer-checked:bg-blue-600" : ""} 
+                peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] 
+                after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 
+                after:border after:rounded-full after:h-5 after:w-5 after:transition-all`}
+                ></div>
+              </label>
               <span
                 className={`px-3 py-1 text-xs font-medium rounded-full ${
                   pkg.status
@@ -215,23 +264,24 @@ const MultimediaManager = () => {
               Creado: {new Date(pkg.createdAt).toLocaleDateString()}
             </span>
             <button
-              onClick={() => onEdit(pkg)}
+              onClick={() => onEdit(pkg._id)}
               className="inline-flex items-center text-sm font-medium text-blue-600 hover:text-blue-800 transition-colors cursor-pointer"
             >
               <svg
-                className="w-4 h-4 mr-1.5"
+                xmlns="http://www.w3.org/2000/svg"
+                className="h-5 w-5 mr-2"
                 fill="none"
-                stroke="currentColor"
-                strokeWidth="2"
                 viewBox="0 0 24 24"
+                stroke="currentColor"
               >
                 <path
                   strokeLinecap="round"
                   strokeLinejoin="round"
-                  d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"
+                  strokeWidth={2}
+                  d="M12 6v6m0 0v6m0-6h6m-6 0H6"
                 />
               </svg>
-              Editar
+              Cargar más fotos
             </button>
           </div>
         </div>
@@ -241,6 +291,10 @@ const MultimediaManager = () => {
 
   return (
     <div className="container mx-auto px-4 py-8 max-w-7xl">
+      <div className="flex justify-between items-center mb-6">
+        <ButtonIndicator />
+        <ButtonHome />
+      </div>
       <div className="flex flex-col md:flex-row md:items-center md:justify-between mb-8">
         <h1 className="text-2xl font-bold text-gray-900 mb-4 md:mb-0">
           Gestor de Contenido Multimedia
@@ -353,6 +407,8 @@ const MultimediaManager = () => {
                   key={pkg._id}
                   pkg={pkg}
                   onEdit={handleEditPackage}
+                  onToggleStatus={handleToggleStatus}
+                  isActive={activePackageId === pkg._id}
                 />
               ))}
             </div>
