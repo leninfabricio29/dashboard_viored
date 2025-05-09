@@ -1,16 +1,12 @@
 import { useEffect, useState } from "react";
-import {
-  FiPlus,
-  FiSave,
-  FiX,
-  FiUsers,
-  FiInfo,
-} from "react-icons/fi";
+import { FiPlus, FiSave, FiX, FiUsers, FiInfo } from "react-icons/fi";
 import neighborhoodService from "../../../services/neighborhood-service";
 import type { Neighborhood } from "../../../services/neighborhood-service";
 import ButtonIndicator from "../../../components/UI/ButtonIndicator";
 import ButtonHome from "../../../components/UI/ButtonHome";
 import NeighborhoodMapEditor from "../../../components/layout/NeighborhoodMapEditor";
+import DeleteConfirmationModal from "../../../components/layout/DeleteConfirmationModal";
+import { useParams } from "react-router-dom";
 
 const Neighborhood = () => {
   const [neighborhoods, setNeighborhoods] = useState<Neighborhood[]>([]);
@@ -25,6 +21,9 @@ const Neighborhood = () => {
       coordinates: [] as [number, number][][],
     },
   });
+  const { id } = useParams<{ id: string }>();
+
+  const [showDeleteModal, setShowDeleteModal] = useState(false);
 
   // States for user modal
   const [showUsersModal, setShowUsersModal] = useState(false);
@@ -37,6 +36,10 @@ const Neighborhood = () => {
   const [showImageGallery, setShowImageGallery] = useState(false);
   const [selectedImage, setSelectedImage] = useState<string | null>(null);
 
+  const [selectedNeighborhoodId, setSelectedNeighborhoodId] = useState<
+    string | null
+  >(null);
+
   // Sample gallery images (replace with actual images from your project)
   const galleryImages = [
     "https://blog.uber-cdn.com/cdn-cgi/image/width=2160,quality=80,onerror=redirect,format=auto/wp-content/uploads/2019/01/6-barrios-de-Guayaquil-que-te-deslumbrar%C3%A1n-por-sus-edificaciones-1024x512.png",
@@ -45,7 +48,6 @@ const Neighborhood = () => {
     "https://blog.uber-cdn.com/cdn-cgi/image/width=2160,quality=80,onerror=redirect,format=auto/wp-content/uploads/2019/01/6-barrios-de-Guayaquil-que-te-deslumbrar%C3%A1n-por-sus-edificaciones-1024x512.png",
     "https://blog.uber-cdn.com/cdn-cgi/image/width=2160,quality=80,onerror=redirect,format=auto/wp-content/uploads/2019/01/Barrio-Las-Pe%C3%B1as.png",
     "https://c.files.bbci.co.uk/AA22/production/_95845534_gettyimages-499950022.jpg",
-    
   ];
 
   // Function to load all neighborhoods
@@ -117,10 +119,22 @@ const Neighborhood = () => {
     }
   };
 
-  const handleDisable = async (id: string) => {
+  const handleDisableClick = (id: string) => {
+    setSelectedNeighborhoodId(id);
+    setShowDeleteModal(true);
+  };
+
+  const handleDeleteCancel = () => {
+    setShowDeleteModal(false);
+  };
+
+  const handleDisableConfirmation = async () => {
+    if (!selectedNeighborhoodId) return;
+
     try {
-      await neighborhoodService.disableNeighborhood(id);
+      await neighborhoodService.disableNeighborhood(selectedNeighborhoodId);
       fetchNeighborhoods();
+      setShowDeleteModal(false); // cerrar el modal
     } catch (err) {
       console.error("Error al deshabilitar barrio:", err);
     }
@@ -312,8 +326,8 @@ const Neighborhood = () => {
                     <td className="px-6 py-4 whitespace-nowrap text-sm">
                       {n.isActive && (
                         <button
-                          onClick={() => handleDisable(n._id)}
-                          className="flex items-center text-red-600 hover:text-red-900"
+                          onClick={() => handleDisableClick(n._id)}
+                          className="flex items-center px-4 py-2 bg-white border border-red-500 text-red-600 rounded-lg hover:bg-red-50 transition-colors shadow-sm cursor-pointer"
                         >
                           <svg
                             className="w-5 h-5 mr-1"
@@ -338,6 +352,13 @@ const Neighborhood = () => {
             </tbody>
           </table>
         </div>
+        <DeleteConfirmationModal
+          isOpen={showDeleteModal}
+          onClose={handleDeleteCancel}
+          onConfirm={handleDisableConfirmation}
+          userName={neighborhoods.find((n) => n._id === selectedNeighborhoodId)?.name}
+          entityType="barrio"
+        />
       </div>
 
       {/* Modal for creating/editing neighborhood */}
@@ -623,8 +644,8 @@ const Neighborhood = () => {
                         {user.email}
                       </span>
                       <span className="px-3 py-1 ml-2  inline-flex text-xs leading-5 font-semibold rounded-full bg-green-100 text-green-800">
-                          Activo
-                        </span>
+                        Activo
+                      </span>
                     </li>
                   ))}
                 </ul>

@@ -103,7 +103,7 @@ const Header = () => {
   };
 
   return (
-    <header className="bg-gradient-to-r from-blue-900 to-blue-800 shadow-lg">
+    <header className="bg-gradient-to-r from-slate-900 to-slate-800 shadow-lg">
   <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
     <div className="flex justify-between items-center h-20">
       {/* Logo y nombre de la app */}
@@ -116,34 +116,10 @@ const Header = () => {
             <FiHome className="h-6 w-6 text-white" />
           </div>
           <span className="font-bold text-xl text-white hidden md:block tracking-tight">
-            Panel<span className="text-blue-200">Admin</span>
+            Vio<span className="text-blue-200">Red</span>
           </span>
         </Link>
-        
-        {/* Menú desktop */}
-        <nav className="hidden md:flex space-x-1 ml-6">
-          <Link
-            to="/users"
-            className="text-white/90 hover:text-white px-3 py-2 rounded-md text-sm font-medium hover:bg-white/10 transition-colors duration-300 flex items-center"
-          >
-            <FiUser className="mr-2" />
-            Usuarios
-          </Link>
-          <Link
-            to="/maps"
-            className="text-white/90 hover:text-white px-3 py-2 rounded-md text-sm font-medium hover:bg-white/10 transition-colors duration-300 flex items-center"
-          >
-            <FiMap className="mr-2" />
-            Mapas
-          </Link>
-          <Link
-            to="/statistics"
-            className="text-white/90 hover:text-white px-3 py-2 rounded-md text-sm font-medium hover:bg-white/10 transition-colors duration-300 flex items-center"
-          >
-            <FiPieChart className="mr-2" />
-            Estadísticas
-          </Link>
-        </nav>
+
       </div>
 
       {/* Menú de usuario */}

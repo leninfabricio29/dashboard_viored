@@ -73,84 +73,117 @@ const MapIndicator = () => {
   }, [isNeighborhoodsMapOpen, neighborhoods.length]);
 
   return (
-    <div className="max-w-5xl mx-auto px-4 py-6">
-      <div className="flex justify-between items-center mb-6">
+    <div className="max-w-6xl mx-auto px-4 py-6 space-y-6">
+      <div className="flex justify-between items-center">
         <ButtonIndicator />
         <ButtonHome />
       </div>
+      {/* Header Section - Mejorado */}
+      <div className="flex justify-between items-center mb-8 mt-4">
+        <div>
+          <h1 className="text-3xl font-bold text-slate-800 mb-1">
+            Visualización Geográfica
+          </h1>
+          <div className="flex items-center text-slate-500">
+            <FiMapPin className="mr-2 text-sky-500" />
+            <span>Explora datos geoespaciales del sistema</span>
+          </div>
+        </div>
+      </div>
 
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mt-4">
-        {/* Card para Mapa de Usuarios */}
-        <div className="bg-white rounded-lg shadow-md overflow-hidden">
-          <div className="bg-gradient-to-r from-blue-500 to-blue-600 p-4">
-            <h2 className="text-xl font-semibold text-white flex items-center">
-              <FiUsers className="mr-2" /> Mapa de Usuarios
-            </h2>
+      {/* Cards Grid - Versión Premium */}
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+        {/* Card Usuarios */}
+        <div className="bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden hover:shadow-md transition-all duration-300 group">
+          <div className="bg-gradient-to-r from-sky-600 to-sky-700 p-6">
+            <div className="flex items-center">
+              <div className="p-3 rounded-xl bg-white/20 backdrop-blur-sm mr-4 group-hover:rotate-6 transition-transform">
+                <FiUsers className="w-6 h-6 text-white" />
+              </div>
+              <h2 className="text-xl font-semibold text-white">
+                Mapa de Usuarios
+              </h2>
+            </div>
           </div>
           <div className="p-6">
-            <p className="text-gray-600 mb-4">
-              Visualiza la ubicación de todos los usuarios registrados en el
-              sistema. Cada pin representa la última ubicación conocida de un
-              usuario.
+            <p className="text-slate-600 mb-6 leading-relaxed">
+              Visualización en tiempo real de la ubicación de todos los usuarios
+              registrados, con actualizaciones automáticas cada 5 minutos.
             </p>
             <div className="flex justify-between items-center">
-              <div className="flex items-center text-sm text-gray-500">
-                <FiMapPin className="mr-1 text-blue-500" />
-                Ubicaciones en tiempo real
+              <div className="flex items-center text-sm font-medium text-sky-600">
+                <FiMapPin className="mr-2" />
+                <span>Ubicaciones activas</span>
               </div>
               <button
                 onClick={() => setIsUsersMapOpen(true)}
-                className="bg-blue-500 hover:bg-blue-600 text-white px-4 py-2 rounded transition-colors flex items-center"
+                className="bg-sky-600 hover:bg-sky-700 text-white px-5 py-2.5 rounded-xl transition-all flex items-center shadow-sm hover:shadow-md"
               >
-                <FiMap className="mr-2" /> Ver mapa
+                <FiMap className="mr-2" />
+                <span>Explorar Mapa</span>
               </button>
             </div>
           </div>
         </div>
 
-        {/* Card para Mapa de Barrios */}
-        <div className="bg-white rounded-lg shadow-md overflow-hidden">
-          <div className="bg-gradient-to-r from-green-500 to-green-600 p-4">
-            <h2 className="text-xl font-semibold text-white flex items-center">
-              <FiGrid className="mr-2" /> Mapa de Barrios
-            </h2>
+        {/* Card Barrios */}
+        <div className="bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden hover:shadow-md transition-all duration-300 group">
+          <div className="bg-gradient-to-r from-emerald-600 to-emerald-700 p-6">
+            <div className="flex items-center">
+              <div className="p-3 rounded-xl bg-white/20 backdrop-blur-sm mr-4 group-hover:-rotate-6 transition-transform">
+                <FiGrid className="w-6 h-6 text-white" />
+              </div>
+              <h2 className="text-xl font-semibold text-white">
+                Mapa de Barrios
+              </h2>
+            </div>
           </div>
           <div className="p-6">
-            <p className="text-gray-600 mb-4">
-              Explora los límites de todos los barrios o zonas configuradas en
-              el sistema. Cada polígono representa un barrio con sus límites
-              geográficos.
+            <p className="text-slate-600 mb-6 leading-relaxed">
+              Delimitación precisa de los barrios registrados, con capacidad de
+              filtrar por zonas y ver detalles demográficos.
             </p>
             <div className="flex justify-between items-center">
-              <div className="flex items-center text-sm text-gray-500">
-                <FiGrid className="mr-1 text-green-500" />
-                Límites territoriales
+              <div className="flex items-center text-sm font-medium text-emerald-600">
+                <FiGrid className="mr-2" />
+                <span>Barrios registrados</span>
               </div>
               <button
                 onClick={() => setIsNeighborhoodsMapOpen(true)}
-                className="bg-green-500 hover:bg-green-600 text-white px-4 py-2 rounded transition-colors flex items-center"
+                className="bg-emerald-600 hover:bg-emerald-700 text-white px-5 py-2.5 rounded-xl transition-all flex items-center shadow-sm hover:shadow-md"
               >
-                <FiMap className="mr-2" /> Ver mapa
+                <FiMap className="mr-2" />
+                <span>Explorar Mapa</span>
               </button>
             </div>
           </div>
         </div>
       </div>
 
-      {/* Modal para Mapa de Usuarios */}
+      {/* Modales Mejorados */}
       <Modal
         isOpen={isUsersMapOpen}
         onClose={() => setIsUsersMapOpen(false)}
-        title="Mapa de Ubicación de Usuarios"
+        title="Mapa de Usuarios"
+        titleClassName="text-sky-700"
+        headerIcon={<FiUsers className="text-sky-600 mr-2" />}
       >
-        <div className="h-[70vh] w-full ">
+        <div className="h-[70vh] w-full rounded-xl overflow-hidden border border-slate-200 shadow-inner">
           {loading.users ? (
-            <div className="h-full flex items-center justify-center">
-              <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-blue-500"></div>
+            <div className="h-full flex flex-col items-center justify-center space-y-4">
+              <div className="animate-spin rounded-full h-14 w-14 border-t-2 border-b-2 border-sky-500"></div>
+              <p className="text-slate-500">Cargando datos de usuarios...</p>
             </div>
           ) : error.users ? (
-            <div className="h-full flex items-center justify-center text-red-500">
-              {error.users}
+            <div className="h-full flex flex-col items-center justify-center space-y-4 text-red-500">
+              <FiAlertCircle className="w-10 h-10" />
+              <p>{error.users}</p>
+              <button
+                onClick={() => window.location.reload()}
+                className="mt-4 px-4 py-2 bg-slate-100 hover:bg-slate-200 rounded-lg text-slate-700 transition-colors"
+              >
+                Reintentar
+              </button>
             </div>
           ) : (
             <UsersMap users={users} />
@@ -158,20 +191,29 @@ const MapIndicator = () => {
         </div>
       </Modal>
 
-      {/* Modal para Mapa de Barrios */}
       <Modal
         isOpen={isNeighborhoodsMapOpen}
         onClose={() => setIsNeighborhoodsMapOpen(false)}
         title="Mapa de Barrios"
+        titleClassName="text-emerald-700"
+        headerIcon={<FiGrid className="text-emerald-600 mr-2" />}
       >
-        <div className="h-[70vh] w-full">
+        <div className="h-[70vh] w-full rounded-xl overflow-hidden border border-slate-200 shadow-inner">
           {loading.neighborhoods ? (
-            <div className="h-full flex items-center justify-center">
-              <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-green-500"></div>
+            <div className="h-full flex flex-col items-center justify-center space-y-4">
+              <div className="animate-spin rounded-full h-14 w-14 border-t-2 border-b-2 border-emerald-500"></div>
+              <p className="text-slate-500">Cargando límites geográficos...</p>
             </div>
           ) : error.neighborhoods ? (
-            <div className="h-full flex items-center justify-center text-red-500">
-              {error.neighborhoods}
+            <div className="h-full flex flex-col items-center justify-center space-y-4 text-red-500">
+              <FiAlertCircle className="w-10 h-10" />
+              <p>{error.neighborhoods}</p>
+              <button
+                onClick={() => window.location.reload()}
+                className="mt-4 px-4 py-2 bg-slate-100 hover:bg-slate-200 rounded-lg text-slate-700 transition-colors"
+              >
+                Reintentar
+              </button>
             </div>
           ) : (
             <NeighborhoodsMap neighborhoods={neighborhoods} />

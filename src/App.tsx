@@ -1,4 +1,5 @@
 import { Routes, Route, Navigate } from "react-router-dom";
+import {DashboardLayout} from "./components/layout/DashboardLayout";
 import MainLayout from "./components/layout/MainLayout";
 import Dashboard from "./pages/Dashboard";
 import UsersList from "./pages/modules/Users/UsersList";
@@ -43,7 +44,7 @@ function App() {
         path="/"
         element={
           <ProtectedRoute>
-            <MainLayout />
+            <DashboardLayout />
           </ProtectedRoute>
         }
       >

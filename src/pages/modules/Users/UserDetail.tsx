@@ -396,6 +396,7 @@ const UserDetail = () => {
         onClose={handleDeleteCancel}
         onConfirm={handleDeleteConfirm}
         userName={user.name}
+        entityType="usuario"
       />
       
       {/* Mostrar error si existe */}

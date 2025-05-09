@@ -1,36 +1,60 @@
 import React from "react";
-import { useLocation } from "react-router-dom";
+import { useLocation, Link } from "react-router-dom";
+import { FiHome, FiChevronRight } from "react-icons/fi";
 
 const ButtonIndicator: React.FC = () => {
   const location = useLocation();
 
-  // Función para convertir la ruta en un formato legible
-  const getPathName = () => {
+  const getPathSegments = () => {
     const path = location.pathname;
     const segments = path.split("/").filter((segment) => segment !== "");
 
-    if (segments.length === 0) return "Inicio";
+    if (segments.length === 0) return [{ name: "Inicio", path: "/" }];
 
-    return segments
-      .map((segment) => {
-        // Convertir IDs a formato más amigable
-        if (segment.match(/^[0-9a-fA-F]{24}$/)) {
-          return "Detalle";
-        }
+    return segments.map((segment, index) => {
+      // Convertir IDs a formato más amigable
+      if (segment.match(/^[0-9a-fA-F]{24}$/)) {
+        return {
+          name: "Detalle",
+          path: `/${segments.slice(0, index + 1).join("/")}`,
+        };
+      }
 
-        // Capitalizar y formatear palabras
-        return segment.charAt(0).toUpperCase() + segment.slice(1);
-      })
-      .join(" / ");
+      return {
+        name: segment.charAt(0).toUpperCase() + segment.slice(1),
+        path: `/${segments.slice(0, index + 1).join("/")}`,
+      };
+    });
   };
 
+  const segments = getPathSegments();
+
   return (
-    <div className="flex flex-col items-start">
-      <div className="text-lg text-gray-700 bg-blue-100 p-3 rounded-lg shadow-md">
-      <span className="font-semibold">Ubicación actual:</span>{" "}
-      <span className="text-blue-600">{getPathName()}</span>
-      </div>
-    </div>
+    <nav className="flex" aria-label="Breadcrumb">
+      <ol className="inline-flex items-center space-x-2 md:space-x-3 rtl:space-x-reverse">
+        <li className="inline-flex items-center">
+          <div className="inline-flex items-center text-base font-medium text-gray-800 hover:text-blue-600 transition-colors">
+            <FiHome className="w-5 h-5 mr-2" />
+            Inicio
+          </div>
+        </li>
+
+        {segments.map((segment, index) => (
+          <li key={index} className="inline-flex items-center">
+            <FiChevronRight className="w-5 h-5 mx-1.5 text-gray-400" />
+            {index === segments.length - 1 ? (
+              <span className="ms-1 text-base font-semibold text-gray-600 md:ms-2">
+                {segment.name}
+              </span>
+            ) : (
+              <div className="ms-1 text-base font-medium text-gray-700 hover:text-blue-600 md:ms-2 transition-colors">
+                {segment.name}
+              </div>
+            )}
+          </li>
+        ))}
+      </ol>
+    </nav>
   );
 };
 
