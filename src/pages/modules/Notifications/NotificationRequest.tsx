@@ -27,7 +27,9 @@ const NotificationRequest = () => {
   const [selectedNeighborhood, setSelectedNeighborhood] = useState<string>("");
   const [loadingNeighborhoods, setLoadingNeighborhoods] = useState(false);
   const [assigningNeighborhood, setAssigningNeighborhood] = useState(false);
-  const [neighborhoodsFiltered, setNeighborhoodsFiltered] = useState<Neighborhood[]>([]);
+  const [neighborhoodsFiltered, setNeighborhoodsFiltered] = useState<
+    Neighborhood[]
+  >([]);
   const [searchTerm, setSearchTerm] = useState("");
   const [isBarrioModalOpen, setIsBarrioModalOpen] = useState(false);
 
@@ -109,7 +111,9 @@ const NotificationRequest = () => {
         ? emitter.neighborhood._id
         : emitter.neighborhood;
 
-    const foundNeighborhood = neighborhoods.find((n) => n._id === neighborhoodId);
+    const foundNeighborhood = neighborhoods.find(
+      (n) => n._id === neighborhoodId
+    );
 
     if (foundNeighborhood) {
       return (
@@ -177,9 +181,11 @@ const NotificationRequest = () => {
   }
 
   return (
-    <div className="max-w-3xl mx-auto px-4 py-6 space-y-6">
-      <ButtonIndicator />
-      <ButtonHome />
+    <div className="container mx-auto px-4 py-8 max-w-7xl">
+      <div className="flex justify-between items-center mb-6">
+        <ButtonIndicator />
+        <ButtonHome />
+      </div>
 
       <div className="bg-white shadow-lg rounded-xl border border-gray-100 overflow-hidden">
         <div className="bg-gradient-to-r from-yellow-600 to-yellow-700 px-6 py-4">

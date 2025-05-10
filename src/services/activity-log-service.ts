@@ -9,7 +9,6 @@ export interface User {
 export const getActivityLogs = async () => {
   try{
     const response = await api.get('/api/auditories/logs');
-    console.log(response.data); 
     return response.data;
   }
   catch(error){

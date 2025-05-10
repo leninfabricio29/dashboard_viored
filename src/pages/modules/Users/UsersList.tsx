@@ -7,6 +7,7 @@ import ButtonHome from "../../../components/UI/ButtonHome";
 import ButtonIndicator from "../../../components/UI/ButtonIndicator";
 import { FiEye, FiPhone, FiSearch } from "react-icons/fi";
 import Pagination from "../../../components/layout/Pagination";
+import { FaUser } from "react-icons/fa";
 
 const UsersList = () => {
   const [users, setUsers] = useState<User[]>([]);
@@ -48,11 +49,26 @@ const UsersList = () => {
   const totalPages = Math.ceil(filteredUsers.length / usersPerPage);
 
   return (
-    <div className="max-w-6xl mx-auto px-4 py-6 space-y-6">
-      <div className="flex justify-between items-center">
+    <div className="container mx-auto px-4 py-8 max-w-7xl">
+      <div className="flex justify-between items-center mb-6">
         <ButtonIndicator />
         <ButtonHome />
       </div>
+
+      <div className="flex justify-between items-center mb-8 mt-4">
+        <div>
+          <h1 className="text-3xl font-bold text-slate-800 mb-1">
+            Usuarios del Sistema
+          </h1>
+          <div className="flex items-center text-slate-500">
+            <FaUser className="mr-2" />
+            <span className="text-sm">
+              Aquí puedes ver todos los usuarios registrados en el sistema.
+            </span>
+          </div>
+        </div>
+      </div>
+
       <div className="mb-8">
         <div className="relative w-full max-w-md">
           <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
@@ -214,54 +230,11 @@ const UsersList = () => {
         </div>
       )}
       {/* Paginación */}
-      {/* {totalPages > 1 && (
-        <div className="flex justify-center mt-6 space-x-2">
-          {totalPages > 1 && (
-            <div className="flex justify-center mt-6 space-x-2">
-              <button
-                className={`px-4 py-2 text-sm rounded-md cursor-pointer ${
-                  currentPage === 1 ? "bg-gray-300" : "bg-blue-600 text-white"
-                }`}
-                disabled={currentPage === 1}
-                onClick={() => setCurrentPage((prev) => Math.max(prev - 1, 1))}
-              >
-                Anterior
-              </button>
-              {Array.from({ length: totalPages }, (_, i) => (
-                <button
-                  key={i + 1}
-                  className={`px-4 py-2 text-sm rounded-md cursor-pointer ${
-                    currentPage === i + 1
-                      ? "bg-blue-600 text-white"
-                      : "bg-gray-200"
-                  }`}
-                  onClick={() => setCurrentPage(i + 1)}
-                >
-                  {i + 1}
-                </button>
-              ))}
-              <button
-                className={`px-4 py-2 text-sm rounded-md cursor-pointer ${
-                  currentPage === totalPages
-                    ? "bg-gray-300"
-                    : "bg-blue-600 text-white"
-                }`}
-                disabled={currentPage === totalPages}
-                onClick={() =>
-                  setCurrentPage((prev) => Math.min(prev + 1, totalPages))
-                }
-              >
-                Siguiente
-              </button>
-            </div>
-          )}
-        </div>
-      )} */}
+      
       <Pagination
         currentPage={currentPage}
         totalPages={totalPages}
         onPageChange={(page) => setCurrentPage(page)}
-        className="my-8" // Opcional
       />
     </div>
   );

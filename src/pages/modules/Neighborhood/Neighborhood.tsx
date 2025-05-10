@@ -159,20 +159,21 @@ const Neighborhood = () => {
   }, []);
 
   return (
-    <div className="max-w-6xl mx-auto px-4 py-6 space-y-6">
-      <div className="flex justify-between items-center">
+    <div className="container mx-auto px-4 py-8 max-w-7xl">
+      <div className="flex justify-between items-center mb-6">
         <ButtonIndicator />
         <ButtonHome />
       </div>
 
-      <div className="flex justify-between items-center mb-6">
+      <div className="flex justify-between items-center mb-8 mt-4">
         <div>
-          <h1 className="text-2xl font-bold text-gray-800">
+          <h1 className="text-3xl font-bold text-slate-800 mb-1">
             Listado de Barrios
           </h1>
-          <p className="text-gray-500 mt-1">
-            Administra los barrios de la ciudad y sus usuarios
-          </p>
+          <div className="flex items-center text-slate-500">
+            <FiInfo className="mr-2" />
+            +{neighborhoods.length} barrio(s) registrado(s)
+          </div>
         </div>
         <button
           onClick={() => {
@@ -188,35 +189,39 @@ const Neighborhood = () => {
       <div className="bg-white shadow-sm rounded-xl overflow-hidden">
         <div className="overflow-x-auto">
           <table className="min-w-full">
-            <thead className="bg-gray-50 border-b border-gray-200">
+            <thead
+              className="shadow-lg bg-gradient-to-r from-slate-900 to-slate-800 
+         transition-all duration-300 
+        overflow-hidden "
+            >
               <tr>
                 <th
                   scope="col"
-                  className="px-6 py-3 text-left text-sm font-medium text-gray-500 uppercase"
+                  className="px-6 py-3 text-left text-sm font-medium text-white uppercase"
                 >
                   Nombre
                 </th>
                 <th
                   scope="col"
-                  className="px-6 py-3 text-left text-sm font-medium text-gray-500 uppercase"
+                  className="px-6 py-3 text-left text-sm font-medium text-white uppercase"
                 >
                   Descripción
                 </th>
                 <th
                   scope="col"
-                  className="px-6 py-3 text-left text-sm font-medium text-gray-500 uppercase"
+                  className="px-6 py-3 text-left text-sm font-medium text-white uppercase"
                 >
                   Estado
                 </th>
                 <th
                   scope="col"
-                  className="px-6 py-3 text-left text-sm font-medium text-gray-500 uppercase"
+                  className="px-6 py-3 text-left text-sm font-medium text-white uppercase"
                 >
                   Usuarios
                 </th>
                 <th
                   scope="col"
-                  className="px-6 py-3 text-left text-sm font-medium text-gray-500 uppercase"
+                  className="px-6 py-3 text-left text-sm font-medium text-white uppercase"
                 >
                   Acciones
                 </th>
@@ -356,14 +361,16 @@ const Neighborhood = () => {
           isOpen={showDeleteModal}
           onClose={handleDeleteCancel}
           onConfirm={handleDisableConfirmation}
-          userName={neighborhoods.find((n) => n._id === selectedNeighborhoodId)?.name}
+          userName={
+            neighborhoods.find((n) => n._id === selectedNeighborhoodId)?.name
+          }
           entityType="barrio"
         />
       </div>
 
       {/* Modal for creating/editing neighborhood */}
       {showCreateModal && import.meta.env.VITE_GOOGLE_MAPS_API_KEY && (
-        <div className="fixed inset-0 bg-gray-600 bg-opacity-50 flex items-center justify-center p-4 z-50">
+        <div className="fixed inset-0 bg-black/50 bg-opacity-50 flex items-center justify-center p-4 z-50">
           <div className="bg-white rounded-lg shadow-xl max-w-4xl w-full max-h-[90vh] flex flex-col">
             <div className="px-6 py-4 border-b border-gray-200 flex justify-between items-center">
               <h3 className="text-lg font-medium text-gray-900">

@@ -6,7 +6,6 @@ import {
   FiBell,
   FiClock,
   FiImage,
-  FiX,
   FiMenu,
   FiChevronLeft,
   FiHome,
@@ -19,6 +18,11 @@ export const DashboardLayout = () => {
   const [sidebarOpen, setSidebarOpen] = useState(true);
 
   const modules = [
+    {
+      title: "Inicio",
+      icon: <FiHome className="h-6 w-6 text-white" />,
+      path: "/",
+    },
     { title: "Mapas", icon: <FiMapPin className="h-5 w-5" />, path: "/maps" },
     {
       title: "Estadísticas",

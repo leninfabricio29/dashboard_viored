@@ -90,9 +90,11 @@ const NotificationDetail = () => {
   if (!notification) return <div className="p-4">Notificación no encontrada.</div>;
 
   return (
-    <div className="max-w-2xl mx-auto px-4 py-6 space-y-6">
-      <ButtonIndicator />
-      <ButtonHome />
+    <div className="container mx-auto px-4 py-8 max-w-7xl">
+      <div className="flex justify-between items-center mb-6">
+        <ButtonIndicator />
+        <ButtonHome />
+      </div>
 
       {successMessage && (
         <div className="bg-green-50 border-l-4 border-green-500 text-green-700 p-4 rounded mb-6">

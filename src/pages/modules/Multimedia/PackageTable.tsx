@@ -2,7 +2,6 @@ import { useEffect, useState } from "react";
 import {
   getAllPackages,
   createPackage,
-  getImages,
   activatePackage,
 } from "../../../services/media-service";
 import CreatePackageModal from "../../../components/layout/CreatePackageModal";
@@ -172,25 +171,24 @@ const MultimediaManager = () => {
   const handleToggleStatus = async (pkgId: string) => {
     try {
       setError(null);
-      
+
       // Si ya está activo, no hacer nada (o podrías desactivarlo si lo prefieres)
       if (activePackageId === pkgId) return;
 
       // Llamar a la API para activar el paquete
       const updatedPackage = await activatePackage(pkgId);
-      
+
       // Actualizar el estado local
-      setPackages(prev => 
-        prev.map(pkg => ({
+      setPackages((prev) =>
+        prev.map((pkg) => ({
           ...pkg,
-          status: pkg._id === pkgId ? true : false
+          status: pkg._id === pkgId ? true : false,
         }))
       );
-      
+
       setActivePackageId(pkgId);
-      
     } catch (err) {
-      setError(err.message || 'Error al cambiar el estado del paquete');
+      setError(err.message || "Error al cambiar el estado del paquete");
       console.error(err);
     }
   };
@@ -208,7 +206,7 @@ const MultimediaManager = () => {
   }) => {
     return (
       <div
-        className="bg-white  rounded-2xl shadow-sm transition-all hover:shadow-indigo-300 duration-300 hover:shadow-lg hover:-translate-y-1 
+        className="bg-white  rounded-2xl shadow-sm transition-all hover:shadow-slate-500 duration-300 hover:shadow-lg hover:-translate-y-1 
         border border-gray-100"
       >
         <div className="p-5">
@@ -296,9 +294,16 @@ const MultimediaManager = () => {
         <ButtonHome />
       </div>
       <div className="flex flex-col md:flex-row md:items-center md:justify-between mb-8">
-        <h1 className="text-2xl font-bold text-gray-900 mb-4 md:mb-0">
-          Gestor de Contenido Multimedia
-        </h1>
+        <div className="flex justify-between items-center mb-8 mt-4">
+          <div>
+            <h1 className="text-3xl font-bold text-slate-800 mb-1">
+              Gestor de contenido multimedia 
+            </h1>
+            <div className="flex items-center text-slate-500">
+            <span>Explora los paquetes multimedia </span>
+            </div>
+          </div>
+        </div>
 
         <button
           onClick={() => setIsModalOpen(true)}

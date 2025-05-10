@@ -3,7 +3,13 @@ import { getActivityLogs } from "../../../services/activity-log-service";
 
 import ButtonIndicator from "../../../components/UI/ButtonIndicator";
 import ButtonHome from "../../../components/UI/ButtonHome";
-import { FiChevronLeft, FiChevronRight } from "react-icons/fi";
+import {
+  FiArrowRight,
+  FiChevronLeft,
+  FiChevronRight,
+  FiClock,
+} from "react-icons/fi";
+import Pagination from "../../../components/layout/Pagination";
 
 interface User {
   _id: string;
@@ -105,114 +111,89 @@ const HistoryLogs: React.FC = () => {
   const paginate = (pageNumber: number) => setCurrentPage(pageNumber);
 
   return (
-    <div className="min-h-screen px-4 py-6">
-      <div className="max-w-5xl mx-auto rounded-2xl shadow p-6">
-        {/* Top bar */}
-        <div className="flex justify-between items-center mb-6">
-          <ButtonIndicator />
-          <ButtonHome />
-        </div>
+    <div className="container mx-auto px-4 py-8 max-w-7xl">
+      <div className="flex justify-between items-center mb-6">
+        <ButtonIndicator />
+        <ButtonHome />
+      </div>
 
-          {/* Paginación */}
-          {logs.length > logsPerPage && (
-            <div className="flex justify-between items-center m-2">
-              <button
-                onClick={() => setCurrentPage((prev) => Math.max(prev - 1, 1))}
-                disabled={currentPage === 1}
-                className={`flex items-center px-4 py-2 rounded-md cursor-pointer ${
-                  currentPage === 1
-                    ? "text-gray-400 cursor-not-allowed"
-                    : "text-blue-600 hover:bg-blue-50"
-                }`}
-              >
-                <FiChevronLeft className="mr-1" /> Anterior
-              </button>
-
-              <div className="flex space-x-1">
-                {Array.from({ length: totalPages }, (_, i) => i + 1).map(
-                  (number) => (
-                    <button
-                      key={number}
-                      onClick={() => paginate(number)}
-                      className={`w-10 h-10 rounded-md flex items-center justify-center cursor-pointer ${
-                        currentPage === number
-                          ? "bg-blue-600 text-white"
-                          : "text-gray-700 hover:bg-gray-100"
-                      }`}
-                    >
-                      {number}
-                    </button>
-                  )
-                )}
-              </div>
-
-              <button
-                onClick={() =>
-                  setCurrentPage((prev) => Math.min(prev + 1, totalPages))
-                }
-                disabled={currentPage === totalPages}
-                className={`flex items-center px-4 py-2 rounded-md cursor-pointer ${
-                  currentPage === totalPages
-                    ? "text-gray-400 cursor-not-allowed"
-                    : "text-blue-600 hover:bg-blue-50"
-                }`}
-              >
-                Siguiente <FiChevronRight className="ml-1" />
-              </button>
-            </div>
-          )}
-
-          {/* Lista de logs */}
-          <div className="divide-y divide-gray-100">
-            {currentLogs.map((log) => (
-              <div
-                key={log._id}
-                className="p-6 hover:bg-gray-50 transition-colors duration-200 rounded-lg"
-              >
-                <div className="flex items-start space-x-4">
-                  {/* Avatar con inicial */}
-                  <div className="flex-shrink-0">
-                    <div className="h-12 w-12 rounded-xl bg-gradient-to-br from-blue-50 to-blue-100 flex items-center justify-center border border-blue-200 shadow-sm">
-                      <span className="text-blue-600 font-semibold text-lg">
-                        {log.user.name.charAt(0).toUpperCase()}
-                      </span>
-                    </div>
-                  </div>
-
-                  {/* Contenido del log */}
-                  <div className="flex-1 min-w-0">
-                    <div className="flex items-center justify-between mb-2">
-                      <div className="flex items-center space-x-2">
-                        <p className="text-base font-semibold text-gray-900">
-                          {log.user.name}
-                        </p>
-                        <span className="px-2 py-1 text-xs font-medium bg-blue-100 text-blue-800 rounded-full">
-                          {log.user.email}
-                        </span>
-                      </div>
-                      <p className="text-sm text-gray-500">
-                        {formatDate(log.timestamp)}
-                      </p>
-                    </div>
-
-                    <div className="mt-2">
-                      <p className="text-sm text-gray-700">
-                        <span className="font-medium text-blue-700">
-                          {log.action}
-                        </span>
-                      </p>
-                      <p className="mt-1 text-sm text-gray-500">
-                        {log.target}
-                      </p>
-                    </div>
-                  </div>
-                </div>
-              </div>
-            ))}
+      <div className="flex justify-between items-center mb-8 mt-4">
+        <div>
+          <h1 className="text-3xl font-bold text-slate-800 mb-1">
+            Historial de Actividades
+          </h1>
+          <div className="flex items-center text-slate-500">
+            <FiClock className="mr-2 text-sky-500" />
+            <span className="text-slate-500">
+              Aquí puedes ver todas las actividades realizadas en el sistema.
+            </span>
           </div>
         </div>
       </div>
-    
+
+      {/* Paginación */}
+      <Pagination
+        currentPage={currentPage}
+        totalPages={totalPages}
+        onPageChange={(page) => setCurrentPage(page)}
+      />
+
+      {/* Lista de logs */}
+      <div className="space-y-4">
+  {currentLogs.map((log) => (
+    <div
+      key={log._id}
+      className="p-4 sm:p-5 bg-white border border-slate-200 rounded-2xl hover:shadow-md transition-shadow duration-200 group"
+    >
+      <div className="flex items-start gap-4">
+        {/* Avatar */}
+        <div className="flex-shrink-0">
+          <div className="h-12 w-12 rounded-full bg-gradient-to-br from-blue-100 to-sky-200 flex items-center justify-center border border-slate-300 shadow-sm group-hover:shadow-md transition-shadow">
+            <span className="text-sky-700 font-semibold text-lg">
+              {log.user.name.charAt(0).toUpperCase()}
+            </span>
+          </div>
+        </div>
+
+        {/* Contenido */}
+        <div className="flex-1 min-w-0">
+          {/* Encabezado */}
+          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between mb-2">
+            <div className="flex items-center flex-wrap gap-2">
+              <p className="text-base font-semibold text-slate-800">
+                {log.user.name}
+              </p>
+              <span className="text-xs bg-slate-100 text-slate-600 px-2 py-0.5 rounded-full">
+                {log.user.email}
+              </span>
+            </div>
+            <p className="text-sm text-slate-400 mt-1 sm:mt-0">
+              {formatDate(log.timestamp)}
+            </p>
+          </div>
+
+          {/* Acción y detalles */}
+          <p className="text-sm text-slate-700 mb-2">
+            <span className="text-sky-600 font-medium">{log.action}</span>
+            {log.details && (
+              <span className="ml-1 text-slate-600">{log.details}</span>
+            )}
+          </p>
+
+          {/* Target */}
+          {log.target && (
+            <div className="flex items-start">
+              <FiArrowRight className="w-4 h-4 mt-0.5 text-slate-400 mr-2" />
+              <p className="text-sm text-slate-500 flex-1">{log.target}</p>
+            </div>
+          )}
+        </div>
+      </div>
+    </div>
+  ))}
+</div>
+
+    </div>
   );
 };
 
