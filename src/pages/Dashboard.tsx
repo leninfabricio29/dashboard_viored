@@ -6,6 +6,7 @@ import {
   FiClock,
   FiAlertCircle,
   FiBarChart2,
+  FiSettings,
 } from "react-icons/fi";
 import { Link } from "react-router-dom";
 import userService from "../services/user-service";
@@ -16,6 +17,8 @@ import statisticsService from "../services/statis-service";
 
 import { getActivityLogs } from "../services/activity-log-service";
 import { ActivityLog } from "../types/activity-log";
+import TopEmergencyDaysChart from "../components/statistics/TopEmergencyDaysChart";
+import ActivityBarChart from "../components/layout/ActivityBarChart";
 
 const Dashboard = () => {
   // Datos de ejemplo (deberías reemplazarlos con tus datos reales)
@@ -153,8 +156,6 @@ const Dashboard = () => {
     },
   ];
 
-
-
   return (
     <div className="container mx-auto px-4 py-8 max-w-7xl">
       {/* Header */}
@@ -200,18 +201,18 @@ const Dashboard = () => {
       {/* Gráficos y contenido principal */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-8">
         {/* Gráfico de actividad (ejemplo) */}
-        <div className="bg-white rounded-xl shadow-sm border border-slate-200 p-6 lg:col-span-2">
-          <div className="flex items-center justify-between mb-6">
+        <div className="bg-white rounded-xl shadow-sm border border-slate-200 p-6 lg:col-span-2 flex flex-col">
+          <div className="flex items-center justify-between mb-4">
             <h2 className="text-lg font-semibold text-slate-800">
-              Actividad reciente
+              Distribución de actividades
             </h2>
-            <button className="text-sm text-blue-600 hover:text-blue-800 flex items-center">
-              <FiBarChart2 className="mr-1" /> Ver reporte completo
-            </button>
+            <FiBarChart2 className="text-slate-400 w-5 h-5" />
           </div>
-          <div className="h-64 bg-slate-50 rounded-lg border border-slate-200 flex items-center justify-center">
-            {/* Aquí iría tu gráfico (Chart.js, ApexCharts, etc) */}
-            <p className="text-slate-400">Gráfico de actividad</p>
+
+          <div className="flex-1 min-h-[300px]">
+            {" "}
+            {/* Contenedor flexible con altura mínima */}
+            <ActivityBarChart logs={logs} />
           </div>
         </div>
 
@@ -263,10 +264,10 @@ const Dashboard = () => {
             color="from-emerald-500 to-emerald-600"
           />
           <ModuleCard
-            title="Reportes"
-            description="Genera reportes del sistema"
-            icon={<FiBarChart2 className="w-5 h-5" />}
-            link="/reports"
+            title="Configuración"
+            description="Cambia la información del admin"
+            icon={<FiSettings className="w-5 h-5" />}
+            link="/settings"
             color="from-purple-500 to-purple-600"
           />
         </div>

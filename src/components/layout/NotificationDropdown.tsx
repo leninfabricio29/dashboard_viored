@@ -158,9 +158,9 @@ const NotificationsDropdown = ({
   };
 
   return (
-    <div className="relative" ref={dropdownRef}>
+    <div className="relative m-2" ref={dropdownRef}>
       <button
-        className="relative p-1 rounded-full hover:bg-blue-900 transition-colors duration-200"
+        className="relative p-4 rounded-lg hover:bg-white/10 transition-colors duration-200 cursor-pointer"
         onClick={toggleNotifications}
         aria-expanded={showNotifications}
         aria-label="Notificaciones"
@@ -174,9 +174,10 @@ const NotificationsDropdown = ({
       </button>
 
       {showNotifications && (
-        <div className="absolute right-0 mt-2 w-80 bg-white rounded-lg shadow-xl z-50 overflow-hidden border border-gray-100">
+         <div className="absolute right-0 mt-2 w-80 bg-white rounded-lg shadow-xl z-[9999] overflow-hidden border border-gray-100">
+
           {/* Header */}
-          <div className="flex justify-between items-center p-4 bg-gradient-to-r from-blue-900 to-blue-800">
+          <div className="flex justify-between items-center p-4 bg-gradient-to-r from-slate-900 to-slate-800">
             <h3 className="font-semibold text-white">Notificaciones</h3>
             <span className="text-xs text-blue-100 font-bold">
               {notifications.filter((n) => !n.isRead).length} sin leer

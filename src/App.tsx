@@ -1,6 +1,5 @@
 import { Routes, Route, Navigate } from "react-router-dom";
-import {DashboardLayout} from "./components/layout/DashboardLayout";
-import MainLayout from "./components/layout/MainLayout";
+import { DashboardLayout } from "./components/layout/DashboardLayout";
 import Dashboard from "./pages/Dashboard";
 import UsersList from "./pages/modules/Users/UsersList";
 import UserDetail from "./pages/modules/Users/UserDetail";
@@ -16,6 +15,7 @@ import Neighborhood from "./pages/modules/Neighborhood/Neighborhood";
 import HistoryLogs from "./pages/modules/History/HistoryLogs";
 import PackageTable from "./pages/modules/Multimedia/PackageTable";
 import PackageDetailView from "./pages/modules/Multimedia/PackageDetailView";
+import UserProfile from "./pages/modules/Settings/UserProfile";
 //import LogsComponent from "./components/logs/LogsComponent";
 
 // Función para verificar si el usuario está autenticado
@@ -86,7 +86,8 @@ function App() {
         <Route path="/multimedia" element={<PackageTable />} />
         <Route path="/multimedia/package/:id" element={<PackageDetailView />} />
 
-        {/* Rutas para el módulo de paquetes */}
+        {/* Settings */}
+        <Route path="/settings" element={<UserProfile />} />
       </Route>
 
       {/* Redireccionar cualquier ruta no encontrada al dashboard */}
