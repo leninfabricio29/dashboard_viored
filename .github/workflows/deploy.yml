@@ -23,7 +23,7 @@ jobs:
           git config --global user.name "GitHub CI"
           git config --global user.email "ci@github.com"
 
-          git clone https://x-access-token:${{ secrets.STATIC_REPO_TOKEN }}@github.com/leninfabricio29/virys-admin-build.git build-output
+          git clone https://x-access-token:${{ secrets.STATIC_REPO_TOKEN }}@github.com/leninfabricio29/virys-admin.git build-output
           rm -rf build-output/*
           cp -r dist/* build-output/
           cd build-output
