@@ -1,10 +1,10 @@
 import { useState, useEffect } from "react";
-import { useParams } from "react-router-dom";
+import { useNavigate, useParams } from "react-router-dom";
 import authService from "../../../services/auth-service";
 import userService from "../../../services/user-service";
 import ButtonIndicator from "../../../components/UI/ButtonIndicator";
 import ButtonHome from "../../../components/UI/ButtonHome";
-import { FiSettings } from "react-icons/fi";
+import { FiEye, FiEyeOff, FiSettings } from "react-icons/fi";
 import { getAllPackages } from "../../../services/media-service";
 
 const UserProfile = () => {
@@ -32,6 +32,20 @@ const UserProfile = () => {
     avatars: [] as string[], // Array de URLs de avatares
     selectedAvatar: "",
   });
+  const [showPasswords, setShowPasswords] = useState({
+    current: false,
+    new: false,
+    confirm: false,
+  });
+  const [redirectCountdown, setRedirectCountdown] = useState<number | null>(
+    null
+  );
+
+  const navigate = useNavigate();
+
+  const toggleVisibility = (field) => {
+    setShowPasswords((prev) => ({ ...prev, [field]: !prev[field] }));
+  };
 
   // Obtener el email del usuario
   useEffect(() => {
@@ -82,14 +96,16 @@ const UserProfile = () => {
     setIsLoading(true);
     try {
       const data = await getAllPackages();
-      const avatarPackages = data.filter(pkg => pkg.type === 'avatar' && pkg.status);
-  
+      const avatarPackages = data.filter(
+        (pkg) => pkg.type === "avatar" && pkg.status
+      );
+
       setPackages(avatarPackages);
-  
+
       const activePkg = avatarPackages[0]; // o el primero activo si hay varios
       if (activePkg) {
         setActivePackageId(activePkg._id);
-  
+
         // Solo URLs de imágenes del paquete activo
         setAvatarSelection((prev) => ({
           ...prev,
@@ -102,7 +118,6 @@ const UserProfile = () => {
       setIsLoading(false);
     }
   };
-  
 
   const AvatarSelectionModal = () => {
     if (!avatarSelection.showModal) return null;
@@ -200,6 +215,7 @@ const UserProfile = () => {
     setIsLoading(true);
     setError("");
     setSuccess("");
+    setRedirectCountdown(null);
 
     // Validaciones
     if (!userEmail) {
@@ -227,7 +243,21 @@ const UserProfile = () => {
         newPassword: passwordData.newPassword,
       });
 
-      setSuccess(response.message || "Contraseña actualizada correctamente");
+      setSuccess(
+        "Contraseña actualizada correctamente. Serás redirigido en 3 segundos..."
+      );
+      setRedirectCountdown(3);
+
+      const timer = setInterval(() => {
+        setRedirectCountdown((prev) => {
+          if (prev === 1) {
+            clearInterval(timer);
+            navigate("/login");
+            return null;
+          }
+          return prev ? prev - 1 : null;
+        });
+      }, 1000);
       setPasswordData({
         currentPassword: "",
         newPassword: "",
@@ -381,9 +411,16 @@ const UserProfile = () => {
               {success && (
                 <div className="mb-4 p-3 bg-green-100 text-green-700 rounded-lg">
                   {success}
+                  {redirectCountdown && (
+                    <div className="mt-1 text-sm">
+                      Redirigiendo en {redirectCountdown} segundo
+                      {redirectCountdown !== 1 ? "s" : ""}...
+                    </div>
+                  )}
                 </div>
               )}
 
+              {/* Contraseña actual */}
               <div className="mb-6">
                 <label
                   className="block text-slate-700 text-sm font-bold mb-2"
@@ -391,17 +428,27 @@ const UserProfile = () => {
                 >
                   Contraseña actual
                 </label>
-                <input
-                  className="w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500"
-                  id="currentPassword"
-                  type="password"
-                  name="currentPassword"
-                  value={passwordData.currentPassword}
-                  onChange={handlePasswordChange}
-                  required
-                />
+                <div className="relative">
+                  <input
+                    className="w-full px-4 py-2 pr-12 border rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                    id="currentPassword"
+                    type={showPasswords.current ? "text" : "password"}
+                    name="currentPassword"
+                    value={passwordData.currentPassword}
+                    onChange={handlePasswordChange}
+                    required
+                  />
+                  <button
+                    type="button"
+                    onClick={() => toggleVisibility("current")}
+                    className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-500 hover:text-gray-700"
+                  >
+                    {showPasswords.current ? <FiEyeOff /> : <FiEye />}
+                  </button>
+                </div>
               </div>
 
+              {/* Nueva contraseña */}
               <div className="mb-6">
                 <label
                   className="block text-slate-700 text-sm font-bold mb-2"
@@ -409,18 +456,28 @@ const UserProfile = () => {
                 >
                   Nueva contraseña
                 </label>
-                <input
-                  className="w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500"
-                  id="newPassword"
-                  type="password"
-                  name="newPassword"
-                  value={passwordData.newPassword}
-                  onChange={handlePasswordChange}
-                  required
-                  minLength={6}
-                />
+                <div className="relative">
+                  <input
+                    className="w-full px-4 py-2 pr-12 border rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                    id="newPassword"
+                    type={showPasswords.new ? "text" : "password"}
+                    name="newPassword"
+                    value={passwordData.newPassword}
+                    onChange={handlePasswordChange}
+                    required
+                    minLength={6}
+                  />
+                  <button
+                    type="button"
+                    onClick={() => toggleVisibility("new")}
+                    className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-500 hover:text-gray-700"
+                  >
+                    {showPasswords.new ? <FiEyeOff /> : <FiEye />}
+                  </button>
+                </div>
               </div>
 
+              {/* Confirmar nueva contraseña */}
               <div className="mb-6">
                 <label
                   className="block text-slate-700 text-sm font-bold mb-2"
@@ -428,16 +485,25 @@ const UserProfile = () => {
                 >
                   Confirmar nueva contraseña
                 </label>
-                <input
-                  className="w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500"
-                  id="confirmPassword"
-                  type="password"
-                  name="confirmPassword"
-                  value={passwordData.confirmPassword}
-                  onChange={handlePasswordChange}
-                  required
-                  minLength={6}
-                />
+                <div className="relative">
+                  <input
+                    className="w-full px-4 py-2 pr-12 border rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                    id="confirmPassword"
+                    type={showPasswords.confirm ? "text" : "password"}
+                    name="confirmPassword"
+                    value={passwordData.confirmPassword}
+                    onChange={handlePasswordChange}
+                    required
+                    minLength={6}
+                  />
+                  <button
+                    type="button"
+                    onClick={() => toggleVisibility("confirm")}
+                    className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-500 hover:text-gray-700"
+                  >
+                    {showPasswords.confirm ? <FiEyeOff /> : <FiEye />}
+                  </button>
+                </div>
               </div>
 
               <div className="flex justify-end">

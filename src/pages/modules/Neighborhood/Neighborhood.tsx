@@ -428,50 +428,7 @@ const Neighborhood = () => {
                     />
                   </div>
 
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">
-                      Imagen *
-                    </label>
-                    <div
-                      onClick={() => setShowImageGallery(true)}
-                      className="w-full h-32 border border-dashed border-gray-300 rounded-md flex flex-col items-center justify-center cursor-pointer hover:bg-gray-50 transition-colors"
-                    >
-                      {selectedImage ? (
-                        <div className="relative w-full h-full">
-                          <img
-                            src={selectedImage}
-                            alt="Imagen del barrio"
-                            className="w-full h-full object-cover rounded-md"
-                          />
-                          <div className="absolute inset-0 bg-black bg-opacity-20 flex items-center justify-center opacity-0 hover:opacity-100 transition-opacity">
-                            <span className="text-white text-sm font-medium">
-                              Cambiar imagen
-                            </span>
-                          </div>
-                        </div>
-                      ) : (
-                        <>
-                          <svg
-                            className="w-10 h-10 text-gray-400"
-                            fill="none"
-                            stroke="currentColor"
-                            viewBox="0 0 24 24"
-                            xmlns="http://www.w3.org/2000/svg"
-                          >
-                            <path
-                              strokeLinecap="round"
-                              strokeLinejoin="round"
-                              strokeWidth="2"
-                              d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"
-                            ></path>
-                          </svg>
-                          <span className="mt-2 text-sm text-gray-500">
-                            Click para seleccionar una imagen
-                          </span>
-                        </>
-                      )}
-                    </div>
-                  </div>
+
 
                   <div className="pt-2">
                     <h4 className="text-sm font-medium text-gray-700 mb-2">
@@ -597,78 +554,82 @@ const Neighborhood = () => {
 
       {/* Modal for viewing users */}
       {showUsersModal && selectedNeighborhood && (
-        <div className="fixed inset-0 bg-gray-600 bg-opacity-50 flex items-center justify-center z-50 p-4">
-          <div className="bg-white rounded-lg shadow-xl w-full max-w-md overflow-hidden flex flex-col">
-            <div className="bg-indigo-700  p-2.5 flex justify-center">
-              <span className="text-white text-sm font-medium">
-                Total: {neighborhoodUsers.length} usuario(s)
-              </span>
-            </div>
-
-            <div className="overflow-y-auto max-h-60">
-              {loadingUsers ? (
-                <div className="text-center py-12">
-                  <svg
-                    className="animate-spin h-8 w-8 text-blue-500 mx-auto mb-3"
-                    xmlns="http://www.w3.org/2000/svg"
-                    fill="none"
-                    viewBox="0 0 24 24"
-                  >
-                    <circle
-                      className="opacity-25"
-                      cx="12"
-                      cy="12"
-                      r="10"
-                      stroke="currentColor"
-                      strokeWidth="4"
-                    ></circle>
-                    <path
-                      className="opacity-75"
-                      fill="currentColor"
-                      d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
-                    ></path>
-                  </svg>
-                  <p className="text-gray-500">Cargando usuarios...</p>
-                </div>
-              ) : neighborhoodUsers.length === 0 ? (
-                <div className="text-center py-12">
-                  <FiUsers className="h-12 w-12 text-gray-300 mx-auto mb-3" />
-                  <p className="text-gray-500 mb-1">
-                    No hay usuarios en este barrio
-                  </p>
-                  <p className="text-gray-400 text-sm">
-                    Los usuarios se mostrarán aquí cuando sean agregados
-                  </p>
-                </div>
-              ) : (
-                <ul className="divide-y divide-gray-100">
-                  {neighborhoodUsers.map((user) => (
-                    <li key={user._id} className="flex items-center py-3 px-4">
-                      <div className="h-8 w-8 rounded-full bg-blue-100 text-blue-500 flex items-center justify-center mr-3">
-                        {user.email && user.email.charAt(0).toUpperCase()}
-                      </div>
-                      <span className="text-sm text-gray-700">
-                        {user.email}
-                      </span>
-                      <span className="px-3 py-1 ml-2  inline-flex text-xs leading-5 font-semibold rounded-full bg-green-100 text-green-800">
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
+        <div className="bg-white rounded-2xl shadow-2xl w-full max-w-md overflow-hidden flex flex-col">
+          
+          {/* Encabezado */}
+          <div className="bg-slate-900 py-3 px-4 flex justify-between items-center">
+            <h2 className="text-white font-semibold text-base">Usuarios del barrio</h2>
+            <span className="text-white text-sm opacity-90">
+              Total: {neighborhoodUsers.length}
+            </span>
+          </div>
+      
+          {/* Lista */}
+          <div className="overflow-y-auto max-h-72 divide-y divide-gray-100">
+            {loadingUsers ? (
+              <div className="text-center py-12">
+                <svg
+                  className="animate-spin h-8 w-8 text-slate-500 mx-auto mb-3"
+                  xmlns="http://www.w3.org/2000/svg"
+                  fill="none"
+                  viewBox="0 0 24 24"
+                >
+                  <circle
+                    className="opacity-25"
+                    cx="12"
+                    cy="12"
+                    r="10"
+                    stroke="currentColor"
+                    strokeWidth="4"
+                  />
+                  <path
+                    className="opacity-75"
+                    fill="currentColor"
+                    d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
+                  />
+                </svg>
+                <p className="text-gray-500 text-sm">Cargando usuarios...</p>
+              </div>
+            ) : neighborhoodUsers.length === 0 ? (
+              <div className="text-center py-12">
+                <FiUsers className="h-12 w-12 text-gray-300 mx-auto mb-3" />
+                <p className="text-gray-600 font-medium">No hay usuarios en este barrio</p>
+                <p className="text-gray-400 text-sm mt-1">
+                  Los usuarios se mostrarán aquí cuando sean agregados
+                </p>
+              </div>
+            ) : (
+              <ul>
+                {neighborhoodUsers.map((user) => (
+                  <li key={user._id} className="flex items-center gap-3 py-3 px-4 hover:bg-gray-50 transition">
+                    <div className="h-10 w-10 rounded-full bg-indigo-100 text-indigo-600 font-semibold flex items-center justify-center text-sm">
+                      {user.email?.charAt(0).toUpperCase()}
+                    </div>
+                    <div className="flex-1">
+                      <p className="text-gray-800 text-sm font-medium">{user.email}</p>
+                      <span className="text-green-600 text-xs font-semibold bg-green-100 px-2 py-0.5 rounded-full">
                         Activo
                       </span>
-                    </li>
-                  ))}
-                </ul>
-              )}
-            </div>
-
-            <div className="p-4 flex justify-end bg-gray-50">
-              <button
-                onClick={() => setShowUsersModal(false)}
-                className="px-4 py-2 text-blue-600 font-medium text-sm"
-              >
-                Cerrar
-              </button>
-            </div>
+                    </div>
+                  </li>
+                ))}
+              </ul>
+            )}
+          </div>
+      
+          {/* Footer */}
+          <div className="p-4 bg-gray-50 flex justify-end">
+            <button
+              onClick={() => setShowUsersModal(false)}
+              className="flex items-center px-4 py-2 bg-white border border-red-500 text-red-600 rounded-lg hover:bg-red-50 transition-colors shadow-sm cursor-pointer"
+            >
+              Cerrar
+            </button>
           </div>
         </div>
+      </div>
+      
       )}
     </div>
   );

@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef } from "react";
-import { useNavigate, Link, useParams } from "react-router-dom";
-import { FiLogOut, FiSettings, FiUser, FiChevronDown } from "react-icons/fi";
+import { useNavigate, Link } from "react-router-dom";
+import { FiLogOut, FiSettings, FiChevronDown } from "react-icons/fi";
 import authService from "../../services/auth-service";
 import userService from "../../services/user-service";
 import {
@@ -22,9 +22,14 @@ interface Notification {
 const Header = () => {
   const navigate = useNavigate();
   const [isUserDropdownOpen, setIsUserDropdownOpen] = useState(false);
-  const [user, setUser] = useState<{ name: string; role: string }>({
+  const [user, setUser] = useState<{
+    name: string;
+    role: string;
+    avatar?: string;
+  }>({
     name: "",
     role: "",
+    avatar: "",
   });
   const [loading, setLoading] = useState(true);
   const [notifications, setNotifications] = useState<Notification[]>([]);
@@ -38,7 +43,11 @@ const Header = () => {
         if (userIdFromToken) {
           setUserId(userIdFromToken);
           const userData = await userService.getUserById(userIdFromToken);
-          setUser({ name: userData.name, role: userData.role });
+          setUser({
+            name: userData.name,
+            role: userData.role,
+            avatar: userData.avatar,
+          });
         }
       } catch (error) {
         console.error("Error al obtener datos del usuario:", error);
@@ -47,7 +56,7 @@ const Header = () => {
       }
     };
     fetchUserData();
-  });
+  }, []);
 
   useEffect(() => {
     const fetchNotifications = async () => {
@@ -132,9 +141,20 @@ const Header = () => {
                 onClick={() => setIsUserDropdownOpen(!isUserDropdownOpen)}
                 className="flex items-center space-x-2 cursor-pointer"
               >
-                <div className="bg-white/10 p-1 rounded-full">
-                  <FiUser className="h-5 w-5 text-white" />
+                <div className="w-10 h-10 rounded-full overflow-hidden border-2 border-white">
+                  {user.avatar ? (
+                    <img
+                      src={user.avatar}
+                      alt={`Avatar de ${user.name}`}
+                      className="w-full h-full object-cover"
+                    />
+                  ) : (
+                    <div className="w-full h-full bg-blue-500 flex items-center justify-center text-white text-sm font-bold">
+                      {user.name.charAt(0).toUpperCase()}
+                    </div>
+                  )}
                 </div>
+
                 <div className="text-right">
                   <div className="text-sm font-medium text-white">
                     {loading ? (

@@ -88,6 +88,7 @@ export const DashboardLayout = () => {
             role: userData.role,
           });
         }
+        
       } catch (error) {
         console.error("Error al obtener datos del usuario:", error);
       } finally {
@@ -116,7 +117,7 @@ export const DashboardLayout = () => {
         <div className="p-5  flex items-center justify-between border-b border-indigo-700/30 bg-indigo-800/10">
           {sidebarOpen ? (
             <div className="flex items-center gap-2">
-                
+
               <h1 className="text-lg font-semibold bg-gradient-to-r from-indigo-200 to-indigo-100 bg-clip-text text-transparent">
                 AdminPanel
               </h1>

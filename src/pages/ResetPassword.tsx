@@ -48,14 +48,14 @@ const ResetPassword = () => {
   }
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-blue-50 px-4">
+    <div className="min-h-screen flex items-center justify-center bg-slate-100 px-4">
       <div className="max-w-md w-full bg-gray-100 rounded-xl shadow-md overflow-hidden p-8 space-y-6">
         <div className="flex flex-col items-center">
-          <div className="bg-gradient-to-r from-blue-500 to-indigo-600 rounded-full p-4 mb-4 shadow-lg">
+          <div className="bg-gradient-to-r from-slate-500 to-slate-600 rounded-full p-4 mb-4 shadow-lg">
             <FiMail className="h-8 w-8 text-white" />
           </div>
-          <h1 className="text-2xl font-bold text-gray-800">Restablecer Contraseña</h1>
-          <p className="text-gray-500 mt-1 text-center">
+          <h1 className="text-3xl font-extrabold text-slate-800">Restablecer Contraseña</h1>
+          <p className="text-slate-500 mt-2 text-sm">
             Ingrese su email para recibir una nueva contraseña
           </p>
         </div>
@@ -94,7 +94,7 @@ const ResetPassword = () => {
               <input
                 type="email"
                 id="email"
-                className="w-full px-4 py-3 rounded-lg border border-gray-300 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition duration-300"
+                className="w-full px-4 py-3 rounded-lg border border-gray-300 focus:ring-2 focus:ring-slate-500 focus:border-slate-500 transition duration-300"
                 placeholder="correo@ejemplo.com"
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
@@ -104,7 +104,7 @@ const ResetPassword = () => {
             
             <button
               type="submit"
-              className="w-full bg-gradient-to-r from-blue-500 to-indigo-600 text-white py-3 px-4 rounded-lg font-medium hover:from-blue-600 hover:to-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 transition duration-300 flex justify-center items-center"
+              className="w-full bg-slate-700 text-white py-3 px-4 rounded-lg font-medium hover:bg-slate-800 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-slate-500 transition duration-300 flex justify-center items-center"
               disabled={isLoading}
             >
               {isLoading ? (
@@ -127,7 +127,7 @@ const ResetPassword = () => {
         <div className="text-center">
           <Link 
             to="/login" 
-            className="inline-flex items-center text-blue-600 hover:text-blue-800 font-medium"
+            className="inline-flex items-center text-slate-600 hover:text-slate-800 font-medium"
           >
             <FiArrowLeft className="mr-2" />
             Volver a Inicio de Sesión
