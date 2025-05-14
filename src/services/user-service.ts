@@ -2,6 +2,12 @@
 import api from './api';
 import { User, UsersResponse } from '../types/user.types';
 
+interface UpdateUserData {
+  email?: string;
+  phone?: string;
+  avatar?: string;
+}
+
 export const userService = {
   // Obtener todos los usuarios
   getUsers: async (): Promise<User[]> => {
@@ -14,8 +20,8 @@ export const userService = {
     }
   },
 
- // Obtener un usuario por ID
-getUserById: async (id: string): Promise<User> => {
+  // Obtener un usuario por ID
+  getUserById: async (id: string): Promise<User> => {
     try {
       const response = await api.get<User>(`/api/users/${id}`);
       return response.data; // Ya no necesitas acceder a .user
@@ -25,7 +31,7 @@ getUserById: async (id: string): Promise<User> => {
     }
   },
 
- 
+
 
   // Eliminar un usuario
   deleteUser: async (id: string): Promise<boolean> => {
@@ -43,13 +49,25 @@ getUserById: async (id: string): Promise<User> => {
       const response = await api.post('/api/users/validate', {
         newuserId: userId,
         type_suscription,
-      });      return response.status === 200
+      }); return response.status === 200
     } catch (error) {
       console.error(`Error al validar usuario ${userId}:`, error)
       throw error
     }
   },
-  
+
+  updateUser: async (userId: string, data: UpdateUserData): Promise<{ 
+    message: string; 
+    user: { email: string; phone: string; avatar: string } 
+  }> => {
+    try {
+      const response = await api.put(`/api/users/${userId}`, data);
+      return response.data;
+    } catch (error) {
+      console.error('Error al actualizar usuario:', error);
+      throw error;
+    }
+  }
 };
 
 export default userService;

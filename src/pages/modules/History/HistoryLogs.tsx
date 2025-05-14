@@ -5,8 +5,6 @@ import ButtonIndicator from "../../../components/UI/ButtonIndicator";
 import ButtonHome from "../../../components/UI/ButtonHome";
 import {
   FiArrowRight,
-  FiChevronLeft,
-  FiChevronRight,
   FiClock,
 } from "react-icons/fi";
 import Pagination from "../../../components/layout/Pagination";

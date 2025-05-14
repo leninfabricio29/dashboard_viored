@@ -1,12 +1,6 @@
 import { useState, useEffect, useRef } from "react";
-import { useNavigate, Link } from "react-router-dom";
-import {
-  FiHome,
-  FiLogOut,
-  FiSettings,
-  FiUser,
-  FiChevronDown,
-} from "react-icons/fi";
+import { useNavigate, Link, useParams } from "react-router-dom";
+import { FiLogOut, FiSettings, FiUser, FiChevronDown } from "react-icons/fi";
 import authService from "../../services/auth-service";
 import userService from "../../services/user-service";
 import {
@@ -14,6 +8,7 @@ import {
   markNotificationAsRead,
 } from "../../services/notifications-service";
 import NotificationsDropdown from "./NotificationDropdown";
+import Logo from "../../assets/Icono de advertencia y letra P.png";
 
 interface Notification {
   _id: string;
@@ -34,13 +29,15 @@ const Header = () => {
   const [loading, setLoading] = useState(true);
   const [notifications, setNotifications] = useState<Notification[]>([]);
   const userDropdownRef = useRef<HTMLDivElement>(null);
+  const [userId, setUserId] = useState<string | null>(null);
 
   useEffect(() => {
     const fetchUserData = async () => {
       try {
-        const userId = authService.getUserIdFromToken();
-        if (userId) {
-          const userData = await userService.getUserById(userId);
+        const userIdFromToken = authService.getUserIdFromToken();
+        if (userIdFromToken) {
+          setUserId(userIdFromToken);
+          const userData = await userService.getUserById(userIdFromToken);
           setUser({ name: userData.name, role: userData.role });
         }
       } catch (error) {
@@ -50,7 +47,7 @@ const Header = () => {
       }
     };
     fetchUserData();
-  }, []);
+  });
 
   useEffect(() => {
     const fetchNotifications = async () => {
@@ -111,11 +108,14 @@ const Header = () => {
         <div className="flex justify-between items-center h-20">
           {/* Logo */}
           <Link to="/" className="flex items-center space-x-2 group">
-            <div className="bg-white/10 p-2 rounded-lg group-hover:bg-white/20 transition-all duration-300">
-              <FiHome className="h-6 w-6 text-white" />
-            </div>
+            <img
+              src={Logo}
+              alt="Logo de la empresa"
+              className="w-16 h-16 object-contain"
+            />
+
             <span className="font-bold text-xl text-white hidden md:block tracking-tight">
-              Vio<span className="text-blue-200">Red</span>
+              Viryx<span className="text-blue-200">SOS</span>
             </span>
           </Link>
 
@@ -151,7 +151,7 @@ const Header = () => {
               {isUserDropdownOpen && (
                 <div className="absolute right-0 mt-2 w-52 bg-slate-800 rounded-xl shadow-xl ring-1 ring-slate-700 z-50 overflow-hidden">
                   <Link
-                    to="/settings"
+                    to={`/settings/${userId}`}
                     className="flex items-center gap-2 px-4 py-3 text-sm text-slate-200 hover:bg-slate-700 hover:text-white hover:border-l-4 hover:border-blue-500 transition-all duration-150"
                   >
                     <FiSettings className="w-4 h-4" />

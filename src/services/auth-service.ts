@@ -31,12 +31,12 @@ const authService = {
   login: async (credentials: LoginCredentials): Promise<LoginResponse> => {
     try {
       const response = await api.post<LoginResponse>('/api/auth/login', credentials);
-      
+
       // Guardar el token en localStorage para mantener la sesión
       if (response.data.token) {
         localStorage.setItem('token', response.data.token);
       }
-      
+
       return response.data;
     } catch (error) {
       console.error('Error en login:', error);
@@ -71,33 +71,41 @@ const authService = {
   },
 
   // Actualizar contraseña
-  updatePassword: async (data: UpdatePasswordData): Promise<{ message: string }> => {
+  // auth-service.ts
+  // auth-service.ts
+  updatePassword: async (data: {
+    email: string,
+    currentPassword: string,
+    newPassword: string
+  }): Promise<{ message: string }> => {
     try {
-      const response = await api.put<{ message: string }>('/api/auth/update-password', data);
+      const response = await api.put<{ message: string }>('/api/auth/update-password', {
+        email: data.email,
+        currentPassword: data.currentPassword,
+        newPassword: data.newPassword
+      });
       return response.data;
     } catch (error) {
       console.error('Error al actualizar contraseña:', error);
       throw error;
     }
+  },
 
-    
-},
+  getUserIdFromToken: (): string | null => {
+    const token = localStorage.getItem('token');
+    if (!token) return null;
 
-getUserIdFromToken: (): string | null => {
-  const token = localStorage.getItem('token');
-  if (!token) return null;
-  
-  try {
-    // Decodificar el token JWT (método simple)
-    const payload = JSON.parse(atob(token.split('.')[1]));
-    return payload.id; // Asumiendo que el ID del usuario está en la propiedad "id" del payload
-  } catch (error) {
-    console.error('Error al decodificar el token:', error);
-    return null;
+    try {
+      // Decodificar el token JWT (método simple)
+      const payload = JSON.parse(atob(token.split('.')[1]));
+      return payload.id; // Asumiendo que el ID del usuario está en la propiedad "id" del payload
+    } catch (error) {
+      console.error('Error al decodificar el token:', error);
+      return null;
+    }
   }
-}
 
-  
+
 };
 
 export default authService;

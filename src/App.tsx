@@ -87,7 +87,7 @@ function App() {
         <Route path="/multimedia/package/:id" element={<PackageDetailView />} />
 
         {/* Settings */}
-        <Route path="/settings" element={<UserProfile />} />
+        <Route path="/settings/:id" element={<UserProfile />} />
       </Route>
 
       {/* Redireccionar cualquier ruta no encontrada al dashboard */}

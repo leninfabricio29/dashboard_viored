@@ -20,7 +20,7 @@ import authService from "../../services/auth-service";
 import userService from "../../services/user-service";
 
 export const DashboardLayout = () => {
-  const [sidebarOpen, setSidebarOpen] = useState(false);
+  const [sidebarOpen, setSidebarOpen] = useState(true);
   const navigate = useNavigate();
   const [user, setUser] = useState<{ name: string; role: string }>({
     name: "",
@@ -113,12 +113,10 @@ export const DashboardLayout = () => {
           zIndex: 10
         }}
       >
-        <div className="p-4 flex items-center justify-between border-b border-indigo-700/30 bg-indigo-800/10">
+        <div className="p-5  flex items-center justify-between border-b border-indigo-700/30 bg-indigo-800/10">
           {sidebarOpen ? (
             <div className="flex items-center gap-2">
-              <div className="p-2 rounded-lg bg-indigo-600/20">
-                <FiHome className="h-5 w-5 text-indigo-200" />
-              </div>
+                
               <h1 className="text-lg font-semibold bg-gradient-to-r from-indigo-200 to-indigo-100 bg-clip-text text-transparent">
                 AdminPanel
               </h1>
