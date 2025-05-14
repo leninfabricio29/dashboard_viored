@@ -10,21 +10,26 @@ import {
 } from "react-icons/fi";
 import { Link } from "react-router-dom";
 import userService from "../services/user-service";
-import neighborhoodService, {
-  Neighborhood,
-} from "../services/neighborhood-service";
-import statisticsService from "../services/statis-service";
+import neighborhoodService, { Neighborhood } from "../services/neighborhood-service";
+import statisticsService, { EmergencyAlertStat } from "../services/statis-service";
 
 import { getActivityLogs } from "../services/activity-log-service";
 import { ActivityLog } from "../types/activity-log";
-import TopEmergencyDaysChart from "../components/statistics/TopEmergencyDaysChart";
 import ActivityBarChart from "../components/layout/ActivityBarChart";
 
+interface User {
+  name: string;
+  role: string;
+  avatar?: string;
+}
+
+// interface EmergencyAlertStat {
+//   date: string;
+//   count: number;
+// }
+
 const Dashboard = () => {
-  // Datos de ejemplo (deberías reemplazarlos con tus datos reales)
   const [users, setUsers] = useState<User[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState("");
   const [neighborhoods, setNeighborhoods] = useState<Neighborhood[]>([]);
   const [totalAlertas, setTotalAlertas] = useState<number>(0);
   const [alertasDia, setAlertasDia] = useState<number>(0);
@@ -32,91 +37,55 @@ const Dashboard = () => {
 
   const fetchUsers = async () => {
     try {
-      setLoading(true);
       const data = await userService.getUsers();
       setUsers(data);
     } catch (err) {
       console.error("Error al cargar usuarios:", err);
-      setError("No se pudieron cargar los datos. Intente nuevamente.");
-    } finally {
-      setLoading(false);
     }
   };
 
   const fetchNeighborhoods = async () => {
     try {
-      setLoading(true);
       const data = await neighborhoodService.getAllNeighborhoods();
       setNeighborhoods(data);
     } catch (err) {
       console.error("Error al cargar barrios:", err);
-    } finally {
-      setLoading(false);
     }
   };
 
   const fetchTotalAlertas = async () => {
-    const stats = await statisticsService.getEmergencyAlertsByDate();
+    const stats: EmergencyAlertStat[] = await statisticsService.getEmergencyAlertsByDate();
     const totalAlerts = stats.reduce((sum, item) => sum + item.count, 0);
     setTotalAlertas(totalAlerts);
   };
 
   const fetchAlertasDia = async () => {
     try {
-      const stats = await statisticsService.getEmergencyAlertsByDate();
-
-      // Obtener la fecha actual en formato YYYY-MM-DD
+      const stats: EmergencyAlertStat[] = await statisticsService.getEmergencyAlertsByDate();
       const today = new Date().toISOString().split("T")[0];
-
-      // Filtrar solo las alertas de hoy y sumar
       const alertasHoy = stats
-        .filter((item) => item.date === today)
+        .filter((item: EmergencyAlertStat) => item.date === today)
         .reduce((sum, item) => sum + item.count, 0);
-
       setAlertasDia(alertasHoy);
     } catch (error) {
       console.error("Error al cargar las estadísticas de emergencias:", error);
-      setAlertasDia(0); // Establecer a 0 en caso de error
+      setAlertasDia(0);
     }
   };
 
   const fetchLogs = async () => {
     try {
-      setLoading(true);
-      const activityLogs = await getActivityLogs();
-
+      const activityLogs: ActivityLog[] = await getActivityLogs();
       const recentLogs = (activityLogs || [])
-        .sort((a, b) => new Date(b.timestamp) - new Date(a.timestamp))
-        .slice(0, 3)
-        .map((log) => ({
-          user: log.user.name,
-          action: log.action,
-          target: log.target,
-          time: formatTimeAgo(log.timestamp), // Necesitarías implementar esta función
-        }));
-
+        .sort((a: ActivityLog, b: ActivityLog) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime())
+        .slice(0, 3);
       setLogs(recentLogs);
     } catch (err) {
-      // ... manejo de errores
-    } finally {
-      setLoading(false);
+      console.error("Error al cargar registros de actividad:", err);
     }
   };
 
-  // Función para formatear la fecha como "Hace X tiempo"
-  const formatTimeAgo = (timestamp) => {
-    const now = new Date();
-    const date = new Date(timestamp);
-    const diffInSeconds = Math.floor((now - date) / 1000);
-
-    if (diffInSeconds < 60) return "Hace unos segundos";
-    if (diffInSeconds < 3600)
-      return `Hace ${Math.floor(diffInSeconds / 60)} min`;
-    if (diffInSeconds < 86400)
-      return `Hace ${Math.floor(diffInSeconds / 3600)} horas`;
-
-    return `Hace ${Math.floor(diffInSeconds / 86400)} días`;
-  };
+  ;
 
   useEffect(() => {
     fetchUsers();
@@ -130,43 +99,19 @@ const Dashboard = () => {
   const registerNeighborhood = neighborhoods.length;
 
   const stats = [
-    {
-      name: "Usuarios activos",
-      value: activeUsersCount,
-      icon: FiUsers,
-      trend: "up",
-    },
-    {
-      name: "Barrios registrados",
-      value: registerNeighborhood,
-      icon: FiMap,
-      trend: "up",
-    },
-    {
-      name: "Alertas por día",
-      value: alertasDia,
-      icon: FiActivity,
-      trend: "down",
-    },
-    {
-      name: "Total de Alertas",
-      value: totalAlertas,
-      icon: FiAlertCircle,
-      trend: "down",
-    },
+    { name: "Usuarios activos", value: activeUsersCount, icon: FiUsers, trend: "up" },
+    { name: "Barrios registrados", value: registerNeighborhood, icon: FiMap, trend: "up" },
+    { name: "Alertas por día", value: alertasDia, icon: FiActivity, trend: "down" },
+    { name: "Total de Alertas", value: totalAlertas, icon: FiAlertCircle, trend: "down" },
   ];
 
   return (
     <div className="container mx-auto px-4 py-8 max-w-7xl">
-      {/* Header */}
       <div className="mb-8">
-        <h1 className="text-2xl font-bold text-slate-800">
-          Panel de Administración
-        </h1>
+        <h1 className="text-2xl font-bold text-slate-800">Panel de Administración</h1>
         <p className="text-slate-600">Resumen general del sistema</p>
       </div>
 
-      {/* Tarjetas de métricas */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
         {stats.map((stat, index) => (
           <div
@@ -175,19 +120,13 @@ const Dashboard = () => {
           >
             <div className="flex items-center justify-between">
               <div>
-                <p className="text-sm font-medium text-slate-500">
-                  {stat.name}
-                </p>
-                <p className="text-2xl font-semibold text-slate-800 mt-1">
-                  {stat.value}
-                </p>
+                <p className="text-sm font-medium text-slate-500">{stat.name}</p>
+                <p className="text-2xl font-semibold text-slate-800 mt-1">{stat.value}</p>
               </div>
               <div
                 className={`p-3 rounded-lg ${
                   stat.trend === "up"
                     ? "bg-emerald-50 text-emerald-600"
-                    : stat.trend === "down"
-                    ? "bg-red-50 text-red-600"
                     : "bg-red-50 text-red-600"
                 }`}
               >
@@ -198,29 +137,19 @@ const Dashboard = () => {
         ))}
       </div>
 
-      {/* Gráficos y contenido principal */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-8">
-        {/* Gráfico de actividad (ejemplo) */}
         <div className="bg-white rounded-xl shadow-sm border border-slate-200 p-6 lg:col-span-2 flex flex-col">
           <div className="flex items-center justify-between mb-4">
-            <h2 className="text-lg font-semibold text-slate-800">
-              Distribución de actividades
-            </h2>
+            <h2 className="text-lg font-semibold text-slate-800">Distribución de actividades</h2>
             <FiBarChart2 className="text-slate-400 w-5 h-5" />
           </div>
-
           <div className="flex-1 min-h-[300px]">
-            {" "}
-            {/* Contenedor flexible con altura mínima */}
             <ActivityBarChart logs={logs} />
           </div>
         </div>
 
-        {/* Últimos registros */}
         <div className="bg-white rounded-xl shadow-sm border border-slate-200 p-6">
-          <h2 className="text-lg font-semibold text-slate-800 mb-6">
-            Registros recientes
-          </h2>
+          <h2 className="text-lg font-semibold text-slate-800 mb-6">Registros recientes</h2>
           <div className="space-y-4">
             {logs.map((log, index) => (
               <div key={index} className="flex items-start">
@@ -231,8 +160,7 @@ const Dashboard = () => {
                 </div>
                 <div className="ml-3">
                   <p className="text-sm font-medium text-slate-800">
-                    <span className="text-blue-600">{log.user}</span>{" "}
-                    {log.action}{" "}
+                    <span className="text-blue-600">{typeof log.user === "string" ? log.user : log.user.name}</span> {log.action} {" "}
                     <span className="text-slate-600">{log.target}</span>
                   </p>
                   <p className="text-xs text-slate-500 mt-1">{log.time}</p>
@@ -243,11 +171,8 @@ const Dashboard = () => {
         </div>
       </div>
 
-      {/* Módulos rápidos */}
       <div className="mb-8">
-        <h2 className="text-lg font-semibold text-slate-800 mb-4">
-          Accesos rápidos
-        </h2>
+        <h2 className="text-lg font-semibold text-slate-800 mb-4">Accesos rápidos</h2>
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
           <ModuleCard
             title="Gestión de Usuarios"
@@ -276,8 +201,15 @@ const Dashboard = () => {
   );
 };
 
-// Componente auxiliar para las tarjetas de módulo
-const ModuleCard = ({ title, description, icon, link, color }) => (
+interface ModuleCardProps {
+  title: string;
+  description: string;
+  icon: JSX.Element;
+  link: string;
+  color: string;
+}
+
+const ModuleCard = ({ title, description, icon, link, color }: ModuleCardProps) => (
   <Link
     to={link}
     className={`bg-gradient-to-r ${color} rounded-xl shadow-sm overflow-hidden hover:shadow-md transition-shadow`}
@@ -285,9 +217,7 @@ const ModuleCard = ({ title, description, icon, link, color }) => (
     <div className="p-5 text-white">
       <div className="flex items-center justify-between">
         <h3 className="text-lg font-semibold">{title}</h3>
-        <div className="p-2 rounded-lg bg-white/20 backdrop-blur-sm">
-          {icon}
-        </div>
+        <div className="p-2 rounded-lg bg-white/20 backdrop-blur-sm">{icon}</div>
       </div>
       <p className="mt-2 text-sm opacity-90">{description}</p>
     </div>

@@ -48,6 +48,7 @@ const UserDetail = () => {
 
   const handleDeleteConfirm = async () => {
     try {
+      if (!user) return;
       await userService.deleteUser(user._id);
       navigate("/users");
     } catch (err) {

@@ -20,11 +20,7 @@ interface ResetPasswordResponse {
   newPassword: string;
 }
 
-interface UpdatePasswordData {
-  email: string;
-  currentPassword: string;
-  newPassword: string;
-}
+
 
 const authService = {
   // Login de usuario

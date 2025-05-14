@@ -47,6 +47,7 @@ const PackageDetailPage = () => {
     try {
       // Aquí puedes pasar el packageId dinámicamente o como prop/estado
       const response = await uploadImages(formData, packageId);
+      console.log(response)
       fetchPackage(); // Refresca los datos del paquete después de subir las imágenes
     } catch (error) {
       console.error("Error al subir imágenes:", error);
@@ -166,7 +167,7 @@ const PackageDetailPage = () => {
 
             {packageData.images.length > 0 ? (
               <div className="flex flex-wrap gap-3">
-                {packageData.images.map((image) => (
+                {packageData.images.map((image: any) => (
                   <div
                     key={image._id}
                     className="relative group rounded-xl overflow-hidden border border-gray-200 hover:shadow-md transition-all"

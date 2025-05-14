@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { FiMapPin, FiMap, FiUsers, FiGrid } from "react-icons/fi";
+import { FiMapPin, FiMap, FiUsers, FiGrid, FiAlertCircle } from "react-icons/fi";
 import Modal from "../../../components/UI/Modal";
 import UsersMap from "./UserMaps";
 import userService from "../../../services/user-service";
@@ -165,8 +165,6 @@ const MapIndicator = () => {
         isOpen={isUsersMapOpen}
         onClose={() => setIsUsersMapOpen(false)}
         title="Mapa de Usuarios"
-        titleClassName="text-sky-700"
-        headerIcon={<FiUsers className="text-sky-600 mr-2" />}
       >
         <div className="h-[70vh] w-full rounded-xl overflow-hidden border border-slate-200 shadow-inner">
           {loading.users ? (
@@ -195,8 +193,6 @@ const MapIndicator = () => {
         isOpen={isNeighborhoodsMapOpen}
         onClose={() => setIsNeighborhoodsMapOpen(false)}
         title="Mapa de Barrios"
-        titleClassName="text-emerald-700"
-        headerIcon={<FiGrid className="text-emerald-600 mr-2" />}
       >
         <div className="h-[70vh] w-full rounded-xl overflow-hidden border border-slate-200 shadow-inner">
           {loading.neighborhoods ? (
