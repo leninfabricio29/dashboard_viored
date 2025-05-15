@@ -13,8 +13,8 @@ import Notifications from "./pages/modules/Notifications/Notifications";
 import StatisticsPage from "./pages/modules/Statistics/StatisticsPage";
 import Neighborhood from "./pages/modules/Neighborhood/Neighborhood";
 import HistoryLogs from "./pages/modules/History/HistoryLogs";
-import PackageTable from "./pages/modules/Multimedia/PackageTable";
-import PackageDetailView from "./pages/modules/Multimedia/PackageDetailView";
+/* import PackageTable from "./pages/modules/Multimedia/PackageTable";
+import PackageDetailView from "./pages/modules/Multimedia/PackageDetailView"; */
 import UserProfile from "./pages/modules/Settings/UserProfile";
 //import LogsComponent from "./components/logs/LogsComponent";
 

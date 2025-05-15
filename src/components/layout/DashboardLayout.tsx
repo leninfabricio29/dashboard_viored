@@ -5,7 +5,6 @@ import {
   FiMapPin,
   FiBell,
   FiClock,
-  FiImage,
   FiMenu,
   FiChevronLeft,
   FiHome,

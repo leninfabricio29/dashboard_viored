@@ -58,7 +58,7 @@ const UserDetail = () => {
             const neighborhoodData = await neighborhoodService.getNeighborhoodById(
               typeof userData.neighborhood === 'string' 
                 ? userData.neighborhood 
-                : userData.neighborhood._id
+                : userData.neighborhood
             );
             
             setNeighborhood(neighborhoodData);
