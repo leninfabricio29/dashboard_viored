@@ -36,7 +36,7 @@ const NotificationDetail = () => {
     if (!emitter) return;
 
     try {
-      await userService.validateUser(emitter._id);
+      await userService.validateUser(emitter._id, emitter.type_suscription);
 
       setSuccessMessage(
         `✅ Reseteo validado correctamente.\n\n📧 Correo: ${emitter.email}\n🔐 Contraseña: ${emitter.ci}`

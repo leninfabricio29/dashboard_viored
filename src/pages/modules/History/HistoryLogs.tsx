@@ -22,6 +22,7 @@ interface ActivityLog {
   target: string;
   timestamp: string;
   __v: number;
+  details: string;
 }
 
 const ITEMS_PER_PAGE = 10;
@@ -31,7 +32,6 @@ const HistoryLogs: React.FC = () => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [currentPage, setCurrentPage] = useState(1);
-  const [logsPerPage] = useState(10);
 
   useEffect(() => {
     const fetchLogs = async () => {
@@ -106,7 +106,6 @@ const HistoryLogs: React.FC = () => {
     );
   }
 
-  const paginate = (pageNumber: number) => setCurrentPage(pageNumber);
 
   return (
     <div className="container mx-auto px-4 py-8 max-w-7xl">

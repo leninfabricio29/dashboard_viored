@@ -17,6 +17,7 @@ export interface Location {
     lastLocation: Location;
     createdAt: string;
     updatedAt: string;
+    avatar: string,
     __v: number;
   }
   

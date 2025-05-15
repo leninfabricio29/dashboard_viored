@@ -3,6 +3,8 @@ import api from './api';
 export interface EmergencyAlertStat {
   _id: string; // fecha YYYY-MM-DD
   count: number;
+  date: string;
+
 }
 
 const statisticsService = {

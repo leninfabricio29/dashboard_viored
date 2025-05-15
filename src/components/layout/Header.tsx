@@ -10,6 +10,12 @@ import {
 import NotificationsDropdown from "./NotificationDropdown";
 import Logo from "../../assets/Icono de advertencia y letra P.png";
 
+interface User {
+  name: string;
+  role: string;
+  avatar?: string;
+}
+
 interface Notification {
   _id: string;
   title: string;
@@ -22,15 +28,12 @@ interface Notification {
 const Header = () => {
   const navigate = useNavigate();
   const [isUserDropdownOpen, setIsUserDropdownOpen] = useState(false);
-  const [user, setUser] = useState<{
-    name: string;
-    role: string;
-    avatar?: string;
-  }>({
-    name: "",
-    role: "",
-    avatar: "",
-  });
+  const [user, setUser] = useState<User>({
+  name: "",
+  role: "",
+  avatar: "",
+});
+
   const [loading, setLoading] = useState(true);
   const [notifications, setNotifications] = useState<Notification[]>([]);
   const userDropdownRef = useRef<HTMLDivElement>(null);
@@ -46,7 +49,8 @@ const Header = () => {
           setUser({
             name: userData.name,
             role: userData.role,
-            avatar: userData.avatar,
+            avatar: userData.avatar
+            //avatar: userData. ?? "",
           });
         }
       } catch (error) {

@@ -1,5 +1,9 @@
 import api from './api';
 
+interface Package {
+  
+}
+
 export const getAllPackages = async () => {
   try {
     const response = await api.get(`/api/media/packages/list`);
@@ -10,7 +14,7 @@ export const getAllPackages = async () => {
   }
 };
 
-export const createPackage = async (data) => {
+export const createPackage = async (data:any) => {
   try {
     const response = await api.post(`/api/media/packages`, data);
     return response.data;

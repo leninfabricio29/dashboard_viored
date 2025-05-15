@@ -6,7 +6,6 @@ import ButtonIndicator from "../../../components/UI/ButtonIndicator";
 import ButtonHome from "../../../components/UI/ButtonHome";
 import NeighborhoodMapEditor from "../../../components/layout/NeighborhoodMapEditor";
 import DeleteConfirmationModal from "../../../components/layout/DeleteConfirmationModal";
-import { useParams } from "react-router-dom";
 
 const Neighborhood = () => {
   const [neighborhoods, setNeighborhoods] = useState<Neighborhood[]>([]);
@@ -21,7 +20,6 @@ const Neighborhood = () => {
       coordinates: [] as [number, number][][],
     },
   });
-  const { id } = useParams<{ id: string }>();
 
   const [showDeleteModal, setShowDeleteModal] = useState(false);
 
@@ -354,7 +352,7 @@ const Neighborhood = () => {
           onClose={handleDeleteCancel}
           onConfirm={handleDisableConfirmation}
           userName={
-            neighborhoods.find((n) => n._id === selectedNeighborhoodId)?.name
+            neighborhoods.find((n) => n._id === selectedNeighborhoodId)?.name || ""
           }
           entityType="barrio"
         />

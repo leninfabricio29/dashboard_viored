@@ -11,5 +11,7 @@ export interface ActivityLog {
     target?: string;
     metadata?: Record<string, any>;
     timestamp: string;
+    time: string;
+    details: string;
   }
   

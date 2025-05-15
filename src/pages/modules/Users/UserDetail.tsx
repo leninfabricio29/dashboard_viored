@@ -36,6 +36,7 @@ const UserDetail = () => {
     if (!user?._id) return;
     
     try {
+      if (!user) return;
       await userService.deleteUser(user._id);
       navigate("/users");
     } catch (err) {

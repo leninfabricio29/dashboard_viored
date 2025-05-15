@@ -10,6 +10,8 @@ import { getAllPackages } from "../../../services/media-service";
 const UserProfile = () => {
   const [activeTab, setActiveTab] = useState("profile");
   const { id } = useParams();
+  const [ packages ,setPackages] = useState("")
+  console.log(packages)
   const [userEmail, setUserEmail] = useState("");
   const [passwordData, setPasswordData] = useState({
     currentPassword: "",
@@ -25,8 +27,7 @@ const UserProfile = () => {
     phone: "",
     avatar: "",
   });
-  const [packages, setPackages] = useState<Package[]>([]);
-  const [activePackageId, setActivePackageId] = useState<string | null>(null);
+  const [activePackageId,setActivePackageId] = useState<string | null>(null);
   const [avatarSelection, setAvatarSelection] = useState({
     showModal: false,
     avatars: [] as string[], // Array de URLs de avatares
@@ -41,9 +42,10 @@ const UserProfile = () => {
     null
   );
 
+  console.log(activePackageId)
   const navigate = useNavigate();
 
-  const toggleVisibility = (field) => {
+  const toggleVisibility = (field: 'current' | 'new' | 'confirm') => {
     setShowPasswords((prev) => ({ ...prev, [field]: !prev[field] }));
   };
 
@@ -97,7 +99,7 @@ const UserProfile = () => {
     try {
       const data = await getAllPackages();
       const avatarPackages = data.filter(
-        (pkg) => pkg.type === "avatar" && pkg.status
+        (pkg: any) => pkg.type === "avatar" && pkg.status
       );
 
       setPackages(avatarPackages);
@@ -109,7 +111,7 @@ const UserProfile = () => {
         // Solo URLs de imágenes del paquete activo
         setAvatarSelection((prev) => ({
           ...prev,
-          avatars: activePkg.images.map((img) => img.url),
+          avatars: activePkg.images.map((img: any) => img.url),
         }));
       }
     } catch (error) {
@@ -200,7 +202,7 @@ const UserProfile = () => {
     );
   };
 
-  const handlePasswordChange = (e) => {
+  const handlePasswordChange = (e:any) => {
     const { name, value } = e.target;
     setPasswordData((prev) => ({
       ...prev,
@@ -210,7 +212,7 @@ const UserProfile = () => {
     setSuccess("");
   };
 
-  const handlePasswordSubmit = async (e) => {
+  const handlePasswordSubmit = async (e:any) => {
     e.preventDefault();
     setIsLoading(true);
     setError("");
@@ -243,6 +245,8 @@ const UserProfile = () => {
         newPassword: passwordData.newPassword,
       });
 
+      console.log(response)
+
       setSuccess(
         "Contraseña actualizada correctamente. Serás redirigido en 3 segundos..."
       );
@@ -267,20 +271,21 @@ const UserProfile = () => {
       console.error("Error al actualizar contraseña:", error);
 
       // Manejo específico de errores
-      if (error.response?.status === 400) {
+      const err = error as any;
+      if (err.response?.status === 400) {
         if (
-          error.response.data.message === "La contraseña actual es incorrecta"
+          err.response.data.message === "La contraseña actual es incorrecta"
         ) {
           setError("La contraseña actual es incorrecta");
         } else if (
-          error.response.data.message === "El email no está registrado"
+          err.response.data.message === "El email no está registrado"
         ) {
           setError(
             "Error de autenticación. Por favor, vuelve a iniciar sesión"
           );
         } else {
           setError(
-            error.response.data.message || "Error al actualizar la contraseña"
+            err.response.data.message || "Error al actualizar la contraseña"
           );
         }
       } else {
@@ -291,7 +296,7 @@ const UserProfile = () => {
     }
   };
 
-  const handleSubmit = async (e) => {
+  const handleSubmit = async (e:any) => {
     e.preventDefault();
     setIsLoading(true);
     setError("");
@@ -308,7 +313,7 @@ const UserProfile = () => {
       const response = await userService.updateUser(id!, updates);
       setSuccess(response.message);
     } catch (error) {
-      setError(error.response?.data?.error || "Error al actualizar perfil");
+      setError("Error al actualizar perfil");
     } finally {
       setIsLoading(false);
     }

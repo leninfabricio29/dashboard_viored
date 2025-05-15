@@ -1,26 +1,47 @@
-import { useState } from "react";
+import { useState, ChangeEvent, FormEvent } from "react";
 
-export default function CreatePackageModal({ isOpen, onClose, onCreate }) {
-  const [formData, setFormData] = useState({
+type PackageFormData = {
+  name: string;
+  description: string;
+  type: "avatar" | "barrio" | "publicidad" | "";
+  status: boolean;
+};
+
+type Props = {
+  isOpen: boolean;
+  onClose: () => void;
+  onCreate: (data: PackageFormData) => void;
+};
+
+export default function CreatePackageModal({ isOpen, onClose, onCreate }: Props) {
+  const [formData, setFormData] = useState<PackageFormData>({
     name: "",
     description: "",
     type: "avatar",
     status: false,
   });
 
-  const handleChange = (e) => {
-    const { name, value, type, checked } = e.target;
+  const handleChange = (e: ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) => {
+    const { name, value, type } = e.target;
     setFormData((prev) => ({
       ...prev,
-      [name]: type === "checkbox" ? checked : value,
+      [name]:
+        type === "checkbox"
+          ? (e.target as HTMLInputElement).checked
+          : value,
     }));
   };
 
-  const handleSubmit = (e) => {
+  const handleSubmit = (e: FormEvent) => {
     e.preventDefault();
     onCreate(formData);
-    onClose(); // cerrar modal tras creación
-    setFormData({ name: "", description: "", type: "avatar", status: false }); // limpiar
+    onClose();
+    setFormData({
+      name: "",
+      description: "",
+      type: "avatar",
+      status: false,
+    });
   };
 
   if (!isOpen) return null;
@@ -41,8 +62,7 @@ export default function CreatePackageModal({ isOpen, onClose, onCreate }) {
         </h2>
 
         <form onSubmit={handleSubmit} className="space-y-5">
-
-        <div>
+          <div>
             <label className="block text-sm font-semibold text-gray-700 mb-1">
               Tipo
             </label>
@@ -59,7 +79,7 @@ export default function CreatePackageModal({ isOpen, onClose, onCreate }) {
               <option value="publicidad">Publicidad</option>
             </select>
           </div>
-          
+
           <div>
             <label className="block text-sm font-semibold text-gray-700 mb-1">
               Nombre
@@ -88,8 +108,6 @@ export default function CreatePackageModal({ isOpen, onClose, onCreate }) {
               placeholder="Describe brevemente el paquete"
             />
           </div>
-
-
 
           <div className="flex items-center">
             <input

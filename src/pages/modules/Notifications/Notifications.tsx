@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
-import { FiChevronLeft, FiBell, FiChevronRight } from "react-icons/fi";
+import { FiBell } from "react-icons/fi";
 import { getAllNotifications } from "../../../services/notifications-service";
 import authService from "../../../services/auth-service";
 import ButtonIndicator from "../../../components/UI/ButtonIndicator";

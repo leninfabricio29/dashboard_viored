@@ -2,7 +2,6 @@ import { useEffect, useState } from "react";
 import {
   getAllPackages,
   createPackage,
-  activatePackage,
 } from "../../../services/media-service";
 import CreatePackageModal from "../../../components/layout/CreatePackageModal";
 import { useNavigate } from "react-router-dom";
@@ -37,7 +36,7 @@ const PackageImageGallery = ({ images }: { images: PackageImage[] }) => {
   return (
     <div className="mt-4">
       <div className="flex flex-wrap gap-3">
-        {(showAllImages ? images : images.slice(0, 3)).map((image, index) => (
+        {(showAllImages ? images : images.slice(0, 3)).map((image) => (
           <div
             key={image._id}
             className="relative group rounded-xl overflow-hidden border border-gray-200 hover:shadow-md transition-all"
@@ -117,6 +116,7 @@ const MultimediaManager = () => {
   // Obtener los paquetes de la API
   useEffect(() => {
     fetchPackages();
+    console.log(error)
   }, []);
 
   const fetchPackages = async () => {
@@ -124,7 +124,7 @@ const MultimediaManager = () => {
     try {
       const data = await getAllPackages();
       setPackages(data);
-      const activePkg = data.find((pkg) => pkg.status);
+      const activePkg = data.find((pkg: Package) => pkg.status);
       if (activePkg) {
         setActivePackageId(activePkg._id);
       }
@@ -153,7 +153,7 @@ const MultimediaManager = () => {
   ];
 
   // Manejador para crear un nuevo paquete
-  const handleCreatePackage = async (formData) => {
+  const handleCreatePackage = async (formData: Record<string, any>) => {
     try {
       await createPackage(formData);
       fetchPackages();
@@ -175,10 +175,6 @@ const MultimediaManager = () => {
       // Si ya está activo, no hacer nada (o podrías desactivarlo si lo prefieres)
       if (activePackageId === pkgId) return;
 
-      // Llamar a la API para activar el paquete
-      const updatedPackage = await activatePackage(pkgId);
-
-      // Actualizar el estado local
       setPackages((prev) =>
         prev.map((pkg) => ({
           ...pkg,
@@ -188,7 +184,7 @@ const MultimediaManager = () => {
 
       setActivePackageId(pkgId);
     } catch (err) {
-      setError(err.message || "Error al cambiar el estado del paquete");
+      setError("Error al cambiar el estado del paquete");
       console.error(err);
     }
   };

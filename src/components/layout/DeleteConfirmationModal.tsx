@@ -5,7 +5,7 @@ interface DeleteConfirmationModalProps {
   onClose: () => void;
   onConfirm: () => void;
   userName: string;
-  entityType?: string; // 👈 nueva prop opcional
+  entityType?: string; // opcional con valor por defecto
 }
 
 const DeleteConfirmationModal = ({
@@ -13,8 +13,8 @@ const DeleteConfirmationModal = ({
   onClose,
   onConfirm,
   userName,
-  entityType = "usuario", // 👈 valor por defecto
-}) => {
+  entityType = "usuario",
+}: DeleteConfirmationModalProps) => {
   if (!isOpen) return null;
 
   return (

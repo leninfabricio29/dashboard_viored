@@ -83,6 +83,12 @@ const ResetPassword = () => {
             </div>
           </div>
         )}
+
+        {message && !newPassword && (
+          <div className="bg-blue-50 border-l-4 border-blue-500 text-blue-700 p-4 rounded mb-4">
+            Se ha enviado un correo a tu dirección. Por favor, revisa tu bandeja de entrada.
+          </div>
+        )}
         
         {!message && (
           <form onSubmit={handleSubmit} className="space-y-5">
