@@ -10,7 +10,7 @@ import { getAllPackages } from "../../../services/media-service";
 const UserProfile = () => {
   const [activeTab, setActiveTab] = useState("profile");
   const { id } = useParams();
-  const [ packages ,setPackages] = useState("")
+ /*  const [packages, setPackages] = useState<any[]>([]); */
   const [userEmail, setUserEmail] = useState("");
   const [passwordData, setPasswordData] = useState({
     currentPassword: "",
@@ -26,7 +26,7 @@ const UserProfile = () => {
     phone: "",
     avatar: "",
   });
-  const [activePackageId,setActivePackageId] = useState<string | null>(null);
+/*   const [activePackageId,setActivePackageId] = useState<string | null>(null); */
   const [avatarSelection, setAvatarSelection] = useState({
     showModal: false,
     avatars: [] as string[], // Array de URLs de avatares
@@ -96,24 +96,24 @@ const UserProfile = () => {
     setIsLoading(true);
     try {
       const data = await getAllPackages();
-      const avatarPackages = data.filter(
+      const activePackage = data.find(
         (pkg: any) => pkg.type === "avatar" && pkg.status
       );
 
-      setPackages(avatarPackages);
-
-      const activePkg = avatarPackages[0]; // o el primero activo si hay varios
-      if (activePkg) {
-        setActivePackageId(activePkg._id);
-
-        // Solo URLs de imágenes del paquete activo
+      if (activePackage) {
+        /* setPackages([activePackage]);
+        setActivePackageId(activePackage._id); */
+        
+        // Actualizar la selección de avatares con las imágenes del paquete activo
         setAvatarSelection((prev) => ({
           ...prev,
-          avatars: activePkg.images.map((img: any) => img.url),
+          avatars: activePackage.images.map((img: any) => img.url),
+          selectedAvatar: userData.avatar || ""
         }));
       }
     } catch (error) {
       console.error("Error al obtener los paquetes:", error);
+      setError("No se pudieron cargar los avatares disponibles");
     } finally {
       setIsLoading(false);
     }
