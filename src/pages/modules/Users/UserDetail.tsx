@@ -8,8 +8,6 @@ import {
   FiMapPin,
   FiCalendar,
   FiMap,
-  FiCheck,
-  FiSearch,
 } from "react-icons/fi";
 import userService from "../../../services/user-service";
 import { User } from "../../../types/user.types";
@@ -17,11 +15,8 @@ import ButtonIndicator from "../../../components/UI/ButtonIndicator";
 import Modal from "../../../components/UI/Modal";
 import Map from "../../../components/UI/Map";
 import ButtonHome from "../../../components/UI/ButtonHome";
-import neighborhoodService, {
-  Neighborhood,
-} from "../../../services/neighborhood-service";
+import neighborhoodService, { Neighborhood } from "../../../services/neighborhood-service";
 import DeleteConfirmationModal from "../../../components/layout/DeleteConfirmationModal";
-
 
 const UserDetail = () => {
   const { id } = useParams<{ id: string }>();
@@ -30,75 +25,56 @@ const UserDetail = () => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
   const [isMapModalOpen, setIsMapModalOpen] = useState(false);
-  const [isBarrioModalOpen, setIsBarrioModalOpen] = useState(false);
-  const [neighborhoods, setNeighborhoods] = useState<Neighborhood[]>([]);
-  const [selectedNeighborhood, setSelectedNeighborhood] = useState<string>("");
-  const [loadingNeighborhoods, setLoadingNeighborhoods] = useState(false);
-  const [assigningNeighborhood, setAssigningNeighborhood] = useState(false);
-  const [neighborhoodsFiltered, setNeighborhoodsFiltered] = useState<
-    Neighborhood[]
-  >([]);
-  const [searchTerm, setSearchTerm] = useState("");
   const [showDeleteModal, setShowDeleteModal] = useState(false);
-
+  const [neighborhood, setNeighborhood] = useState<Neighborhood | null>(null);
 
   const handleDeleteClick = () => {
     setShowDeleteModal(true);
   };
 
   const handleDeleteConfirm = async () => {
+    if (!user?._id) return;
+    
     try {
       await userService.deleteUser(user._id);
       navigate("/users");
     } catch (err) {
       console.error("Error al eliminar usuario:", err);
-      setError("Error al eliminar el usuario. Intente nuevamente.");
-    } finally {
-      setShowDeleteModal(false);
     }
-  };
-
-  const handleDeleteCancel = () => {
-    setShowDeleteModal(false);
   };
 
   useEffect(() => {
     const fetchData = async () => {
-      // Cargar datos del usuario si hay un ID
-      if (id) {
-        try {
-          setLoading(true);
-          const userData = await userService.getUserById(id);
-          setUser(userData);
-        } catch (err) {
-          console.error(`Error al cargar usuario con ID ${id}:`, err);
-          setError("No se pudo cargar la información del usuario");
-        } finally {
-          setLoading(false);
-        }
-      }
+      if (!id) return;
 
-      // Cargar barrios si el modal está abierto
-      if (isBarrioModalOpen) {
-        await fetchNeighborhoods();
+      try {
+        const userData = await userService.getUserById(id);
+        setUser(userData);
+
+        // Si el usuario tiene un ID de barrio, obtener los detalles del barrio
+        if (userData.neighborhood) {
+          try {
+            const neighborhoodData = await neighborhoodService.getNeighborhoodById(
+              typeof userData.neighborhood === 'string' 
+                ? userData.neighborhood 
+                : userData.neighborhood._id
+            );
+            
+            setNeighborhood(neighborhoodData);
+          } catch (err) {
+            console.error("Error al cargar el barrio:", err);
+          }
+        }
+      } catch (err) {
+        console.error(`Error al cargar usuario con ID ${id}:`, err);
+        setError("Error al cargar los datos del usuario");
+      } finally {
+        setLoading(false);
       }
     };
 
     fetchData();
-  }, [id, isBarrioModalOpen]); // Dependencias combinadas
-
-  useEffect(() => {
-    if (searchTerm.trim() === "") {
-      setNeighborhoodsFiltered(neighborhoods);
-    } else {
-      const filtered = neighborhoods.filter((neighborhood) =>
-        neighborhood.name.toLowerCase().includes(searchTerm.toLowerCase())
-      );
-      setNeighborhoodsFiltered(filtered);
-    }
-  }, [searchTerm, neighborhoods]);
-
-  
+  }, [id]);
 
   const formatDate = (dateString: string) => {
     const options: Intl.DateTimeFormatOptions = {
@@ -109,41 +85,6 @@ const UserDetail = () => {
       minute: "2-digit",
     };
     return new Date(dateString).toLocaleDateString("es-ES", options);
-  };
-
-  const fetchNeighborhoods = async () => {
-    try {
-      setLoadingNeighborhoods(true);
-      const data = await neighborhoodService.getAllNeighborhoods();
-      setNeighborhoods(data);
-      setLoadingNeighborhoods(false);
-    } catch (err) {
-      console.error("Error al cargar barrios:", err);
-      setLoadingNeighborhoods(false);
-    }
-  };
-
-  const assignNeighborhood = async () => {
-    if (!selectedNeighborhood || !user) return;
-
-    try {
-      setAssigningNeighborhood(true);
-      await neighborhoodService.addUserToNeighborhood(
-        selectedNeighborhood,
-        user._id
-      );
-
-      // Actualizar la información del usuario después de asignar
-      const updatedUser = await userService.getUserById(user._id);
-      setUser(updatedUser);
-
-      setIsBarrioModalOpen(false);
-      setSelectedNeighborhood("");
-      setAssigningNeighborhood(false);
-    } catch (err) {
-      console.error("Error al asignar barrio:", err);
-      setAssigningNeighborhood(false);
-    }
   };
 
   if (loading) {
@@ -322,20 +263,12 @@ const UserDetail = () => {
                     </p>
                     {user.neighborhood ? (
                       <p className="font-medium text-gray-800">
-                        {user.neighborhood}
+                        {neighborhood?.name || 'Cargando...'}
                       </p>
                     ) : (
-                      <div className="flex items-center justify-between">
-                        <p className="font-medium text-amber-600">
-                          No asignado
-                        </p>
-                        <button
-                          onClick={() => setIsBarrioModalOpen(true)}
-                          className="px-3 py-1 text-xs bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors flex items-center shadow-sm"
-                        >
-                          <FiMapPin className="mr-1.5" /> Asignar
-                        </button>
-                      </div>
+                      <p className="font-medium text-amber-600">
+                        No asignado
+                      </p>
                     )}
                   </div>
                 </div>
@@ -393,7 +326,7 @@ const UserDetail = () => {
          {/* Modal de confirmación */}
       <DeleteConfirmationModal
         isOpen={showDeleteModal}
-        onClose={handleDeleteCancel}
+        onClose={() => setShowDeleteModal(false)}
         onConfirm={handleDeleteConfirm}
         userName={user.name}
         entityType="usuario"
@@ -421,142 +354,6 @@ const UserDetail = () => {
             ]}
           />
         )}
-      </Modal>
-
-      {/* Modal para asignar barrio */}
-      <Modal
-        isOpen={isBarrioModalOpen}
-        onClose={() => {
-          setIsBarrioModalOpen(false);
-          setSearchTerm("");
-          setSelectedNeighborhood("");
-        }}
-        title={`Asignar barrio a ${user.name}`}
-      >
-        <div className="p-4">
-          <p className="mb-4">
-            Selecciona el barrio al que deseas asignar a este usuario:
-          </p>
-
-          {/* Buscador */}
-          <div className="mb-6">
-            <div className="relative w-96">
-              <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                <FiSearch className="h-5 w-5 text-gray-400" />
-              </div>
-              <input
-                type="text"
-                placeholder="Buscar barrio..."
-                className="block w-full pl-10 pr-3 py-2 border border-gray-400 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                value={searchTerm}
-                onChange={(e) => setSearchTerm(e.target.value)}
-              />
-            </div>
-          </div>
-
-          {/* Lista de tarjetas */}
-          <div className="max-h-[400px] overflow-y-auto">
-            {loadingNeighborhoods ? (
-              <div className="flex justify-center py-8">
-                <div className="animate-spin rounded-full h-10 w-10 border-t-2 border-b-2 border-blue-500"></div>
-              </div>
-            ) : neighborhoodsFiltered.length > 0 ? (
-              <div className="grid grid-cols-1 sm:grid-cols-4 gap-3">
-                {neighborhoodsFiltered.map((neighborhood) => (
-                  <div
-                    key={neighborhood._id}
-                    className={`relative flex flex-col items-center justify-center p-4 border rounded-lg cursor-pointer transition-all duration-200 min-h-[120px] ${
-                      selectedNeighborhood === neighborhood._id
-                        ? "border-blue-500 bg-blue-50 shadow-md"
-                        : "border-gray-200 hover:border-gray-300 hover:bg-gray-50"
-                    }`}
-                    onClick={() => setSelectedNeighborhood(neighborhood._id)}
-                  >
-                    {/* Checkmark para selección */}
-                    {selectedNeighborhood === neighborhood._id && (
-                      <div className="absolute top-2 right-2 bg-green-500 text-white rounded-full p-1">
-                        <FiCheck className="h-3 w-3" />
-                      </div>
-                    )}
-
-                    {/* Icono del mapa */}
-                    <FiMap className="text-gray-400 w-8 h-8 mb-2" />
-
-                    {/* Nombre del barrio */}
-                    <h3 className="font-bold text-sm text-gray-800 text-center">
-                      {neighborhood.name}
-                    </h3>
-                  </div>
-                ))}
-              </div>
-            ) : (
-              <div className="text-center py-8">
-                <svg
-                  xmlns="http://www.w3.org/2000/svg"
-                  className="h-12 w-12 mx-auto text-gray-400"
-                  fill="none"
-                  viewBox="0 0 24 24"
-                  stroke="currentColor"
-                >
-                  <path
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    strokeWidth={1}
-                    d="M9.172 16.172a4 4 0 015.656 0M9 10h.01M15 10h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"
-                  />
-                </svg>
-                <p className="mt-2 text-gray-500">No se encontraron barrios</p>
-                {searchTerm && (
-                  <button
-                    onClick={() => setSearchTerm("")}
-                    className="mt-2 text-blue-500 hover:underline"
-                  >
-                    Limpiar búsqueda
-                  </button>
-                )}
-              </div>
-            )}
-          </div>
-
-          {/* Botones de acción */}
-          <div className="flex justify-end mt-6 space-x-3">
-            <button
-              onClick={() => {
-                setIsBarrioModalOpen(false);
-                setSearchTerm("");
-                setSelectedNeighborhood("");
-              }}
-              className="px-4 py-2 bg-gray-200 text-gray-800 rounded-lg hover:bg-gray-300 transition-colors"
-            >
-              Cancelar
-            </button>
-            <button
-              onClick={assignNeighborhood}
-              disabled={!selectedNeighborhood || assigningNeighborhood}
-              className={`px-4 py-2 rounded-lg flex items-center ${
-                !selectedNeighborhood || assigningNeighborhood
-                  ? "bg-blue-300 cursor-not-allowed"
-                  : "bg-blue-600 hover:bg-blue-700 text-white"
-              } transition-colors`}
-            >
-              {assigningNeighborhood ? (
-                <>
-                  <svg
-                    className="animate-spin -ml-1 mr-2 h-4 w-4 text-white"
-                    xmlns="http://www.w3.org/2000/svg"
-                    fill="none"
-                    viewBox="0 0 24 24"
-                  >
-                    <FiCheck></FiCheck>
-                  </svg>
-                  Asignando...
-                </>
-              ) : (
-                "Asignar barrio"
-              )}
-            </button>
-          </div>
-        </div>
       </Modal>
     </div>
   );

@@ -38,7 +38,7 @@ const neighborhoodService = {
   // Obtener barrio por ID
   getNeighborhoodById: async (id: string): Promise<Neighborhood> => {
     try {
-      const response = await api.get(`/api/neighborhoods/${id}`);
+      const response = await api.get(`/api/neighborhood/${id}`);
       return response.data.neighborhood;
     } catch (error) {
       console.error(`Error fetching neighborhood ${id}:`, error);

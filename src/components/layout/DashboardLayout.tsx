@@ -55,11 +55,11 @@ export const DashboardLayout = () => {
       icon: <FiBell className="h-5 w-5" />,
       path: "/notifications",
     },
-    {
+    /* {
       title: "Gest. Multimedia",
       icon: <FiImage className="h-5 w-5" />,
       path: "/multimedia",
-    },
+    }, */
     {
       title: "Historial",
       icon: <FiClock className="h-5 w-5" />,

@@ -83,8 +83,8 @@ function App() {
          */}
 
         {/* Rutas para el módulo de multimedia */}
-        <Route path="/multimedia" element={<PackageTable />} />
-        <Route path="/multimedia/package/:id" element={<PackageDetailView />} />
+        {/* <Route path="/multimedia" element={<PackageTable />} />
+        <Route path="/multimedia/package/:id" element={<PackageDetailView />} /> */}
 
         {/* Settings */}
         <Route path="/settings/:id" element={<UserProfile />} />

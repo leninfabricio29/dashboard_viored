@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { FiMapPin, FiMap, FiUsers, FiGrid } from "react-icons/fi";
+import { FiMapPin, FiMap, FiUsers, FiGrid, FiAlertCircle } from "react-icons/fi";
 import Modal from "../../../components/UI/Modal";
 import UsersMap from "./UserMaps";
 import userService from "../../../services/user-service";
@@ -107,14 +107,11 @@ const MapIndicator = () => {
           </div>
           <div className="p-6">
             <p className="text-slate-600 mb-6 leading-relaxed">
-              Visualización en tiempo real de la ubicación de todos los usuarios
-              registrados, con actualizaciones automáticas cada 5 minutos.
+              Visualización de la ubicación de todos los usuarios
+              registrados.
             </p>
             <div className="flex justify-between items-center">
-              <div className="flex items-center text-sm font-medium text-sky-600">
-                <FiMapPin className="mr-2" />
-                <span>Ubicaciones activas</span>
-              </div>
+              
               <button
                 onClick={() => setIsUsersMapOpen(true)}
                 className="bg-sky-600 hover:bg-sky-700 text-white px-5 py-2.5 rounded-xl transition-all flex items-center shadow-sm hover:shadow-md"
@@ -140,14 +137,10 @@ const MapIndicator = () => {
           </div>
           <div className="p-6">
             <p className="text-slate-600 mb-6 leading-relaxed">
-              Delimitación precisa de los barrios registrados, con capacidad de
-              filtrar por zonas y ver detalles demográficos.
+              Visualización de los barrios registrados.
             </p>
             <div className="flex justify-between items-center">
-              <div className="flex items-center text-sm font-medium text-emerald-600">
-                <FiGrid className="mr-2" />
-                <span>Barrios registrados</span>
-              </div>
+              
               <button
                 onClick={() => setIsNeighborhoodsMapOpen(true)}
                 className="bg-emerald-600 hover:bg-emerald-700 text-white px-5 py-2.5 rounded-xl transition-all flex items-center shadow-sm hover:shadow-md"

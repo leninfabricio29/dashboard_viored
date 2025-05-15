@@ -39,19 +39,16 @@ const NotificationRequest = () => {
         const notif = await getNotificationById(id as string);
         const user = await userService.getUserById(notif.notification.emitter);
         setEmitter(user);
+        await fetchNeighborhoods();
       } catch (error) {
         console.error("Error cargando detalle de notificación:", error);
       } finally {
         setLoading(false);
       }
-
-      if (isBarrioModalOpen) {
-        await fetchNeighborhoods();
-      }
     };
 
     fetchData();
-  }, [id, isBarrioModalOpen]);
+  }, [id]);
 
   useEffect(() => {
     if (searchTerm.trim() === "") {
@@ -63,6 +60,12 @@ const NotificationRequest = () => {
       setNeighborhoodsFiltered(filtered);
     }
   }, [searchTerm, neighborhoods]);
+
+  useEffect(() => {
+    if (isBarrioModalOpen) {
+      fetchNeighborhoods();
+    }
+  }, [isBarrioModalOpen]);
 
   const formatDate = (dateString: string) => {
     const options: Intl.DateTimeFormatOptions = {
@@ -88,7 +91,9 @@ const NotificationRequest = () => {
   };
 
   const getNeighborhoodName = () => {
-    if (!emitter?.neighborhood) {
+    if (!emitter) return null;
+
+    if (!emitter.neighborhood) {
       return (
         <div className="flex items-center">
           <p className="font-medium text-amber-600">No asignado</p>
@@ -103,27 +108,38 @@ const NotificationRequest = () => {
     }
 
     if (loadingNeighborhoods) {
-      return <p className="text-sm text-gray-500">Cargando barrios...</p>;
-    }
-
-    const neighborhoodId =
-      typeof emitter.neighborhood === "object"
-        ? emitter.neighborhood._id
-        : emitter.neighborhood;
-
-    const foundNeighborhood = neighborhoods.find(
-      (n) => n._id === neighborhoodId
-    );
-
-    if (foundNeighborhood) {
       return (
         <div className="flex items-center">
-          <p className="font-medium text-gray-800">{foundNeighborhood.name}</p>
+          <div className="animate-spin h-4 w-4 mr-2 border-2 border-blue-500 rounded-full border-t-transparent"></div>
+          <p className="text-sm text-gray-500">Cargando barrio...</p>
+        </div>
+      );
+    }
+
+    let neighborhoodId: string | null = null;
+    let neighborhoodName: string | undefined = undefined;
+
+    if (typeof emitter.neighborhood === 'object' && emitter.neighborhood !== null) {
+      neighborhoodId = emitter.neighborhood._id;
+      neighborhoodName = emitter.neighborhood.name;
+    } else if (typeof emitter.neighborhood === 'string') {
+      neighborhoodId = emitter.neighborhood;
+      const foundNeighborhood = neighborhoods.find(n => n._id === neighborhoodId);
+      neighborhoodName = foundNeighborhood?.name;
+    }
+
+    if (neighborhoodName) {
+      return (
+        <div className="flex items-center">
+          <div className="flex items-center bg-green-50 px-3 py-1.5 rounded-full">
+            
+            <p className="font-medium text-green-800">{neighborhoodName}</p>
+          </div>
           <button
             onClick={() => setIsBarrioModalOpen(true)}
-            className="ml-2 px-2 py-1 text-xs bg-blue-500 text-white rounded hover:bg-blue-600 transition-colors flex items-center"
+            className="ml-3 px-3 py-1.5 text-xs bg-blue-500 text-white rounded-full hover:bg-blue-600 transition-colors flex items-center"
           >
-            <FiMapPin className="mr-1" /> Cambiar
+            Cambiar
           </button>
         </div>
       );
@@ -131,18 +147,15 @@ const NotificationRequest = () => {
 
     return (
       <div className="flex items-center">
-        <p className="font-medium text-red-500">
-          Barrio no encontrado (ID:{" "}
-          {typeof emitter.neighborhood === "object"
-            ? emitter.neighborhood._id
-            : emitter.neighborhood}
-          )
-        </p>
+        <div className="flex items-center bg-red-50 px-3 py-1.5 rounded-full">
+          <FiMapPin className="text-red-600 mr-2 h-4 w-4" />
+          <p className="font-medium text-red-800">Barrio no encontrado</p>
+        </div>
         <button
           onClick={() => setIsBarrioModalOpen(true)}
-          className="ml-2 px-2 py-1 text-xs bg-blue-500 text-white rounded hover:bg-blue-600 transition-colors flex items-center"
+          className="ml-3 px-3 py-1.5 text-xs bg-blue-500 text-white rounded-full hover:bg-blue-600 transition-colors flex items-center"
         >
-          <FiMapPin className="mr-1" /> Reasignar
+          Reasignar
         </button>
       </div>
     );

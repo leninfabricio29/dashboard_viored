@@ -93,23 +93,16 @@ const Neighborhood = () => {
     if (
       !newNeighborhood.name ||
       !newNeighborhood.description ||
-      !hasValidCoords ||
-      !selectedImage
+      !hasValidCoords 
     ) {
       alert(
-        "Debe ingresar nombre, descripción, seleccionar una imagen y dibujar un área válida"
+        "Debe ingresar nombre, descripción y dibujar un área válida"
       );
       return;
     }
 
     try {
-      // Include the image in the neighborhood data
-      const neighborhoodWithImage = {
-        ...newNeighborhood,
-        image: selectedImage,
-      };
-
-      await neighborhoodService.createNeighborhood(neighborhoodWithImage);
+      await neighborhoodService.createNeighborhood(newNeighborhood);
       fetchNeighborhoods();
       setShowCreateModal(false);
       resetForm();
@@ -151,7 +144,6 @@ const Neighborhood = () => {
       },
     });
     setEditingId(null);
-    setSelectedImage(null);
   };
 
   useEffect(() => {
@@ -428,8 +420,6 @@ const Neighborhood = () => {
                     />
                   </div>
 
-
-
                   <div className="pt-2">
                     <h4 className="text-sm font-medium text-gray-700 mb-2">
                       Instrucciones:
@@ -483,8 +473,8 @@ const Neighborhood = () => {
                 disabled={
                   !newNeighborhood.name.trim() ||
                   !newNeighborhood.description.trim() ||
-                  !selectedImage ||
-                  newNeighborhood.area.coordinates[0]?.length < 3
+                  !Array.isArray(newNeighborhood.area.coordinates[0]) ||
+                  newNeighborhood.area.coordinates[0].length < 3
                 }
                 className="px-4 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 disabled:opacity-50 disabled:cursor-not-allowed"
               >
