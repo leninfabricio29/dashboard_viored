@@ -1,5 +1,11 @@
 import { useState, useEffect } from "react";
-import { FiMapPin, FiMap, FiUsers, FiGrid, FiAlertCircle } from "react-icons/fi";
+import {
+  FiMapPin,
+  FiMap,
+  FiUsers,
+  FiGrid,
+  FiAlertCircle,
+} from "react-icons/fi";
 import Modal from "../../../components/UI/Modal";
 import UsersMap from "./UserMaps";
 import userService from "../../../services/user-service";
@@ -94,7 +100,7 @@ const MapIndicator = () => {
       {/* Cards Grid - Versión Premium */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
         {/* Card Usuarios */}
-        <div className="bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden hover:shadow-md transition-all duration-300 group">
+        <div className="bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden hover:shadow-md transition-all duration-300 group flex flex-col h-full">
           <div className="bg-gradient-to-r from-sky-600 to-sky-700 p-6">
             <div className="flex items-center">
               <div className="p-3 rounded-xl bg-white/20 backdrop-blur-sm mr-4 group-hover:rotate-6 transition-transform">
@@ -105,13 +111,18 @@ const MapIndicator = () => {
               </h2>
             </div>
           </div>
-          <div className="p-6">
-            <p className="text-slate-600 mb-6 leading-relaxed">
-              Visualización de la ubicación de todos los usuarios
-              registrados.
-            </p>
+          <div className="p-6 flex flex-col flex-grow">
+            <div className="flex-grow">
+              <p className="text-slate-600 mb-6 leading-relaxed">
+                Visualiza en tiempo real la ubicación de todos los usuarios
+                activos en el sistema.
+              </p>
+              <p className="text-slate-600 mb-6 leading-relaxed">
+                Permite monitorear la distribución geográfica de los usuarios,
+                ver sus últimas ubicaciones registradas en la ciudad.
+              </p>
+            </div>
             <div className="flex justify-between items-center">
-              
               <button
                 onClick={() => setIsUsersMapOpen(true)}
                 className="bg-sky-600 hover:bg-sky-700 text-white px-5 py-2.5 rounded-xl transition-all flex items-center shadow-sm hover:shadow-md"
@@ -124,7 +135,7 @@ const MapIndicator = () => {
         </div>
 
         {/* Card Barrios */}
-        <div className="bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden hover:shadow-md transition-all duration-300 group">
+        <div className="bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden hover:shadow-md transition-all duration-300 group flex flex-col h-full">
           <div className="bg-gradient-to-r from-emerald-600 to-emerald-700 p-6">
             <div className="flex items-center">
               <div className="p-3 rounded-xl bg-white/20 backdrop-blur-sm mr-4 group-hover:-rotate-6 transition-transform">
@@ -135,12 +146,18 @@ const MapIndicator = () => {
               </h2>
             </div>
           </div>
-          <div className="p-6">
-            <p className="text-slate-600 mb-6 leading-relaxed">
-              Visualización de los barrios registrados.
-            </p>
+          <div className="p-6 flex flex-col flex-grow">
+            <div className="flex-grow">
+              <p className="text-slate-600 mb-6 leading-relaxed">
+                Explora la delimitación geográfica de todos los barrios
+                registrados en el sistema.
+              </p>
+              <p className="text-slate-600 mb-6 leading-relaxed">
+                Visualiza las información como el nombre y la ubicación sobre
+                cada barrio.
+              </p>
+            </div>
             <div className="flex justify-between items-center">
-              
               <button
                 onClick={() => setIsNeighborhoodsMapOpen(true)}
                 className="bg-emerald-600 hover:bg-emerald-700 text-white px-5 py-2.5 rounded-xl transition-all flex items-center shadow-sm hover:shadow-md"

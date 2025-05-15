@@ -18,6 +18,7 @@ import { ActivityLog } from "../types/activity-log";
 import ActivityBarChart from "../components/layout/ActivityBarChart";
 
 interface User {
+  _id: string;
   name: string;
   role: string;
   avatar?: string;
@@ -34,11 +35,17 @@ const Dashboard = () => {
   const [totalAlertas, setTotalAlertas] = useState<number>(0);
   const [alertasDia, setAlertasDia] = useState<number>(0);
   const [logs, setLogs] = useState<ActivityLog[]>([]);
+  const [adminId, setAdminId] = useState<string>("");
 
   const fetchUsers = async () => {
     try {
       const data = await userService.getUsers();
       setUsers(data);
+      // Buscar el usuario con rol de admin
+      const admin = data.find(user => user.role === "admin");
+      if (admin) {
+        setAdminId(admin._id);
+      }
     } catch (err) {
       console.error("Error al cargar usuarios:", err);
     }
@@ -192,7 +199,7 @@ const Dashboard = () => {
             title="Configuración"
             description="Cambia la información del admin"
             icon={<FiSettings className="w-5 h-5" />}
-            link="/settings"
+            link={`/settings/${adminId}`}
             color="from-purple-500 to-purple-600"
           />
         </div>

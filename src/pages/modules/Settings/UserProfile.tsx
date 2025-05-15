@@ -11,7 +11,6 @@ const UserProfile = () => {
   const [activeTab, setActiveTab] = useState("profile");
   const { id } = useParams();
   const [ packages ,setPackages] = useState("")
-  console.log(packages)
   const [userEmail, setUserEmail] = useState("");
   const [passwordData, setPasswordData] = useState({
     currentPassword: "",
@@ -42,7 +41,6 @@ const UserProfile = () => {
     null
   );
 
-  console.log(activePackageId)
   const navigate = useNavigate();
 
   const toggleVisibility = (field: 'current' | 'new' | 'confirm') => {
