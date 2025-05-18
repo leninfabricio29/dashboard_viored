@@ -1,6 +1,26 @@
 // src/services/auth-service.ts
 import api from './api';
 
+export interface User {
+  _id: string;
+  name: string;
+  email: string;
+  role: string;
+  phone: string;
+  ci: string;
+  avatar: string;
+  neighborhood: string;
+  isActive: boolean;
+  createdAt: string;
+  updatedAt: string;
+  lastLocation: {
+    type: string;
+    coordinates: number[];
+    lastUpdated: string;
+  };
+  // ... otros campos si los necesitas
+}
+
 interface LoginCredentials {
   email: string;
   password: string;
@@ -9,6 +29,7 @@ interface LoginCredentials {
 interface LoginResponse {
   message: string;
   token: string;
+  user: User
 }
 
 interface ResetPasswordData {
@@ -27,11 +48,18 @@ const authService = {
   login: async (credentials: LoginCredentials): Promise<LoginResponse> => {
     try {
       const response = await api.post<LoginResponse>('/api/auth/login', credentials);
-
+      console.log(response.data)
       // Guardar el token en localStorage para mantener la sesión
-      if (response.data.token) {
-        localStorage.setItem('token', response.data.token);
+      const { user, token } = response.data;
+
+      if (user.role === "admin") {
+        if (token) {
+          localStorage.setItem('token', token);
+        }
+      }else{
+        console.error('No puedes acceder a este panel de admin')
       }
+
 
       return response.data;
     } catch (error) {

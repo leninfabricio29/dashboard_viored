@@ -11,40 +11,39 @@ const Login = () => {
   const [isLoading, setIsLoading] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
 
-  const handleSubmit = async (e: FormEvent<HTMLFormElement>) => {
-    e.preventDefault();
+ const handleSubmit = async (e: FormEvent<HTMLFormElement>) => {
+  e.preventDefault();
 
-    // Validación simple
-    if (!email || !password) {
-      setError("Por favor, ingrese su email y contraseña");
-      return;
+  if (!email || !password) {
+    setError("Por favor, ingrese su email y contraseña");
+    return;
+  }
+
+  setIsLoading(true);
+  setError("");
+
+  try {
+    const response = await authService.login({ email, password });
+
+    if (response.user.role === "admin") {
+      navigate("/"); // solo redirige si es admin
+    } else {
+      setError("No tienes permisos para acceder a esta página");
     }
 
-    setIsLoading(true);
-    setError("");
+  } catch (err: any) {
+    console.error("Error de inicio de sesión:", err);
 
-    try {
-      // Usar el servicio de autenticación para iniciar sesión
-      await authService.login({
-        email,
-        password,
-      });
-
-      // Redireccionar al dashboard después de un login exitoso
-      navigate("/");
-    } catch (err: any) {
-      console.error("Error de inicio de sesión:", err);
-
-      // Mostrar mensaje de error adecuado
-      if (err.response && err.response.data && err.response.data.message) {
-        setError(err.response.data.message);
-      } else {
-        setError("Error al iniciar sesión. Por favor, intente de nuevo.");
-      }
-    } finally {
-      setIsLoading(false);
+    if (err.response?.data?.message) {
+      setError(err.response.data.message);
+    } else {
+      setError("Error al iniciar sesión. Por favor, intente de nuevo.");
     }
-  };
+  } finally {
+    setIsLoading(false);
+  }
+};
+
 
   return (
     <div className="min-h-screen flex items-center justify-center bg-slate-100 px-4">
