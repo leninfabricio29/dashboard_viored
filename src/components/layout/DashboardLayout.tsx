@@ -118,7 +118,7 @@ export const DashboardLayout = () => {
             <div className="flex items-center gap-2">
 
               <h1 className="text-lg font-semibold bg-gradient-to-r from-indigo-200 to-indigo-100 bg-clip-text text-transparent">
-                AdminPanel
+                Menú
               </h1>
             </div>
           ) : (
