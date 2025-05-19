@@ -1,15 +1,16 @@
 import { Outlet } from 'react-router-dom'
 import Header from './Header'
+import Footer from './Footer'
 
 const MainLayout = () => {
   return (
-    <div className="flex flex-col min-h-screen bg-gray-200">
+    <div>
       <Header />
-      <main className="flex-grow p-4 m-4 rounded shadown  sm:p-6 md:p-8">
-        <Outlet />
-      </main>
+      <Outlet />
+      <Footer />
     </div>
-  )
-}
+  );
+};
+
 
 export default MainLayout

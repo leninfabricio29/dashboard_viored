@@ -210,30 +210,7 @@ const UserDetail = () => {
                     </p>
                     <div className="flex items-baseline">
                       <p className="text-sm font-medium text-blue-600">
-                        {(() => {
-                          const joinDate = new Date(user.createdAt);
-                          const now = new Date();
-                          const diffTime = Math.abs(
-                            now.getTime() - joinDate.getTime()
-                          );
-                          const diffDays = Math.ceil(
-                            diffTime / (1000 * 60 * 60 * 24)
-                          );
-
-                          if (diffDays < 30) {
-                            return `Hace ${diffDays} días`;
-                          } else if (diffDays < 365) {
-                            const months = Math.floor(diffDays / 30);
-                            return `Hace ${months} ${
-                              months === 1 ? "mes" : "meses"
-                            }`;
-                          } else {
-                            const years = Math.floor(diffDays / 365);
-                            return `Hace ${years} ${
-                              years === 1 ? "año" : "años"
-                            }`;
-                          }
-                        })()}
+                      
                       </p>
                       <span className="text-xs text-gray-500 ml-2">
                         ({formatDate(user.createdAt)})

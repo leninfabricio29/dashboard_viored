@@ -95,7 +95,7 @@ const HistoryLogs: React.FC = () => {
     return (
       <div className="container mx-auto px-4 py-8">
         <h2 className="text-2xl font-bold mb-6 text-gray-800">
-          Historial de Actividades
+          Bitácora de Actividades
         </h2>
         <div className="bg-white shadow-md rounded-lg p-6 text-center">
           <p className="text-gray-500">

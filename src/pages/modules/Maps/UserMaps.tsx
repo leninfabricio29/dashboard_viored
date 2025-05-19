@@ -2,7 +2,6 @@
 import { useState, useCallback, useEffect } from 'react';
 import { GoogleMap, useJsApiLoader, Marker, InfoWindow } from '@react-google-maps/api';
 import { User } from '../../../types/user.types';
-
 interface UsersMapProps {
   users: User[];
   zoom?: number;
@@ -135,6 +134,7 @@ const UsersMap = ({ users, zoom = 15 }: UsersMapProps) => {
       )}
     </GoogleMap>
   );
+
 };
 
 export default UsersMap;

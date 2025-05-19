@@ -17,6 +17,7 @@ import { useNavigate, Outlet } from "react-router-dom";
 import Header from "./Header";
 import authService from "../../services/auth-service";
 import userService from "../../services/user-service";
+import Footer from "./Footer";
 
 export const DashboardLayout = () => {
   const [sidebarOpen, setSidebarOpen] = useState(true);
@@ -60,7 +61,7 @@ export const DashboardLayout = () => {
       path: "/multimedia",
     }, */
     {
-      title: "Historial",
+      title: "Bitácora",
       icon: <FiClock className="h-5 w-5" />,
       path: "/history",
     },
@@ -280,6 +281,8 @@ export const DashboardLayout = () => {
         <main className="flex-1 overflow-y-auto p-6 bg-gray-50">
           <Outlet /> {/* Aquí se inyectará tu Dashboard.tsx actual */}
         </main>
+                  <Footer></Footer>
+
       </div>
     </div>
   );
