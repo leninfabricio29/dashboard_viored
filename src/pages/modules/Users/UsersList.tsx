@@ -34,13 +34,15 @@ const UsersList = () => {
   }, []);
 
   const filteredUsers = useMemo(() => {
-    return users.filter(
-      (user) =>
+  return users.filter(
+    (user) =>
+      user.role !== "admin" && (
         user.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
         user.email.toLowerCase().includes(searchTerm.toLowerCase()) ||
         user.phone.includes(searchTerm)
-    );
-  }, [searchTerm, users]);
+      )
+  );
+}, [searchTerm, users]);
 
   // Paginación
   const indexOfLastUser = currentPage * usersPerPage;

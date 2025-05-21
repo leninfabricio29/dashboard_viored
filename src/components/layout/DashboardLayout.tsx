@@ -174,7 +174,7 @@ export const DashboardLayout = () => {
                     )}
                     {/* Efecto de "current page" (opcional) */}
                     {location.pathname === module.path && sidebarOpen && (
-                      <div className="ml-auto w-1 h-6 bg-white rounded-full "></div>
+                      <div className="ml-auto w-1 h-6 bg-blue rounded-full "></div>
                     )}
                   </div>
                   {/* Efecto de luz al pasar el mouse */}

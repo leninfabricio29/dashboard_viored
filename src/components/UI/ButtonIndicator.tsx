@@ -5,6 +5,18 @@ import { FiHome, FiChevronRight } from "react-icons/fi";
 const ButtonIndicator: React.FC = () => {
   const location = useLocation();
 
+  // Diccionario de traducción EN → ES
+  const translations: Record<string, string> = {
+    users: "Usuarios",
+    notifications: "Notificaciones",
+    statistics: "Estadísticas",
+    neighborhood: "Barrios",
+    detalle: "Detalle",
+    history: "Bitácora",
+    settings: "Configuración",
+    maps: "Mapas",
+  };
+
   const getPathSegments = () => {
     const path = location.pathname;
     const segments = path.split("/").filter((segment) => segment !== "");
@@ -12,16 +24,19 @@ const ButtonIndicator: React.FC = () => {
     if (segments.length === 0) return [{ name: "Inicio", path: "/" }];
 
     return segments.map((segment, index) => {
-      // Convertir IDs a formato más amigable
+      // Si el segmento es un ID (Mongo ObjectID)
       if (segment.match(/^[0-9a-fA-F]{24}$/)) {
         return {
-          name: "Detalle",
+          name: translations["detalle"],
           path: `/${segments.slice(0, index + 1).join("/")}`,
         };
       }
 
+      const lowerSegment = segment.toLowerCase();
+      const translatedName = translations[lowerSegment] || segment;
+
       return {
-        name: segment.charAt(0).toUpperCase() + segment.slice(1),
+        name: translatedName.charAt(0).toUpperCase() + translatedName.slice(1),
         path: `/${segments.slice(0, index + 1).join("/")}`,
       };
     });

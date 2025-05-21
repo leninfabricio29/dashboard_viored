@@ -19,7 +19,7 @@ const StatisticsPage: React.FC = () => {
         <div className="flex justify-between items-center mb-8 mt-4">
           <div>
             <h1 className="text-3xl font-bold text-slate-800 mb-1">
-              Estadisticas de la aplicación
+              Estadísticas de la aplicación
             </h1>
             <div className="flex items-center text-slate-500">
               <span>Revisa las acciones realizadas en la aplicación </span>

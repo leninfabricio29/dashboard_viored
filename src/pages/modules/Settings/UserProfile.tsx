@@ -387,7 +387,7 @@ const UserProfile = () => {
             }`}
             onClick={() => setActiveTab("profile")}
           >
-            Perfl
+            Mi cuenta
           </button>
           <button
             className={`py-4 px-6 font-medium ${
@@ -397,7 +397,7 @@ const UserProfile = () => {
             }`}
             onClick={() => setActiveTab("password")}
           >
-            Contraseña
+            Cambiar Contraseña
           </button>
         </div>
 
