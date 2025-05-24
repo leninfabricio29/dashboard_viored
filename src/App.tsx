@@ -18,6 +18,8 @@ import PackageDetailView from "./pages/modules/Multimedia/PackageDetailView"; */
 import UserProfile from "./pages/modules/Settings/UserProfile";
 //import LogsComponent from "./components/logs/LogsComponent";
 
+
+
 // Función para verificar si el usuario está autenticado
 const isAuthenticated = (): boolean => {
   // En una aplicación real, verificaría el token JWT, la sesión, etc.

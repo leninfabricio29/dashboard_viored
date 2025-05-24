@@ -16,6 +16,8 @@ interface FormattedEmergencyAlertStat extends EmergencyAlertStat {
   label: string;
 }
 
+const COLORS = ["#EF4444", "#F97316", "#F59E0B", "#10B981", "#3B82F6"];
+
 const TopEmergencyDaysChart: React.FC = () => {
   const [topDays, setTopDays] = useState<FormattedEmergencyAlertStat[]>([]);
 
@@ -27,7 +29,7 @@ const TopEmergencyDaysChart: React.FC = () => {
         const formatted = sorted.map((item) => ({
           ...item,
           label: new Date(item._id).toLocaleDateString("es-EC", {
-            weekday: "long",
+            weekday: "short",
             day: "numeric",
             month: "short",
           }),
@@ -41,47 +43,49 @@ const TopEmergencyDaysChart: React.FC = () => {
     fetchData();
   }, []);
 
-  const renderCustomizedLabel = ({ name, value }: PieLabelRenderProps) => {
-    return `${name}: ${value}`;
+  const renderCustomizedLabel = ({ name, percent }: PieLabelRenderProps) => {
+    const safePercent = percent ?? 0;
+    return `${name} ${(safePercent * 100).toFixed(0)}%`;
   };
 
   const formatTooltipValue = (value: number) => [`${value} alertas`, "Cantidad"];
 
   return (
-    <div>
-      <div className="flex justify-between items-start mb-6">
+    <div className="bg-white p-6 rounded-2xl shadow-md transition-all hover:shadow-xl">
+      <div className="flex justify-between items-start mb-4">
         <div>
-          <h3 className="text-xl font-semibold text-gray-800">
-            Top 5 Días con Mayor Actividad de Alertas
+          <h3 className="text-xl font-bold text-gray-800">
+            Top 5 Días con Mayor Actividad
           </h3>
-          <p className="text-sm text-gray-500 mt-1">
-            Días con mayor concentración de emergencias registradas
+          <p className="text-sm text-gray-500">
+            Días con mayor concentración de alertas de emergencia
           </p>
         </div>
+        <span className="inline-flex items-center px-3 py-1 rounded-full text-xs font-medium bg-orange-100 text-orange-800">
+          <FiAlertTriangle className="mr-1.5" />
+          Picos críticos
+        </span>
       </div>
-      <span className="inline-flex items-center px-3 py-1 rounded-full text-sm font-medium bg-orange-100 text-orange-800 mb-4">
-        <FiAlertTriangle className="mr-1.5" />
-        Picos críticos
-      </span>
 
-      <div className="w-full h-[300px]">
+      <div className="w-full h-[280px]">
         <ResponsiveContainer width="100%" height="100%">
           <PieChart>
             <Tooltip
-              contentStyle={{
-                background: "white",
-                borderRadius: "6px",
-                boxShadow: "0 4px 6px -1px rgba(0, 0, 0, 0.1)",
-                border: "1px solid #e5e7eb",
-                padding: "12px",
-              }}
               formatter={formatTooltipValue}
-              labelStyle={{
-                fontWeight: 600,
-                color: "#1f2937",
-                marginBottom: "4px",
+              contentStyle={{
+                backgroundColor: "white",
+                borderRadius: "5px",
+                border: "1px solid #e5e7eb",
+                boxShadow: "0 10px 15px rgba(0,0,0,0.1)",
               }}
-              itemStyle={{ color: "#3b82f6" }}
+              labelStyle={{
+                color: "blue",
+                fontSize: "10px",
+              }}
+              itemStyle={{
+                color: "#6B7280",
+                fontSize: "14px",
+              }}
             />
             <Pie
               data={topDays}
@@ -90,26 +94,22 @@ const TopEmergencyDaysChart: React.FC = () => {
               cx="50%"
               cy="50%"
               outerRadius={100}
-              fill="#3b82f6"
+              innerRadius={40}
               label={renderCustomizedLabel}
               labelLine={false}
+              isAnimationActive={true}
             >
               {topDays.map((_, index) => (
-                <Cell
-                  key={`cell-${index}`}
-                  fill={`hsl(${200 + index * 20}, 70%, 50%)`}
-                />
+                <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
               ))}
             </Pie>
           </PieChart>
         </ResponsiveContainer>
       </div>
 
-      <div className="mt-4 flex justify-between items-center text-sm">
-        <div className="flex items-center text-gray-500">
-          <FiCalendar className="mr-1.5" />
-          <span>Período: Últimos 30 días</span>
-        </div>
+      <div className="mt-4 text-sm text-gray-500 flex items-center">
+        <FiCalendar className="mr-2" />
+        Período analizado: últimos 30 días
       </div>
     </div>
   );
