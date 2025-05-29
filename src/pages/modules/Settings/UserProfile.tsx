@@ -59,7 +59,7 @@ const UserProfile = () => {
         const userData = await userService.getUserById(id);
         setUserEmail(userData.email);
       } catch (error) {
-        console.error("Error al obtener el email:", error);
+        console.error("Error al obtener el email del usuario:", error);
         setError("No se pudo obtener la información del usuario");
       } finally {
         setLoadingEmail(false);
