@@ -15,6 +15,8 @@ const UsersList = () => {
   const [error, setError] = useState("");
   const [searchTerm, setSearchTerm] = useState("");
   const [currentPage, setCurrentPage] = useState(1);
+  const [subscriptionType, setSubscriptionType] = useState("all");
+
   const usersPerPage = 6;
 
   useEffect(() => {
@@ -34,15 +36,20 @@ const UsersList = () => {
   }, []);
 
   const filteredUsers = useMemo(() => {
-  return users.filter(
-    (user) =>
-      user.role !== "admin" && (
-        user.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+  return users.filter((user) => {
+    const matchesSearch =
+      user.role !== "admin" &&
+      (user.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
         user.email.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        user.phone.includes(searchTerm)
-      )
-  );
-}, [searchTerm, users]);
+        user.phone.includes(searchTerm));
+
+    const matchesSubscription =
+      subscriptionType === "all" ||
+      user.type_suscription?.toLowerCase() === subscriptionType;
+
+    return matchesSearch && matchesSubscription;
+  });
+}, [searchTerm, subscriptionType, users]);
 
   // Paginación
   const indexOfLastUser = currentPage * usersPerPage;
@@ -104,6 +111,20 @@ const UsersList = () => {
             </button>
           )}
         </div>
+        <div className="mb-6">
+  <label className="block text-sm font-medium text-slate-700 mb-2">
+    Filtrar por tipo de suscripción
+  </label>
+  <select
+    value={subscriptionType}
+    onChange={(e) => setSubscriptionType(e.target.value)}
+    className="block w-full max-w-xs px-4 py-2 border border-slate-300 rounded-xl shadow-sm focus:outline-none focus:ring-2 focus:ring-slate-500 focus:border-transparent text-slate-700"
+  >
+    <option value="all">Todos</option>
+    <option value="free">Viored</option>
+    <option value="premium">Otro</option>
+  </select>
+</div>
       </div>
       {loading ? (
         <div className="flex justify-center items-center h-64">

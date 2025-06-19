@@ -17,6 +17,7 @@ export interface Location {
     lastLocation: Location;
     createdAt: string;
     updatedAt: string;
+    type_suscription: string;
     avatar: string,
     __v: number;
   }
