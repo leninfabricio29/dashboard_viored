@@ -137,10 +137,7 @@ const Notifications = () => {
     setCurrentPage(1);
   };
 
-  const applyFilters = () => {
-    setCurrentPage(1);
-    // Los filtros se aplican automáticamente al cambiar las fechas
-  };
+ 
 
   const hasActiveFilters = startDate || endDate;
 
