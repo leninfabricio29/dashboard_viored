@@ -14,7 +14,7 @@ const Neighborhood = () => {
   const [editingId, setEditingId] = useState<string | null>(null);
   const [newNeighborhood, setNewNeighborhood] = useState({
     name: "",
-    description: "",
+    port: "",
     area: {
       type: "Polygon",
       coordinates: [] as [number, number][][],
@@ -90,11 +90,11 @@ const Neighborhood = () => {
 
     if (
       !newNeighborhood.name ||
-      !newNeighborhood.description ||
+      !newNeighborhood.port ||
       !hasValidCoords 
     ) {
       alert(
-        "Debe ingresar nombre, descripción y dibujar un área válida"
+        "Debe ingresar nombre, puerto y dibujar un área válida"
       );
       return;
     }
@@ -135,7 +135,7 @@ const Neighborhood = () => {
   const resetForm = () => {
     setNewNeighborhood({
       name: "",
-      description: "",
+      port: "",
       area: {
         type: "Polygon",
         coordinates: [],
@@ -280,7 +280,7 @@ const Neighborhood = () => {
                       {n.name}
                     </td>
                     <td className="px-6 py-4 text-sm text-gray-500">
-                      {n.description}
+                      {n.port}
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap">
                       {n.isActive ? (
@@ -401,20 +401,19 @@ const Neighborhood = () => {
 
                   <div>
                     <label className="block text-sm font-medium text-gray-700 mb-1">
-                      Descripción *
+                      Puerto de activación Rele *
                     </label>
-                    <textarea
-                      rows={3}
+                    <input
                       required={true}
                       className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500"
-                      value={newNeighborhood.description}
+                      value={newNeighborhood.port}
                       onChange={(e) =>
                         setNewNeighborhood({
                           ...newNeighborhood,
-                          description: e.target.value,
+                          port: e.target.value,
                         })
                       }
-                      placeholder="Descripción del área del barrio"
+                      placeholder="Ingresar el puerto del barrio (ej: 8080)"
                     />
                   </div>
 
@@ -470,7 +469,7 @@ const Neighborhood = () => {
                 onClick={handleCreateNeighborhood}
                 disabled={
                   !newNeighborhood.name.trim() ||
-                  !newNeighborhood.description.trim() ||
+                  !newNeighborhood.port.trim() ||
                   !Array.isArray(newNeighborhood.area.coordinates[0]) ||
                   newNeighborhood.area.coordinates[0].length < 3
                 }

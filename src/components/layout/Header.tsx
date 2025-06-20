@@ -128,7 +128,7 @@ const Header = () => {
             />
 
             <span className="font-bold text-xl text-white hidden md:block tracking-tight">
-              Viryx<span className="text-blue-200">SOS</span>
+              V-<span className="text-blue-200">SOS</span>
             </span>
           </Link>
 

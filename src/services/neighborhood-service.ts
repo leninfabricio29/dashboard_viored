@@ -5,7 +5,7 @@ import api from './api';
 export interface Neighborhood {
   _id: string;
   name: string;
-  description?: string;
+  port?: string;
   area?: {
     type: string;
     coordinates: number[][][];

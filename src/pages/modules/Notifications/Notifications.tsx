@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
-import { FiBell } from "react-icons/fi";
+import { FiBell, FiChevronDown, FiChevronUp, FiCalendar } from "react-icons/fi";
 import { getAllNotifications } from "../../../services/notifications-service";
 import authService from "../../../services/auth-service";
 import ButtonIndicator from "../../../components/UI/ButtonIndicator";
@@ -28,6 +28,9 @@ const Notifications = () => {
   const [loading, setLoading] = useState(true);
   const [currentPage, setCurrentPage] = useState(1);
   const [notificationsPerPage] = useState(5);
+  const [startDate, setStartDate] = useState<string>('');
+  const [endDate, setEndDate] = useState<string>('');
+  const [showDateFilter, setShowDateFilter] = useState(false);
 
   useEffect(() => {
     const fetchNotifications = async () => {
@@ -46,10 +49,33 @@ const Notifications = () => {
     fetchNotifications();
   }, []);
 
+  const filteredNotifications = notifications.filter((n) => {
+    // Convertir la fecha de la notificación a formato YYYY-MM-DD en zona horaria local
+    const notificationDate = new Date(n.createdAt);
+    const notificationDateString = notificationDate.getFullYear() + '-' + 
+      String(notificationDate.getMonth() + 1).padStart(2, '0') + '-' + 
+      String(notificationDate.getDate()).padStart(2, '0');
+    
+    // Si no hay filtros de fecha, mostrar todas
+    if (!startDate && !endDate) return true;
+    
+    // Si solo hay fecha de inicio, filtrar por ese día específico
+    if (startDate && !endDate) {
+      return notificationDateString === startDate;
+    }
+    
+    // Si hay ambas fechas, filtrar por rango
+    if (startDate && endDate) {
+      return notificationDateString >= startDate && notificationDateString <= endDate;
+    }
+    
+    return true;
+  });
+
   const indexOfLast = currentPage * notificationsPerPage;
   const indexOfFirst = indexOfLast - notificationsPerPage;
-  const currentNotifications = notifications.slice(indexOfFirst, indexOfLast);
-  const totalPages = Math.ceil(notifications.length / notificationsPerPage);
+  const currentNotifications = filteredNotifications.slice(indexOfFirst, indexOfLast);
+  const totalPages = Math.ceil(filteredNotifications.length / notificationsPerPage);
 
   const markAsRead = (id: string) => {
     setNotifications((prev) =>
@@ -105,6 +131,19 @@ const Notifications = () => {
     }
   };
 
+  const clearFilters = () => {
+    setStartDate('');
+    setEndDate('');
+    setCurrentPage(1);
+  };
+
+  const applyFilters = () => {
+    setCurrentPage(1);
+    // Los filtros se aplican automáticamente al cambiar las fechas
+  };
+
+  const hasActiveFilters = startDate || endDate;
+
   return (
     <div className="container mx-auto px-4 py-8 max-w-7xl">
       <div className="flex justify-between items-center mb-6">
@@ -125,16 +164,97 @@ const Notifications = () => {
       </div>
 
       {/* Filtros */}
-      <div className="flex justify-between items-center mb-4">
-        <div className="flex space-x-3">
-          <span className="inline-flex items-center px-3 py-1 rounded-full bg-blue-100 text-blue-800 font-medium text-sm">
-            <FiBell className="mr-1.5" />
-            {notifications.filter((n) => !n.isRead).length} Sin leer
-          </span>
-          <span className="inline-flex items-center px-3 py-1 rounded-full bg-gray-200 text-gray-800 font-medium text-sm">
-            Total: {notifications.length}
-          </span>
+      <div className="mb-6">
+        <div className="flex justify-between items-center mb-4">
+          <div className="flex space-x-3 items-center">
+            <span className="inline-flex items-center px-3 py-1 rounded-full bg-blue-100 text-blue-800 font-medium text-sm">
+              <FiBell className="mr-1.5" />
+              {notifications.filter((n) => !n.isRead).length} Sin leer
+            </span>
+            <span className="inline-flex items-center px-3 py-1 rounded-full bg-gray-200 text-gray-800 font-medium text-sm">
+              Total: {filteredNotifications.length}
+            </span>
+            {hasActiveFilters && (
+              <span className="inline-flex items-center px-3 py-1 rounded-full bg-green-100 text-green-800 font-medium text-sm">
+                <FiCalendar className="mr-1.5" />
+                Filtros activos
+              </span>
+            )}
+          </div>
+          <button
+            onClick={() => setShowDateFilter(!showDateFilter)}
+            className="inline-flex items-center px-4 py-2 bg-slate-100 hover:bg-slate-200 text-slate-700 text-sm font-medium rounded-lg shadow-sm transition"
+          >
+            <FiCalendar className="mr-2" />
+            Filtrar por fecha
+            {showDateFilter ? (
+              <FiChevronUp className="ml-2 w-4 h-4" />
+            ) : (
+              <FiChevronDown className="ml-2 w-4 h-4" />
+            )}
+          </button>
         </div>
+
+        {/* Panel de filtros colapsable */}
+        {showDateFilter && (
+          <div className="bg-white rounded-lg border border-gray-200 p-4 shadow-sm mb-4">
+            <h3 className="text-sm font-medium text-gray-700 mb-3">Filtrar por fechas</h3>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div>
+                <label className="block text-xs font-medium text-gray-600 mb-1">
+                  Fecha específica o desde:
+                </label>
+                <input
+                  type="date"
+                  value={startDate}
+                  onChange={(e) => {
+                    setStartDate(e.target.value);
+                    setCurrentPage(1);
+                  }}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                />
+              </div>
+              <div>
+                <label className="block text-xs font-medium text-gray-600 mb-1">
+                  Hasta (opcional):
+                </label>
+                <input
+                  type="date"
+                  value={endDate}
+                  onChange={(e) => {
+                    setEndDate(e.target.value);
+                    setCurrentPage(1);
+                  }}
+                  min={startDate}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                />
+              </div>
+            </div>
+            <div className="flex justify-between items-center mt-4">
+              <p className="text-xs text-gray-500">
+                {startDate && !endDate && "Mostrando notificaciones del día seleccionado"}
+                {startDate && endDate && "Mostrando notificaciones del rango seleccionado"}
+                {!startDate && !endDate && "Selecciona una fecha para filtrar"}
+              </p>
+              <div className="flex space-x-2">
+                {hasActiveFilters && (
+                  <button
+                    onClick={clearFilters}
+                    className="px-3 py-1 text-xs rounded-md bg-gray-100 hover:bg-gray-200 text-gray-700 transition"
+                  >
+                    Limpiar
+                  </button>
+                )}
+                <button
+                  onClick={() => setShowDateFilter(false)}
+                  className="px-3 py-1 text-xs rounded-md bg-blue-600 hover:bg-blue-700 text-white transition"
+                >
+                  Cerrar
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
       </div>
 
       {/* Lista */}
@@ -142,15 +262,26 @@ const Notifications = () => {
         <div className="text-center py-20 text-gray-400 animate-pulse">
           Cargando...
         </div>
-      ) : notifications.length === 0 ? (
+      ) : filteredNotifications.length === 0 ? (
         <div className="bg-white rounded-xl shadow-sm p-8 text-center">
           <FiBell className="mx-auto h-12 w-12 text-gray-400 mb-4" />
           <h3 className="text-lg font-medium text-gray-900">
-            No hay notificaciones
+            {hasActiveFilters ? "No hay notificaciones en las fechas seleccionadas" : "No hay notificaciones"}
           </h3>
           <p className="mt-1 text-sm text-gray-500">
-            Cuando tengas nuevas notificaciones, aparecerán aquí.
+            {hasActiveFilters 
+              ? "Intenta cambiar el rango de fechas o limpiar los filtros."
+              : "Cuando tengas nuevas notificaciones, aparecerán aquí."
+            }
           </p>
+          {hasActiveFilters && (
+            <button
+              onClick={clearFilters}
+              className="mt-3 inline-flex items-center px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white text-sm font-medium rounded-lg transition"
+            >
+              Limpiar filtros
+            </button>
+          )}
         </div>
       ) : (
         <div className="space-y-4">
@@ -161,9 +292,8 @@ const Notifications = () => {
             return (
               <div
                 key={n._id}
-                className={`p-5 bg-white rounded-xl shadow-sm border transition-all hover:shadow-md ${borderColor} ${
-                  !n.isRead ? "border-l-4" : ""
-                }`}
+                className={`p-5 bg-white rounded-xl shadow-sm border transition-all hover:shadow-md ${borderColor} ${!n.isRead ? "border-l-4" : ""
+                  }`}
                 onClick={() => markAsRead(n._id)}
               >
                 <div className="flex justify-between items-start">

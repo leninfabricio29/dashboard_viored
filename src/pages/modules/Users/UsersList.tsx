@@ -47,6 +47,8 @@ const UsersList = () => {
       subscriptionType === "all" ||
       user.type_suscription?.toLowerCase() === subscriptionType;
 
+    console.log(`Filtrando usuario: ${user.name}, Coincide con búsqueda: ${matchesSearch}, Tipo de suscripción: ${user.type_suscription}, Coincide con filtro: ${matchesSubscription}`);
+
     return matchesSearch && matchesSubscription;
   });
 }, [searchTerm, subscriptionType, users]);
@@ -78,53 +80,53 @@ const UsersList = () => {
         </div>
       </div>
 
-      <div className="mb-8">
+      <div className="mb-8 flex flex-col md:flex-row md:items-end md:space-x-6 space-y-4 md:space-y-0">
         <div className="relative w-full max-w-md">
           <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-            <FiSearch className="h-5 w-5 text-slate-400 group-focus-within:text-blue-500 transition-colors" />
+        <FiSearch className="h-5 w-5 text-slate-400 group-focus-within:text-blue-500 transition-colors" />
           </div>
           <input
-            type="text"
-            placeholder="Buscar usuario..."
-            className="block w-full pl-10 pr-4 py-3 border border-slate-300 rounded-xl shadow-sm focus:outline-none focus:ring-2 focus:ring-slate-500 focus:border-transparent hover:border-slate-400 transition-all duration-200 text-slate-700 placeholder-slate-400 group"
-            value={searchTerm}
-            onChange={(e) => setSearchTerm(e.target.value)}
+        type="text"
+        placeholder="Buscar usuario..."
+        className="block w-full pl-10 pr-4 py-3 border border-slate-300 rounded-xl shadow-sm focus:outline-none focus:ring-2 focus:ring-slate-500 focus:border-transparent hover:border-slate-400 transition-all duration-200 text-slate-700 placeholder-slate-400 group"
+        value={searchTerm}
+        onChange={(e) => setSearchTerm(e.target.value)}
           />
           {searchTerm && (
-            <button
-              onClick={() => setSearchTerm("")}
-              className="absolute inset-y-0 right-0 pr-3 flex items-center"
-            >
-              <svg
-                className="h-5 w-5 text-slate-400 hover:text-slate-600 transition-colors"
-                fill="none"
-                viewBox="0 0 24 24"
-                stroke="currentColor"
-              >
-                <path
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  strokeWidth={2}
-                  d="M6 18L18 6M6 6l12 12"
-                />
-              </svg>
-            </button>
+        <button
+          onClick={() => setSearchTerm("")}
+          className="absolute inset-y-0 right-0 pr-3 flex items-center"
+        >
+          <svg
+            className="h-5 w-5 text-slate-400 hover:text-slate-600 transition-colors"
+            fill="none"
+            viewBox="0 0 24 24"
+            stroke="currentColor"
+          >
+            <path
+          strokeLinecap="round"
+          strokeLinejoin="round"
+          strokeWidth={2}
+          d="M6 18L18 6M6 6l12 12"
+            />
+          </svg>
+        </button>
           )}
         </div>
-        <div className="mb-6">
-  <label className="block text-sm font-medium text-slate-700 mb-2">
-    Filtrar por tipo de suscripción
-  </label>
-  <select
-    value={subscriptionType}
-    onChange={(e) => setSubscriptionType(e.target.value)}
-    className="block w-full max-w-xs px-4 py-2 border border-slate-300 rounded-xl shadow-sm focus:outline-none focus:ring-2 focus:ring-slate-500 focus:border-transparent text-slate-700"
-  >
-    <option value="all">Todos</option>
-    <option value="free">Viored</option>
-    <option value="premium">Otro</option>
-  </select>
-</div>
+        <div>
+          <label className="block text-sm font-medium text-slate-700 mb-2">
+        Filtrar por tipo de suscripción
+          </label>
+          <select
+        value={subscriptionType}
+        onChange={(e) => setSubscriptionType(e.target.value)}
+        className="block w-full max-w-xs px-4 py-2 border border-slate-300 rounded-xl shadow-sm focus:outline-none focus:ring-2 focus:ring-slate-500 focus:border-transparent text-slate-700"
+          >
+        <option value="all">Todos</option>
+        <option value="viored">Viored</option>
+        <option value="other">Otro</option>
+          </select>
+        </div>
       </div>
       {loading ? (
         <div className="flex justify-center items-center h-64">
