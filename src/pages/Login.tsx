@@ -66,12 +66,17 @@ const Login = () => {
             </svg>
           </div>
           <h1 className="text-3xl font-extrabold text-slate-800">
-            Panel de Administración
+            V-SOS Gestión
           </h1>
           <p className="text-slate-500 mt-2 text-sm">
             Ingrese sus credenciales para continuar
           </p>
         </div>
+
+        <div className="alert alert-info bg-blue-50 border-l-4 border-blue-500 text-gray-600  p-4 rounded flex items-center text-sm mb-4">
+          <p className="text-sm ">Si tienes una suscripción activa como entidad <a href="/monitoring"  className="text-green-600">Ingresa aqui </a></p>
+         </div> 
+
 
         {error && (
           <div className="bg-red-50 border-l-4 border-red-500 text-red-700 p-4 rounded flex items-center text-sm">
