@@ -1,6 +1,6 @@
 import { useState, FormEvent } from "react";
 import { useNavigate } from "react-router-dom";
-import { FiUser, FiKey, FiEyeOff, FiEye } from "react-icons/fi";
+import {  FiEyeOff, FiEye } from "react-icons/fi";
 import authService from "../../src/services/auth-service";
 
 const LoginEntity = () => {

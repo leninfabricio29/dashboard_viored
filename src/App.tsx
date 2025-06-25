@@ -16,7 +16,7 @@ import HistoryLogs from "./pages/modules/History/HistoryLogs";
 /* import PackageTable from "./pages/modules/Multimedia/PackageTable";
 import PackageDetailView from "./pages/modules/Multimedia/PackageDetailView"; */
 import UserProfile from "./pages/modules/Settings/UserProfile";
-import LoginEntity from "./pages/LoginEntity";
+//import LoginEntity from "./pages/LoginEntity";
 //import LogsComponent from "./components/logs/LogsComponent";
 
 
