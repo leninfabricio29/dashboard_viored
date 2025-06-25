@@ -18,15 +18,25 @@ jobs:
       - name: Generar build
         run: npm run build
 
-      - name: Clonar repo estático
+      - name: Clonar repo estático y hacer push
         run: |
           git config --global user.name "GitHub CI"
           git config --global user.email "ci@github.com"
 
+          # Clonar con autenticación mediante token
           git clone https://x-access-token:${{ secrets.STATIC_REPO_TOKEN }}@github.com/leninfabricio29/virys-admin.git build-output
+
+          # Limpiar contenido anterior y copiar nuevo build
           rm -rf build-output/*
           cp -r dist/* build-output/
+
           cd build-output
           git add .
-          git commit -m "⚡ Update build from CI at $(date +'%Y-%m-%d %H:%M:%S')" || echo "Nada que commitear"
+
+          # Evita error si no hay cambios
+          git diff-index --quiet HEAD || git commit -m "⚡ Update build from CI at $(date +'%Y-%m-%d %H:%M:%S')"
           git push origin main
+        env:
+          # Previene mostrar el token en logs
+          GIT_AUTHOR_NAME: GitHub CI
+          GIT_AUTHOR_EMAIL: ci@github.com
