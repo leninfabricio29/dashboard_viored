@@ -24,11 +24,17 @@ const Login = () => {
 
   try {
     const response = await authService.login({ email, password });
+    localStorage.setItem('role', response.user.role)
 
-    if (response.user.role === "admin") {
-      navigate("/"); // solo redirige si es admin
-    } else {
-      setError("No tienes permisos para acceder a esta página");
+    if (response.user.role === "admin" ) {
+      console.log("Navegar hasta el dashboard")
+      navigate("/")
+    }else if (response.user.role === "entity"){
+      navigate("/monitoring"); // solo redirige si es admin
+
+    }else{
+            setError("No tienes permisos para acceder a esta página");
+
     }
 
   } catch (err: any) {

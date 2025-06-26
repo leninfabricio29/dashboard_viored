@@ -16,6 +16,7 @@ import HistoryLogs from "./pages/modules/History/HistoryLogs";
 /* import PackageTable from "./pages/modules/Multimedia/PackageTable";
 import PackageDetailView from "./pages/modules/Multimedia/PackageDetailView"; */
 import UserProfile from "./pages/modules/Settings/UserProfile";
+import { DashboardEntity } from "./components/layout/DashboardEntity";
 //import LoginEntity from "./pages/LoginEntity";
 //import LogsComponent from "./components/logs/LogsComponent";
 
@@ -51,6 +52,7 @@ function App() {
           </ProtectedRoute>
         }
       >
+
         <Route index element={<Dashboard />} />
 
         {/* Rutas para módulo de usuarios */}
@@ -98,6 +100,13 @@ function App() {
       <Route path="*" element={<Navigate to="/" replace />} /> 
 
        
+        <Route
+          path="/monitoring"
+          element={
+              <DashboardEntity/>
+          }>
+
+        </Route>
       
 
     </Routes>

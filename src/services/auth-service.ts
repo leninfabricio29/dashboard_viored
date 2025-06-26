@@ -52,7 +52,7 @@ const authService = {
       // Guardar el token en localStorage para mantener la sesión
       const { user, token } = response.data;
 
-      if (user.role === "admin") {
+      if (user.role === "admin" || user.role === "entity") {
         if (token) {
           localStorage.setItem('token', token);
         }
