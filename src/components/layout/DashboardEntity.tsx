@@ -18,9 +18,9 @@ import Header from "./Header";
 import authService from "../../services/auth-service";
 import userService from "../../services/user-service";
 import Footer from "./Footer";
+import ImprovedNavbar from "./NavbarEntity";
 
 export const DashboardEntity = () => {
-  const [sidebarOpen, setSidebarOpen] = useState(true);
   const navigate = useNavigate();
   const [user, setUser] = useState<{ name: string; role: string }>({
     name: "",
@@ -32,19 +32,13 @@ export const DashboardEntity = () => {
     {
       title: "Inicio",
       icon: <FiHome className="h-6 w-6 text-white" />,
-      path: "/",
+      path: "/monitoring",
     },
-    {
-      title: "Historial",
-      icon: <FiPieChart className="h-5 w-5" />,
-      path: "/statistics",
-    },
-    {
+     {
       title: "Usuarios",
       icon: <FiUsers className="h-5 w-5" />,
       path: "/users",
-    },
-    
+    },  
     {
       title: "Notificaciones",
       icon: <FiBell className="h-5 w-5" />,
@@ -93,180 +87,60 @@ export const DashboardEntity = () => {
   return (
     <div className="flex h-screen bg-gray-50">
       {/* Sidebar */}
-      <aside
-        className={`${sidebarOpen ? "w-80" : "w-32"} 
-          relative top-0 left-0 z-10 h-screen shadow-lg bg-gradient-to-r from-slate-900 to-slate-800 
-          transition-all duration-300 overflow-hidden`}
-        style={{
-          // Opcional: comentar si no usas imagen
-          backgroundBlendMode: "overlay",
-          backgroundSize: "cover",
-          position: "relative",
-          zIndex: 10
-        }}
-      >
-        <div className="p-5  flex items-center justify-between border-b border-indigo-700/30 bg-indigo-800/10">
-          {sidebarOpen ? (
-            <div className="flex items-center gap-2">
+     <aside
+  className="w-20  h-80% mx-2 my-1 rounded-lg  bg-blue-900 shadow-lg flex flex-col justify-between items-center py-6"
+>
+  {/* TOP SECTION */}
+  <div className="flex flex-col items-center space-y-6 w-full">
+    {/* Logo o título reducido */}
+    
 
-              <h1 className="text-lg font-semibold bg-gradient-to-r from-indigo-200 to-indigo-100 bg-clip-text text-transparent">
-                Menú
-              </h1>
-            </div>
-          ) : (
-            <div className="p-2 rounded-lg bg-indigo-600/20">
-              <FiHome className="h-5 w-5 text-indigo-200" />
-            </div>
+    {/* Navegación de módulos */}
+    <nav className="flex flex-col space-y-4 w-full items-center">
+      {modules.map((module, index) => (
+        <a
+          key={index}
+          href={module.path}
+          className={`relative group p-2 rounded-lg hover:bg-indigo-500/20 transition-colors`}
+        >
+          <div className="text-indigo-300 group-hover:text-white">{module.icon}</div>
+          {/* Indicador de página actual */}
+          {location.pathname === module.path && (
+            <div className="absolute left-1/2 -translate-x-1/2 bottom-0 w-8 h-1 rounded-2xl bg-white"></div>
           )}
-          <button
-            onClick={() => setSidebarOpen(!sidebarOpen)}
-            className="p-2 rounded-lg hover:bg-white/10 transition-colors group"
-          >
-            {sidebarOpen ? (
-              <FiChevronLeft
-                size={20}
-                className="text-indigo-300 group-hover:text-white transform group-hover:scale-110 transition-all"
-              />
-            ) : (
-              <FiMenu
-                size={20}
-                className="text-indigo-300 group-hover:text-white transform group-hover:scale-110 transition-all"
-              />
-            )}
-          </button>
-        </div>
-        <nav className="p-4">
-          <ul className="space-y-2">
-            {modules.map((module, index) => (
-              <li key={index}>
-                <a
-                  href={module.path}
-                  className={`flex items-center p-3 rounded-lg transition-all 
-                    ${sidebarOpen ? "justify-start" : "justify-center"}
-                    text-indigo-100 hover:bg-white/10 hover:text-white
-                    group relative overflow-hidden `}
-                >
-                  <div
-                    className={`flex items-center ${
-                      sidebarOpen ? "gap-3" : "justify-center"
-                    }`}
-                  >
-                    <div
-                      className={`p-1.5 rounded-md bg-white/10 group-hover:bg-white/20 transition-colors ${
-                        sidebarOpen ? "" : "flex justify-center"
-                      }`}
-                    >
-                      {module.icon}
-                    </div>
-                    {sidebarOpen && (
-                      <span className="text-sm font-medium text-indigo-50 group-hover:text-white transition-colors">
-                        {module.title}
-                      </span>
-                    )}
-                    {/* Efecto de "current page" (opcional) */}
-                    {location.pathname === module.path && sidebarOpen && (
-                      <div className="ml-auto w-1 h-6 bg-blue rounded-full "></div>
-                    )}
-                  </div>
-                  {/* Efecto de luz al pasar el mouse */}
-                  <span
-                    className="absolute inset-0 bg-white/5 group-hover:bg-white/10 
-                    opacity-0 group-hover:opacity-100 transition-opacity text"
-                  ></span>
-                </a>
-              </li>
-            ))}
-          </ul>
+        </a>
+      ))}
+    </nav>
+  </div>
 
-          {/* ADMIN PANEL OPTION */}
-          <div className="md:hidden mt-4">
-            <div className="border-t border-white/20 mx-2 my-3"></div>
-            <ul className="space-y-2">
-              <li>
-                <a
-                  href="/settings"
-                  className={`flex items-center p-3 rounded-lg transition-all ${
-                    sidebarOpen ? "justify-start" : "justify-center"
-                  } hover:bg-white/10 text-indigo-100 hover:text-white group relative overflow-hidden `}
-                >
-                  <div
-                    className={`p-1.5 rounded-md bg-white/10 group-hover:bg-white/20 transition-colors mr-2 ${
-                      sidebarOpen ? "" : "flex justify-center"
-                    }`}
-                  >
-                    <FiSettings className="h-5 w-5" />
-                  </div>
-                  {sidebarOpen && (
-                    <div className="flex items-center gap-3">
-                      <span className="text-sm font-medium text-indigo-50 group-hover:text-white transition-colors">
-                        Configuración
-                      </span>
-                      {location.pathname === "/settings" && (
-                        <div className="ml-auto w-1 h-6 bg-white rounded-full"></div>
-                      )}
-                    </div>
-                  )}
-                  <span className="absolute inset-0 bg-white/5 group-hover:bg-white/10 opacity-0 group-hover:opacity-100 transition-opacity"></span>
-                </a>
-              </li>
+  {/* BOTTOM SECTION */}
+  <div className="flex flex-col items-center space-y-4 w-full">
+    {/* Configuración */}
+    <a
+      href="/settings"
+      className="group p-2 rounded-lg hover:bg-indigo-500/20 transition-colors"
+    >
+      <FiSettings className="text-indigo-300 group-hover:text-white" />
+    </a>
 
-              <li>
-                <button
-                  onClick={handleLogout}
-                  className={`flex items-center w-full p-3 rounded-lg transition-all cursor-pointer ${
-                    sidebarOpen ? "justify-start" : "justify-center"
-                  } hover:bg-white/10 text-indigo-100 hover:text-white group relative overflow-hidden `}
-                >
-                  <div
-                    className={`p-1.5 rounded-md bg-white/10 group-hover:bg-white/20 transition-colors mr-2 ${
-                      sidebarOpen ? "" : "flex justify-center"
-                    }`}
-                  >
-                    <FiLogOut className="h-5 w-5" />
-                  </div>
-                  {sidebarOpen && (
-                    <div className="flex items-center gap-3">
-                      <span className="text-sm font-medium text-indigo-50 group-hover:text-white transition-colors">
-                        Cerrar Sesión
-                      </span>
-                    </div>
-                  )}
-                  <span className="absolute inset-0 bg-white/5 group-hover:bg-white/10 opacity-0 group-hover:opacity-100 transition-opacity"></span>
-                </button>
-              </li>
-            </ul>
+    {/* Logout */}
+    <button
+      onClick={handleLogout}
+      className="group p-2 rounded-lg hover:bg-red-600/30 transition-colors"
+    >
+      <FiLogOut className="text-indigo-300 group-hover:text-white" />
+    </button>
 
-            <div className={`flex items-center w-full p-3 rounded-lg transition-all cursor-pointer ${
-                    sidebarOpen ? "justify-start" : "justify-center"
-                  } hover:bg-white/10 text-indigo-100 hover:text-white group relative overflow-hidden `}>
-              <div
-                className={`p-1.5 rounded-md bg-white/10 group-hover:bg-white/20 transition-colors mr-2 ${
-                  sidebarOpen ? "" : "flex justify-center"
-                }`}
-              >
-                <FiUser className="h-5 w-5" />
-              </div>
-              {sidebarOpen && (
-                <div className="text-sm leading-tight">
-                  <div className="font-semibold text-white">
-                    {loading ? (
-                      <span className="animate-pulse">Cargando...</span>
-                    ) : (
-                      user.name
-                    )}
-                  </div>
-                  <div className="text-xs text-blue-200">{user.role}</div>
-                </div>
-              )}
-            </div>
-          </div>
-        </nav>
-      </aside>
+    {/* Usuario */}
+   
+  </div>
+</aside>
+
 
       {/* Main Content */}
       <div className="flex-1 flex flex-col overflow-hidden">
         {/* Header */}
-        <Header />
+        <ImprovedNavbar />
 
         {/* Contenido */}
         <main className="flex-1 overflow-y-auto p-6 bg-gray-50">
