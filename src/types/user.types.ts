@@ -9,6 +9,8 @@ export interface Location {
     _id: string;
     name: string;
     email: string;
+    ci: string;
+    last_login: string;
     phone: string;
     fcmToken: string | null;
     isActive: boolean;

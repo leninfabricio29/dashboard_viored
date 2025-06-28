@@ -18,6 +18,9 @@ import PackageDetailView from "./pages/modules/Multimedia/PackageDetailView"; */
 import UserProfile from "./pages/modules/Settings/UserProfile";
 import { DashboardEntity } from "./components/layout/DashboardEntity";
 import MonitoringMap from "./pages/modules/Entity/MonitoringMap";
+import Members from "./pages/modules/Entity/Members";
+import AlertsHistory from "./pages/modules/Entity/AlertsHistory";
+import HistoryAdmin from "./pages/modules/Entity/HistoryAdmin";
 //import LoginEntity from "./pages/LoginEntity";
 //import LogsComponent from "./components/logs/LogsComponent";
 
@@ -101,16 +104,14 @@ function App() {
       <Route path="*" element={<Navigate to="/" replace />} /> 
 
        
-       <Route
-  path="/monitoring"
+    <Route
+  path="/monitoring/*"
   element={
     <ProtectedRoute>
       <DashboardEntity />
     </ProtectedRoute>
   }
->
-  <Route index element={<MonitoringMap />} />
-</Route>
+/>
       
 
     </Routes>
