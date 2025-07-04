@@ -23,7 +23,25 @@ export interface Location {
     avatar: string,
     __v: number;
   }
-  
+
+  export interface CreateUserInput {
+    name: string;
+    email: string;
+    password: string;
+    ci?: string;
+  }
+
+  export interface UserView {
+  id: string;
+  ci: string;
+  name: string;
+  email: string;
+  role: string;
+  last_login?: string;
+  createdAt?: string;
+}
+
+
   export interface UsersResponse {
     users: User[];
   }

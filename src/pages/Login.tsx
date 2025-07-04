@@ -29,7 +29,8 @@ const Login = () => {
     if (response.user.role === "admin" ) {
       console.log("Navegar hasta el dashboard")
       navigate("/")
-    }else if (response.user.role === "entity"){
+    }else if (response.user.role === "entity" || response.user.role === "son") {
+      localStorage.getItem('role')
       navigate("/monitoring"); // solo redirige si es admin
 
     }else{
