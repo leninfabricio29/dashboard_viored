@@ -9,27 +9,36 @@ export const entityUsersService = {
   getSonUsers: async (id: string): Promise<User[]> => {
     try {
       const response = await api.get<User[]>(`/api/entity/${id}/sons`);
-      console.log("ADA", response.data)
-      return response.data; // Ya es un array
+      return response.data;
     } catch (error) {
       console.error('Error fetching users:', error);
       throw error;
     }
+  },
+
+  createSonUser: async (
+    entityId: string,
+    userData: CreateUserInput
+  ): Promise<User> => {
+    const response = await api.post<{ user: User }>(`/api/entity/son`, {
+      entityId,
+      userData,
+    });
+
+    return response.data.user;
+  },
+
+  changeStatusSonUser: async (
+    userId: string,
+    isActive: boolean
+  ): Promise<User> => {
+    const response = await api.post<{ user: User }>(`/api/entity/son/status/`, {
+      userId,
+      isActive,
+    });
+
+    return response.data.user;
   }
-  ,
-   createSonUser: async (
-  entityId: string,
-  userData: CreateUserInput
-): Promise<User> => {
-  const response = await api.post<{ user: User }>(`/api/entity/son`, {
-    entityId,
-    userData,
-  });
-
-  return response.data.user;
-}
-
-
 };
 
 

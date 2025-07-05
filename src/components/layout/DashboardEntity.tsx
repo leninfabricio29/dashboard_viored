@@ -36,7 +36,9 @@ export const DashboardEntity = () => {
       path: "/monitoring/alerts-history",
       icon: <FiBell />,
     },
-    { title: "Bitácora", path: "/monitoring/history-admin", icon: <FiClock /> },
+    { title: "Bitácora", 
+      path: "/monitoring/history-admin", 
+      icon: <FiClock /> },
   ];
 
   const handleLogout = () => {
@@ -78,20 +80,28 @@ export const DashboardEntity = () => {
 
           {/* Navegación de módulos */}
           <nav className="flex flex-col space-y-4 w-full items-center">
-            {modules.map((module, index) => (
+            {modules
+              .filter((module) => {
+              if (user.role === "entity") return true;
+              if (user.role === "son") return (
+                module.title === "Inicio" || module.title === "Notificaciones"
+              );
+              return false;
+              })
+              .map((module, index) => (
               <Link
                 key={index}
                 to={module.path}
                 className={`relative group p-2 rounded-lg hover:bg-indigo-500/20 transition-colors`}
               >
                 <div className="text-indigo-300 group-hover:text-white">
-                  {module.icon}
+                {module.icon}
                 </div>
-                {location.pathname === module.path && (
-                  <div className="absolute left-1/2 -translate-x-1/2 bottom-0 w-8 h-1 rounded-2xl bg-white"></div>
+                {pathname === module.path && (
+                <div className="absolute left-1/2 -translate-x-1/2 bottom-0 w-8 h-1 rounded-2xl bg-white"></div>
                 )}
               </Link>
-            ))}
+              ))}
           </nav>
         </div>
 

@@ -37,6 +37,7 @@ export interface Location {
   name: string;
   email: string;
   role: string;
+  isActive: boolean;
   last_login?: string;
   createdAt?: string;
 }

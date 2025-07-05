@@ -24,18 +24,17 @@ const Login = () => {
 
   try {
     const response = await authService.login({ email, password });
-    localStorage.setItem('role', response.user.role)
-
-    if (response.user.role === "admin" ) {
-      console.log("Navegar hasta el dashboard")
-      navigate("/")
-    }else if (response.user.role === "entity" || response.user.role === "son") {
-      localStorage.getItem('role')
-      navigate("/monitoring"); // solo redirige si es admin
-
-    }else{
-            setError("No tienes permisos para acceder a esta página");
-
+    if (response.user.isActive === false) {
+      setError("Tu cuenta está inactiva. Por favor, contacta al administrador.");
+      setIsLoading(false);
+      return;
+    }
+    if (response.user.role === "admin") {
+      navigate("/");
+    } else if (response.user.role === "entity" || response.user.role === "son") {
+      navigate("/monitoring");
+    } else {
+      setError("No tienes permisos para acceder a esta página");
     }
 
   } catch (err: any) {
