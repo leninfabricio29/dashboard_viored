@@ -26,8 +26,9 @@ export const DashboardEntity = () => {
     name: "",
     role: "",
   });
+  console.log("User:", user);
   const [loading, setLoading] = useState(true);
-
+  console.log("Loading:", loading);
   const modules = [
     { title: "Inicio", path: "/monitoring", icon: <FiHome /> },
     { title: "Usuarios", path: "/monitoring/members", icon: <FiUsers /> },

@@ -11,6 +11,7 @@ const Members = () => {
   const [loading, setLoading] = useState<boolean>(true);
   const [error, setError] = useState<string | null>(null);
   const [selectedUser, setSelectedUser] = useState<UserView | null>(null);
+  console.log("Selected User:", selectedUser);
   const [currentPage, setCurrentPage] = useState(1);
   const [showForm, setShowForm] = useState(false);
 
