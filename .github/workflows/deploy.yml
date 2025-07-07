@@ -13,7 +13,8 @@ jobs:
         uses: actions/checkout@v3
 
       - name: Instalar dependencias
-        run: npm ci
+        run: npm install --legacy-peer-deps
+
 
       - name: Generar build
         run: npm run build
