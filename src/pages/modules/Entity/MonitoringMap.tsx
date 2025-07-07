@@ -1,9 +1,9 @@
-import MapAlert from "../../../components/UI/MapAlert";
+import AlertMapContainer from "../../../components/UI/AlertMapContainer";
 
 const MonitoringMap = () => {
   return (
     <div>
-      <MapAlert latitude={-3.6819171288940247} longitude={-79.6821212985001} />
+      <AlertMapContainer />
       
     </div>
   );

@@ -11,6 +11,7 @@ const ButtonIndicator: React.FC = () => {
     notifications: "Notificaciones",
     statistics: "Estadísticas",
     neighborhood: "Barrios",
+    entities: "Entidades",
     detalle: "Detalle",
     history: "Bitácora",
     settings: "Configuración",

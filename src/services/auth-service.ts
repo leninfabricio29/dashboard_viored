@@ -29,7 +29,8 @@ interface LoginCredentials {
 interface LoginResponse {
   message: string;
   token: string;
-  user: User
+  user: User,
+  entidadId: string | null; // ID de la entidad si el usuario es un hijo
 }
 
 interface ResetPasswordData {
@@ -71,6 +72,7 @@ const authService = {
   // Cerrar sesión (eliminar token)
   logout: (): void => {
     localStorage.removeItem('token');
+    localStorage.removeItem('entity_sonId'); // Eliminar el ID de la entidad si existe
   },
 
   // Verificar si el usuario está autenticado

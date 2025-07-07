@@ -21,6 +21,7 @@ import MonitoringMap from "./pages/modules/Entity/MonitoringMap";
 import Members from "./pages/modules/Entity/Members";
 import AlertsHistory from "./pages/modules/Entity/AlertsHistory";
 import HistoryAdmin from "./pages/modules/Entity/HistoryAdmin";
+import EntityList from "./pages/modules/Users/Entitylist";
 //import LoginEntity from "./pages/LoginEntity";
 //import LogsComponent from "./components/logs/LogsComponent";
 
@@ -63,6 +64,10 @@ function App() {
         <Route path="users">
           <Route index element={<UsersList />} />
           <Route path=":id" element={<UserDetail />} />
+        </Route>
+
+        <Route path="entities">
+          <Route index  element={<EntityList />} />
         </Route>
 
         {/* Rutas para el modulo maps */}
