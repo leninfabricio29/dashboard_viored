@@ -2,7 +2,7 @@ import { useState, FormEvent } from "react";
 import { useNavigate } from "react-router-dom";
 import { FiUser, FiKey, FiEyeOff, FiEye } from "react-icons/fi";
 import authService from "../../src/services/auth-service";
-
+import { FiShield } from "react-icons/fi";
 const Login = () => {
   const navigate = useNavigate();
   const [email, setEmail] = useState("");
@@ -59,20 +59,7 @@ const Login = () => {
       <div className="max-w-md w-full bg-white rounded-2xl shadow-xl overflow-hidden p-8 space-y-6">
         <div className="flex flex-col items-center text-center">
           <div className="bg-slate-700 rounded-full p-4 mb-4 shadow-lg">
-            <svg
-              xmlns="http://www.w3.org/2000/svg"
-              className="h-8 w-8 text-white"
-              fill="none"
-              viewBox="0 0 24 24"
-              stroke="currentColor"
-            >
-              <path
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                strokeWidth={2}
-                d="M12 11c0 3.517-1.009 6.799-2.753 9.571m-3.44-2.04l.054-.09A13.916 13.916 0 008 11a4 4 0 118 0c0 1.017-.07 2.019-.203 3m-2.118 6.844A21.88 21.88 0 0015.171 17m3.839 1.132c.645-2.266.99-4.659.99-7.132A8 8 0 008 4.07M3 15.364c.64-1.319 1-2.8 1-4.364 0-1.457.39-2.823 1.07-4"
-              />
-            </svg>
+            <FiShield className="h-10 w-10 text-white" />
           </div>
           <h1 className="text-3xl font-extrabold text-slate-800">
             V-SOS Gestión
@@ -82,9 +69,7 @@ const Login = () => {
           </p>
         </div>
 
-        <div className="alert alert-info bg-blue-50 border-l-4 border-blue-500 text-gray-600  p-4 rounded flex items-center text-sm mb-4">
-          <p className="text-sm ">Si tienes una suscripción activa como entidad <a href="/monitoring"  className="text-green-600">Ingresa aqui </a></p>
-         </div> 
+        
 
 
         {error && (
