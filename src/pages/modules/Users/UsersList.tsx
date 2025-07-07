@@ -24,7 +24,9 @@ const UsersList = () => {
       try {
         setLoading(true);
         const data = await userService.getUsers();
-        setUsers(data);
+        console.log("Usuarios obtenidos:", data);
+        const filteredUsers = data.filter((user: User) => user.role === "user");
+        setUsers(filteredUsers);
       } catch (err) {
         console.error("Error al cargar usuarios:", err);
         setError("No se pudieron cargar los datos. Intente nuevamente.");

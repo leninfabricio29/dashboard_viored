@@ -19,6 +19,10 @@ import UserProfile from "./pages/modules/Settings/UserProfile";
 import { DashboardEntity } from "./components/layout/DashboardEntity";
 
 
+import EntityList from "./pages/modules/Users/Entitylist";
+//import LoginEntity from "./pages/LoginEntity";
+//import LogsComponent from "./components/logs/LogsComponent";
+
 
 
 // Función para verificar si el usuario está autenticado
@@ -58,6 +62,10 @@ function App() {
         <Route path="users">
           <Route index element={<UsersList />} />
           <Route path=":id" element={<UserDetail />} />
+        </Route>
+
+        <Route path="entities">
+          <Route index  element={<EntityList />} />
         </Route>
 
         {/* Rutas para el modulo maps */}

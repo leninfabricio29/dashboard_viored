@@ -4,6 +4,16 @@ export interface Location {
     coordinates: number[];
     lastUpdated: string;
   }
+
+ export interface Entity {
+  _id: string;
+  name: string;
+  email: string;
+  type: string;
+  suscription: string;
+  users_sons: User[];
+  // puedes agregar más campos si los tienes
+}
   
   export interface User {
     _id: string;
@@ -22,6 +32,8 @@ export interface Location {
     type_suscription: string;
     avatar: string,
     __v: number;
+    type?: string;
+    suscription: string;
   }
 
   export interface CreateUserInput {
@@ -31,12 +43,21 @@ export interface Location {
     ci?: string;
   }
 
+  export interface CreateEntityInput {
+    name: string;
+    email: string;
+    password: string;
+    type?: string;
+  }
+
+
   export interface UserView {
   id: string;
   ci: string;
   name: string;
   email: string;
   role: string;
+  isActive: boolean;
   last_login?: string;
   createdAt?: string;
 }

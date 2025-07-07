@@ -41,6 +41,11 @@ export const DashboardLayout = () => {
       path: "/statistics",
     },
     {
+      title: "Entidades ",
+      icon: <FiUsers className="h-5 w-5" />,
+      path: "/entities",
+    },
+    {
       title: "Usuarios",
       icon: <FiUsers className="h-5 w-5" />,
       path: "/users",
