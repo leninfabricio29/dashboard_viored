@@ -1,11 +1,11 @@
-name: Build and Deploy to Static Repo
+name: Build and Deploy to Server
 
 on:
   push:
     branches: [main]
 
 jobs:
-  build:
+  build-and-deploy:
     runs-on: ubuntu-latest
 
     steps:
@@ -15,29 +15,15 @@ jobs:
       - name: Instalar dependencias
         run: npm install --legacy-peer-deps
 
-
       - name: Generar build
         run: npm run build
 
-      - name: Clonar repo estático y hacer push
-        run: |
-          git config --global user.name "GitHub CI"
-          git config --global user.email "ci@github.com"
-
-          # Clonar con autenticación mediante token
-          git clone https://x-access-token:${{ secrets.STATIC_REPO_TOKEN }}@github.com/leninfabricio29/virys-admin.git build-output
-
-          # Limpiar contenido anterior y copiar nuevo build
-          rm -rf build-output/*
-          cp -r dist/* build-output/
-
-          cd build-output
-          git add .
-
-          # Evita error si no hay cambios
-          git diff-index --quiet HEAD || git commit -m "⚡ Update build from CI at $(date +'%Y-%m-%d %H:%M:%S')"
-          git push origin main
-        env:
-          # Previene mostrar el token en logs
-          GIT_AUTHOR_NAME: GitHub CI
-          GIT_AUTHOR_EMAIL: ci@github.com
+      - name: Subir build al servidor físico
+        uses: appleboy/scp-action@v0.1.7
+        with:
+          host: ${{ secrets.SERVER_HOST }}
+          port:  ${{ secrets.PORT }}
+          username: ${{ secrets.SERVER_USER }}
+          key: ${{ secrets.SSH_PRIVATE_KEY }}
+          source: "dist/*"
+          target: "/var/www/panicdashboard"
