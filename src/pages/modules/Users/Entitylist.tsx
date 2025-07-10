@@ -3,11 +3,12 @@ import { entityUsersService } from "../../../services/entity.service";
 import { User } from "../../../types/user.types";
 import ButtonHome from "../../../components/UI/ButtonHome";
 import ButtonIndicator from "../../../components/UI/ButtonIndicator";
-import { FiCheck, FiEye, FiMail, FiSearch, FiX } from "react-icons/fi";
+import { FiCheck, FiEye, FiMail, FiPlus, FiSearch, FiUser, FiX } from "react-icons/fi";
 import Pagination from "../../../components/layout/Pagination";
 import { FaUser } from "react-icons/fa";
 import { CreateEntityModal } from "../../../components/Forms/CreateEntityModal";
 import { DetailEntityModel } from "../../../components/Forms/DetailEntityModal";
+
 
 const EntityList = () => {
   const [users, setUsers] = useState<User[]>([]);
@@ -82,42 +83,27 @@ const EntityList = () => {
   const EmptyState = () => (
     <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-12 text-center">
       <div className="w-16 h-16 mx-auto mb-4 bg-gray-100 rounded-full flex items-center justify-center">
-        <svg
-          className="w-8 h-8 text-gray-400"
-          fill="none"
-          viewBox="0 0 24 24"
-          stroke="currentColor"
-        >
-          <path
-            strokeLinecap="round"
-            strokeLinejoin="round"
-            strokeWidth="2"
-            d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197m13.5-9a2.5 2.5 0 11-5 0 2.5 2.5 0 015 0z"
-          />
-        </svg>
+       <FiUser></FiUser>
       </div>
       <h3 className="text-xl font-semibold text-gray-900 mb-2">
         {searchTerm
-          ? "No se encontraron usuarios"
-          : "No hay usuarios disponibles"}
+          ? "No se encontraron entidad"
+          : "No hay entidades disponibles"}
       </h3>
       <p className="text-gray-500 mb-6">
         {searchTerm
           ? "Intenta con otro término de búsqueda"
-          : "Crea un nuevo usuario para comenzar"}
+          : ""}
       </p>
-      {!searchTerm && (
-        <button className="bg-gradient-to-r from-blue-600 to-purple-600 text-white px-6 py-3 rounded-lg font-medium hover:from-blue-700 hover:to-purple-700 transition-all duration-200 shadow-lg hover:shadow-xl">
-          Crear Usuario
-        </button>
-      )}
+     
     </div>
   );
 
   return (
     <div className="container mx-auto px-4 py-8 max-w-7xl">
       {/* Modal para crear entidad */}
-      <CreateEntityModal
+      
+        <CreateEntityModal
         isOpen={showCreateModal}
         onClose={() => setShowCreateModal(false)}
         onCreated={() => {
@@ -154,43 +140,39 @@ const EntityList = () => {
       </div>
 
       {/* Controles de búsqueda y filtrado */}
-      <div className="mb-8 flex flex-col md:flex-row md:items-end md:space-x-6 space-y-4 md:space-y-0">
-        <div className="relative w-full max-w-md">
-          <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-            <FiSearch className="h-5 w-5 text-slate-400 group-focus-within:text-blue-500 transition-colors" />
-          </div>
-          <input
-            type="text"
-            placeholder="Buscar usuario..."
-            className="block w-full pl-10 pr-4 py-3 border border-slate-300 rounded-xl shadow-sm focus:outline-none focus:ring-2 focus:ring-slate-500 focus:border-transparent hover:border-slate-400 transition-all duration-200 text-slate-700 placeholder-slate-400 group"
-            value={searchTerm}
-            onChange={(e) => setSearchTerm(e.target.value)}
-          />
-          {searchTerm && (
-            <button
-              onClick={() => setSearchTerm("")}
-              className="absolute inset-y-0 right-0 pr-3 flex items-center"
-            >
-              <svg
-                className="h-5 w-5 text-slate-400 hover:text-slate-600 transition-colors"
-                fill="none"
-                viewBox="0 0 24 24"
-                stroke="currentColor"
-              >
-                <path
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  strokeWidth={2}
-                  d="M6 18L18 6M6 6l12 12"
-                />
-              </svg>
-            </button>
-          )}
-          <button onClick={() => setShowCreateModal(true)}>
-            Crear Entidad
-          </button>
-        </div>
-      </div>
+
+<div className="mb-8 flex flex-col md:flex-row md:items-end md:space-x-6 space-y-4 md:space-y-0">
+  <div className="relative w-full max-w-md">
+    <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+      <FiSearch className="h-5 w-5 text-slate-400 group-focus-within:text-blue-500 transition-colors" />
+    </div>
+    <input
+      type="text"
+      placeholder="Buscar usuario..."
+      className="block w-full pl-10 pr-4 py-3 border border-slate-300 rounded-xl shadow-sm focus:outline-none focus:ring-2 focus:ring-slate-500 focus:border-transparent hover:border-slate-400 transition-all duration-200 text-slate-700 placeholder-slate-400 group"
+      value={searchTerm}
+      onChange={(e) => setSearchTerm(e.target.value)}
+    />
+    {searchTerm && (
+      <button
+        onClick={() => setSearchTerm("")}
+        className="absolute inset-y-0 right-0 pr-3 flex items-center"
+      >
+        ✕
+      </button>
+    )}
+  </div>
+
+  <button
+    onClick={() => setShowCreateModal(true)}
+    className="flex cursor-pointer items-center justify-center h-12 w-12 rounded-xl bg-blue-600 hover:bg-blue-700 text-white shadow transition-all duration-200"
+    title="Crear entidad"
+
+  >
+    <FiPlus className="w-6 h-6" />
+  </button>
+</div>
+
 
       {/* Loading y Error States */}
       {loading ? (

@@ -102,11 +102,10 @@ const Dashboard = () => {
     fetchLogs();
   }, []);
 
-  const activeUsersCount = users.length;
   const registerNeighborhood = neighborhoods.length;
-
+const usersFilteres = users.filter(user => user.role === 'user')
   const stats = [
-    { name: "Usuarios activos", value: activeUsersCount, icon: FiUsers, trend: "up" },
+    { name: "Usuarios activos", value: usersFilteres.length, icon: FiUsers, trend: "up" },
     { name: "Barrios registrados", value: registerNeighborhood, icon: FiMap, trend: "up" },
     { name: "Alertas por día", value: alertasDia, icon: FiActivity, trend: "down" },
     { name: "Total de Alertas", value: totalAlertas, icon: FiAlertCircle, trend: "down" },

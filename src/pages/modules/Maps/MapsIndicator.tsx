@@ -204,7 +204,7 @@ const MapIndicator = () => {
         onClose={() => setIsNeighborhoodsMapOpen(false)}
         title="Mapa de Barrios"
       >
-        <div className="h-[70vh] w-full rounded-xl overflow-hidden border border-slate-200 shadow-inner">
+        <div className="h-[70vh] w-full  rounded-xl overflow-hidden border border-slate-200 shadow-inner">
           {loading.neighborhoods ? (
             <div className="h-full flex flex-col items-center justify-center space-y-4">
               <div className="animate-spin rounded-full h-14 w-14 border-t-2 border-b-2 border-emerald-500"></div>

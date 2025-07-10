@@ -12,6 +12,7 @@ export interface Location {
   type: string;
   suscription: string;
   users_sons: User[];
+  is_active: boolean
   // puedes agregar más campos si los tienes
 }
   
