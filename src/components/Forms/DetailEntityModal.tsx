@@ -1,16 +1,5 @@
 import React, { useEffect, useState } from "react";
-import {
-  FiToggleLeft,
-  FiToggleRight,
-  FiUsers,
-  FiX,
-  FiMail,
-  FiTag,
-  FiCreditCard,
-  FiCheckCircle,
-  FiXCircle,
-  FiUserCheck,
-} from "react-icons/fi";
+
 import { entityUsersService } from "../../services/entity.service";
 import { Entity } from "../../types/user.types";
 
@@ -32,6 +21,7 @@ export const DetailEntityModel: React.FC<Props> = ({
   const handleToggle = async (id: string, newStatus: boolean) => {
     try {
       //await entityUsersService.updateEntityStatus(id, { is_active: newStatus });
+      console.log(id)
       setEntity((prev: any) => ({ ...prev, is_active: newStatus }));
     } catch (err) {
       console.error("Error al actualizar estado:", err);
