@@ -143,7 +143,7 @@ export const DashboardEntity = () => {
             </div>
           )}
           {pathname.includes("/monitoring/alerts-history") && (
-            <div className="fixed top-20 right-0 w-80 h-[calc(100%-5rem)] bg-white shadow-lg z-40 p-4 overflow-y-auto">
+            <div className="fixed top-20 right-0 w-100 h-[calc(100%-5rem)] bg-white shadow-lg z-40 p-4 overflow-y-auto">
               <AlertsHistory />
             </div>
           )}

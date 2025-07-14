@@ -67,7 +67,8 @@ export const entityUsersService = {
     });
 
     return response.data.user;
-  }
+  },
+
 };
 
 
