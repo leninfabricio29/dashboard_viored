@@ -20,7 +20,6 @@ const AlertsHistory: React.FC = () => {
   const [filteredNotifications, setFilteredNotifications] = useState<Notification[]>([]);
   const [loading, setLoading] = useState(true);
   const [currentPage, setCurrentPage] = useState(1);
-  const [expandedNotifications, setExpandedNotifications] = useState<Set<string>>(new Set());
   
   // Filtros
   const [readFilter, setReadFilter] = useState<FilterType>('all');
