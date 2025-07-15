@@ -69,6 +69,19 @@ export const entityUsersService = {
     return response.data.user;
   },
 
+  acceptPetition: async (userId: string, entityId: string) => {
+    try {
+      const response = await api.post<Entity>(`/api/entity/suscribe`, {
+        userId,
+        entityId
+      });
+      return response.data;
+    } catch (error) {
+      console.error("Error al aceptar la petición:", error);
+      throw error;
+    }
+  }
+
 };
 
 

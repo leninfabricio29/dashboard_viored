@@ -1,7 +1,8 @@
-import React, { useEffect, useState } from 'react';
-import { getAllNotifications } from '../../../services/notifications-service';
-import authService from '../../../services/auth-service';
-import { FiBell } from 'react-icons/fi';
+import React, { useEffect, useState } from "react";
+import { getAllNotifications } from "../../../services/notifications-service";
+import authService from "../../../services/auth-service";
+import { entityUsersService } from "../../../services/entity.service";
+import { FiBell, FiCheck, FiEye } from "react-icons/fi";
 
 interface Notification {
   _id: string;
@@ -10,24 +11,32 @@ interface Notification {
   createdAt: string;
   read?: boolean;
   details?: string;
+  emitter?: string;
+  receiver?: string;
 }
 
-type FilterType = 'all' | 'read' | 'unread';
-type NotificationType = 'all' | 'info' | 'warning' | 'error' | 'success';
+type FilterType = "all" | "read" | "unread";
+type NotificationType = "all" | "info" | "warning" | "error" | "success";
 
 const AlertsHistory: React.FC = () => {
   const [notifications, setNotifications] = useState<Notification[]>([]);
-  const [filteredNotifications, setFilteredNotifications] = useState<Notification[]>([]);
+  const [filteredNotifications, setFilteredNotifications] = useState<
+    Notification[]
+  >([]);
   const [loading, setLoading] = useState(true);
   const [currentPage, setCurrentPage] = useState(1);
-  
+
   // Filtros
-  const [readFilter, setReadFilter] = useState<FilterType>('all');
-  const [typeFilter, setTypeFilter] = useState<NotificationType>('all');
-  const [dateFrom, setDateFrom] = useState('');
-  const [dateTo, setDateTo] = useState('');
-  const [searchTerm, setSearchTerm] = useState('');
-  
+  const [readFilter, setReadFilter] = useState<FilterType>("all");
+  const [typeFilter, setTypeFilter] = useState<NotificationType>("all");
+  const [dateFrom, setDateFrom] = useState("");
+  const [dateTo, setDateTo] = useState("");
+  const [searchTerm, setSearchTerm] = useState("");
+  const [detailsModal, setDetailsModal] = useState("");
+  const selectedNotification = notifications.find(
+    (n) => n._id === detailsModal
+  );
+
   const itemsPerPage = 10;
 
   useEffect(() => {
@@ -47,37 +56,57 @@ const AlertsHistory: React.FC = () => {
     fetchNotifications();
   }, []);
 
+  const openDetails = (id: string) => {
+    setDetailsModal(id);
+  };
+
+  const closeModal = () => {
+    setDetailsModal("");
+  };
+
+  const handleAcceptRequest = (id: string, userId: string, entityId: string) => {
+    const response  = entityUsersService.acceptPetition(userId, entityId)
+    console.log("repo se", response)
+    markAsRead(id);
+    closeModal();
+  };
+
   useEffect(() => {
     let filtered = [...notifications];
 
     // Filtro por estado de lectura
-    if (readFilter !== 'all') {
-      filtered = filtered.filter(notif => 
-        readFilter === 'read' ? notif.read : !notif.read
+    if (readFilter !== "all") {
+      filtered = filtered.filter((notif) =>
+        readFilter === "read" ? notif.read : !notif.read
       );
     }
 
     // Filtro por tipo
-    if (typeFilter !== 'all') {
-      filtered = filtered.filter(notif => notif.type === typeFilter);
+    if (typeFilter !== "all") {
+      filtered = filtered.filter((notif) => notif.type === typeFilter);
     }
 
     // Filtro por fechas
     if (dateFrom) {
       const fromDate = new Date(dateFrom);
-      filtered = filtered.filter(notif => new Date(notif.createdAt) >= fromDate);
+      filtered = filtered.filter(
+        (notif) => new Date(notif.createdAt) >= fromDate
+      );
     }
     if (dateTo) {
       const toDate = new Date(dateTo);
       toDate.setHours(23, 59, 59, 999);
-      filtered = filtered.filter(notif => new Date(notif.createdAt) <= toDate);
+      filtered = filtered.filter(
+        (notif) => new Date(notif.createdAt) <= toDate
+      );
     }
 
     // Filtro por búsqueda
     if (searchTerm) {
-      filtered = filtered.filter(notif => 
-        notif.message.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        notif.type.toLowerCase().includes(searchTerm.toLowerCase())
+      filtered = filtered.filter(
+        (notif) =>
+          notif.message.toLowerCase().includes(searchTerm.toLowerCase()) ||
+          notif.type.toLowerCase().includes(searchTerm.toLowerCase())
       );
     }
 
@@ -85,36 +114,39 @@ const AlertsHistory: React.FC = () => {
     setCurrentPage(1);
   }, [notifications, readFilter, typeFilter, dateFrom, dateTo, searchTerm]);
 
-
   const markAsRead = (id: string) => {
-    setNotifications(prev => prev.map(notif => 
-      notif._id === id ? { ...notif, read: true } : notif
-    ));
+    setNotifications((prev) =>
+      prev.map((notif) => (notif._id === id ? { ...notif, read: true } : notif))
+    );
   };
 
- 
-
   const clearFilters = () => {
-    setReadFilter('all');
-    setTypeFilter('all');
-    setDateFrom('');
-    setDateTo('');
-    setSearchTerm('');
+    setReadFilter("all");
+    setTypeFilter("all");
+    setDateFrom("");
+    setDateTo("");
+    setSearchTerm("");
   };
 
   // Paginación
   const totalPages = Math.ceil(filteredNotifications.length / itemsPerPage);
   const startIndex = (currentPage - 1) * itemsPerPage;
   const endIndex = startIndex + itemsPerPage;
-  const currentNotifications = filteredNotifications.slice(startIndex, endIndex);
+  const currentNotifications = filteredNotifications.slice(
+    startIndex,
+    endIndex
+  );
 
   const renderPaginationButtons = () => {
     const buttons = [];
     const maxVisibleButtons = 5;
-    
-    let startPage = Math.max(1, currentPage - Math.floor(maxVisibleButtons / 2));
+
+    let startPage = Math.max(
+      1,
+      currentPage - Math.floor(maxVisibleButtons / 2)
+    );
     let endPage = Math.min(totalPages, startPage + maxVisibleButtons - 1);
-    
+
     if (endPage - startPage + 1 < maxVisibleButtons) {
       startPage = Math.max(1, endPage - maxVisibleButtons + 1);
     }
@@ -126,19 +158,20 @@ const AlertsHistory: React.FC = () => {
           onClick={() => setCurrentPage(i)}
           className={`px-3 py-1 mx-1 rounded ${
             i === currentPage
-              ? 'bg-blue-500 text-white'
-              : 'bg-gray-200 text-gray-700 hover:bg-gray-300'
+              ? "bg-blue-500 text-white"
+              : "bg-gray-200 text-gray-700 hover:bg-gray-300"
           }`}
         >
           {i}
         </button>
       );
     }
-    
+
     return buttons;
   };
 
-  const unreadCount = notifications.filter(n => !n.read).length;
+  const unreadCount = notifications.filter((n) => !n.read).length;
+  console.log(unreadCount);
 
   if (loading) {
     return (
@@ -146,7 +179,7 @@ const AlertsHistory: React.FC = () => {
         <div className="animate-pulse">
           <div className="h-8 bg-gray-200 rounded w-1/4 mb-6"></div>
           <div className="space-y-4">
-            {[1, 2, 3].map(i => (
+            {[1, 2, 3].map((i) => (
               <div key={i} className="h-24 bg-gray-200 rounded"></div>
             ))}
           </div>
@@ -158,22 +191,14 @@ const AlertsHistory: React.FC = () => {
   return (
     <div className="p-6 max-[w-6xl] mx-auto">
       {/* Header */}
-      <div className="flex items-center justify-between mb-6">
-        <div className="flex items-center gap-3">
-          <h2 className="text-2xl font-bold text-gray-900">Notificaciones</h2>
-          {unreadCount > 0 && (
-            <span className="bg-red-500 text-white text-xs px-2 py-1 rounded-full">
-              {unreadCount} sin leer
-            </span>
-          )}
-        </div>
-        <div className="text-sm text-gray-500">
-          Total: {filteredNotifications.length} notificaciones
-        </div>
+      <div className="mb-2 text-center">
+        <h2 className="text-[1rem] font-semibold text-blue-600 flex justify-center items-center gap-1">
+          <FiBell /> Notificaciones
+        </h2>
       </div>
 
       {/* Filtros */}
-      <div className="bg-white rounded-lg shadow-sm border p-4 mb-6">
+      <div className="bg-white rounded-lg shadow-sm border p-4 mb-6 hidden">
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-6 gap-4">
           {/* Búsqueda */}
           <div className="lg:col-span-2">
@@ -198,8 +223,6 @@ const AlertsHistory: React.FC = () => {
               <option value="read">Leídas</option>
             </select>
           </div>
-
-          
 
           {/* Fecha desde */}
           <div>
@@ -239,60 +262,76 @@ const AlertsHistory: React.FC = () => {
           <div className="text-gray-400 text-6xl mb-4">📭</div>
           <p className="text-xl text-gray-600 mb-2">No hay notificaciones</p>
           <p className="text-gray-500">
-            {notifications.length === 0 
+            {notifications.length === 0
               ? "No tienes notificaciones disponibles."
-              : "No se encontraron notificaciones con los filtros aplicados."
-            }
+              : "No se encontraron notificaciones con los filtros aplicados."}
           </p>
         </div>
       ) : (
         <>
           <div className="space-y-3">
-            {currentNotifications.map((notif) => (
-              <div
-                key={notif._id}
-                className='border rounded-lg p-2 transition-all duration-200 hover:shadow-md bg-white border-l-4 border-indigo-500'>
-                <div className="flex items-start justify-between">
-                  <div className="flex items-start gap-3 flex-1">
-                    <div className="text-2xl">
-                       <FiBell></FiBell> 
-                    </div>
-                    <div className="flex-1">
-                      <div className="flex items-center gap-2 mb-2">
-                        <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-[0.5rem] font-medium bg-indigo-500 text-white`}>
-                          {notif.type}
-                        </span>
-                        {!notif.read && (
-                          <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-[0.5rem] font-medium bg-red-100 text-red-800">
-                            Sin leer
+            {currentNotifications.map((notif) => {
+              const isSalida = notif.type === "salida";
+
+              return (
+                <div
+                  key={notif._id}
+                  className={` shadow-lg rounded-lg p-2 transition-all duration-200 hover:shadow-md bg-white border-l-4 ${
+                    isSalida ? "border-red-400" : "border-blue-500"
+                  }`}
+                >
+                  <div className="flex items-start justify-between">
+                    <div className="flex items-start gap-3 flex-1">
+                      <div className="text-2xl"></div>
+                      <div className="flex-1">
+                        <div className="flex items-center gap-2 mb-2">
+                          <span
+                            className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-[0.5rem] font-medium ${
+                              isSalida
+                                ? "bg-red-400 text-white"
+                                : "bg-blue-500 text-white"
+                            }`}
+                          >
+                            {notif.type}
                           </span>
-                        )}
-                        <span className="text-[0.5rem] text-gray-500">
-                          {new Date(notif.createdAt).toLocaleString()}
-                        </span>
+                          {!notif.read && (
+                            <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-[0.5rem] font-medium bg-red-100 text-red-800">
+                              Sin leer
+                            </span>
+                          )}
+                          <span className="text-[0.5rem] text-gray-500">
+                            {new Date(notif.createdAt).toLocaleString()}
+                          </span>
+                        </div>
+                        <p className="text-gray-900 mb-2 text-[0.75rem] text-justify">
+                          {notif.message}
+                        </p>
                       </div>
-                      <p className="text-gray-900 mb-2 text-[0.75rem] text-justify">{notif.message}</p>
-                      
-                
                     </div>
-                  </div>
-                  
-                  {/* Acciones */}
-                  <div className="flex items-center gap-2 ml-4">
-                    {!notif.read && (
+
+                    {/* Acciones */}
+                    <div className="flex flex-col items-start gap-2 ml-4">
+                      {!notif.read && (
+                        <button
+                          onClick={() => markAsRead(notif._id)}
+                          className="p-2 text-blue-600 hover:text-blue-800 hover:bg-blue-100 rounded-md transition-colors cursor-pointer"
+                          title="Marcar como leída"
+                        >
+                          <FiCheck />
+                        </button>
+                      )}
                       <button
-                        onClick={() => markAsRead(notif._id)}
-                        className="p-2 text-blue-600 hover:text-blue-800 hover:bg-blue-100 rounded-md transition-colors"
-                        title="Marcar como leída"
+                        onClick={() => openDetails(notif._id)}
+                        className="p-2 text-blue-600 hover:text-blue-800 hover:bg-blue-100 rounded-md transition-colors cursor-pointer"
+                        title="Detalles"
                       >
-                        ✓
+                        <FiEye />
                       </button>
-                    )}
-                   
+                    </div>
                   </div>
                 </div>
-              </div>
-            ))}
+              );
+            })}
           </div>
 
           {/* Paginación */}
@@ -306,24 +345,75 @@ const AlertsHistory: React.FC = () => {
                 >
                   ← Anterior
                 </button>
-                
+
                 {renderPaginationButtons()}
-                
+
                 <button
-                  onClick={() => setCurrentPage(Math.min(totalPages, currentPage + 1))}
+                  onClick={() =>
+                    setCurrentPage(Math.min(totalPages, currentPage + 1))
+                  }
                   disabled={currentPage === totalPages}
                   className="px-3 py-1 rounded bg-gray-200 text-gray-700 hover:bg-gray-300 disabled:opacity-50 disabled:cursor-not-allowed"
                 >
                   Siguiente →
                 </button>
               </div>
-              
+
               <div className="ml-4 text-sm text-gray-600">
                 Página {currentPage} de {totalPages}
               </div>
             </div>
           )}
         </>
+      )}
+
+      {/* Modal de Detalles */}
+      {detailsModal && selectedNotification && (
+        <div className="fixed inset-0 z-50 bg-black/40 backdrop-blur-md flex items-center justify-center">
+          <div className="bg-white rounded-lg shadow-lg max-w-md w-[40%] p-6 relative animate-fade-in">
+            <button
+              onClick={closeModal}
+              className="absolute top-2 right-2  cursor-pointer rounded-full bg-red-400 hover:bg-red-500 text-white px-2"
+              title="Cerrar"
+            >
+              X
+            </button>
+
+            <h3 className="text-lg font-semibold text-blue-600 mb-4">
+              Detalles de la Notificación
+            </h3>
+
+            <div className="text-sm space-y-2">
+              {selectedNotification.message && (
+                <p>
+                  <strong>Mensaje:</strong> {selectedNotification.message}
+                </p>
+              )}
+
+              {selectedNotification.details && (
+                <p>
+                  <strong>Detalles:</strong> {selectedNotification.details}
+                </p>
+              )}
+
+              <p>
+                <strong>Fecha:</strong>{" "}
+                {new Date(selectedNotification.createdAt).toLocaleString()}
+              </p>
+
+              {/* 👇 Solo si es tipo 'peticion' */}
+              {selectedNotification.type === "peticion" && (
+                <button
+                  onClick={() => handleAcceptRequest(selectedNotification._id, selectedNotification.emitter || '', selectedNotification.receiver || '')}
+                  className="px-3 py-1 text-xs font-semibold bg-green-500 text-white rounded hover:bg-green-600 transition cursor-pointer"
+                  title="Aceptar petición"
+                >
+                  Admitir
+                </button>
+              )}
+            </div>
+          </div>
+        </div>
       )}
     </div>
   );
