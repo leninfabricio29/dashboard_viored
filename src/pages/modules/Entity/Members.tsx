@@ -4,7 +4,7 @@ import authService from "../../../services/auth-service";
 import { FiUser, FiRefreshCw } from "react-icons/fi";
 import { IoClose } from "react-icons/io5";
 import { User, CreateUserInput, UserView } from "../../../types/user.types";
-import { Hourglass } from "react-loader-spinner";
+//import { Hourglass } from "react-loader-spinner";
 
 const Members = () => {
   const [searchTerm, setSearchTerm] = useState("");
@@ -223,16 +223,7 @@ const Members = () => {
       </div>
 
       {/* Indicador de carga */}
-      <div className="flex justify-center mb-4 ">
-         {isBusy && (
-        <Hourglass
-          visible={true}
-          height={60}
-          width={60}
-          colors={["#6db2f0", "#266297"]}
-        />
-      )}
-      </div>
+     
             
       {/* Formulario */}
       {showForm && (
