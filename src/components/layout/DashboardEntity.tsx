@@ -81,7 +81,7 @@ export const DashboardEntity = () => {
         <div className="flex flex-col h-full">
           {/* Logo/Brand */}
           <div className="p-4 border-b border-blue-700 flex items-center justify-center">
-            <h1 className="text-xl font-bold text-white font-mono">Monitoreo V1</h1>
+            <h1 className="text-xl font-bold text-white ">Monitoreo V1</h1>
           </div>
 
           {/* User Profile */}
@@ -92,8 +92,8 @@ export const DashboardEntity = () => {
               className="w-10 h-10 rounded-full object-cover border-2 border-blue-400"
             />
             <div>
-              <p className="font-medium font-mono">{user.name}</p>
-              <p className="text-xs text-blue-200 capitalize font-mono">{user.role}</p>
+              <p className="font-medium ">{user.name}</p>
+              <p className="text-xs text-blue-200 capitalize ">{user.role}</p>
             </div>
           </div>
 
@@ -116,7 +116,7 @@ export const DashboardEntity = () => {
     if (module.path.includes("alerts-history")) setModalType("alerts");
     if (module.path.includes("history-admin")) setModalType("history");
     }}
-    className="flex items-center space-x-3 p-3 rounded-lg font-mono text-blue-100 hover:bg-blue-900/50"
+    className="flex items-center space-x-3 p-3 rounded-lg  text-blue-100 hover:bg-blue-900/50"
     >
                   <span className="text-blue-300">{module.icon}</span>
                   <span>{module.title}</span>
@@ -125,7 +125,7 @@ export const DashboardEntity = () => {
           </nav>
 
           {/* Bottom Section */}
-          <div className="p-4 border-t border-gray-100 space-y-2 font-mono">
+          <div className="p-4 border-t border-gray-100 space-y-2 ">
             <button
               type="button"
               className={`w-full flex items-center space-x-3 p-3 rounded-lg transition-colors ${
