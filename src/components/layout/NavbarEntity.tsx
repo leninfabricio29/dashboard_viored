@@ -1,6 +1,5 @@
 import { useState, useEffect, useRef } from "react";
-import { useNavigate, Link } from "react-router-dom";
-import { FiLogOut, FiSettings, FiChevronDown } from "react-icons/fi";
+import {  Link } from "react-router-dom";
 import authService from "../../services/auth-service";
 import userService from "../../services/user-service";
 
@@ -15,7 +14,6 @@ interface User {
 
 
 const NavbarEntity = () => {
-  const navigate = useNavigate();
   const [isUserDropdownOpen, setIsUserDropdownOpen] = useState(false);
   const [user, setUser] = useState<User>({
   name: "",
@@ -27,6 +25,8 @@ const NavbarEntity = () => {
   const [loading, setLoading] = useState(true);
   const userDropdownRef = useRef<HTMLDivElement>(null);
   const [userId, setUserId] = useState<string | null>(null);
+
+  console.log("User:", userId);
 
   useEffect(() => {
     const fetchUserData = async () => {
@@ -69,10 +69,7 @@ const NavbarEntity = () => {
     };
   }, []);
 
-  const handleLogout = () => {
-    authService.logout();
-    navigate("/login");
-  };
+ 
 
  
 
@@ -127,27 +124,9 @@ const NavbarEntity = () => {
                   )}
                 </div>
 
-                <FiChevronDown className="text-gray-200 ml-2" />
               </button>
 
-              {isUserDropdownOpen && (
-                <div className="absolute right-0 mt-2 w-52 bg-slate-800 rounded-xl shadow-xl ring-1 ring-slate-700 z-50 overflow-hidden">
-                  <Link
-                    to={`/settings/${userId}`}
-                    className="flex items-center gap-2 px-4 py-3 text-sm text-slate-200 hover:bg-slate-700 hover:text-white hover:border-l-4 hover:border-blue-500 transition-all duration-150"
-                  >
-                    <FiSettings className="w-4 h-4" />
-                    Configuración
-                  </Link>
-                  <button
-                    onClick={handleLogout}
-                    className="w-full flex items-center gap-2 px-4 py-3 text-sm text-slate-200 hover:bg-slate-700 hover:text-white hover:border-l-4 hover:border-red-500 transition-all duration-150"
-                  >
-                    <FiLogOut className="w-4 h-4" />
-                    Cerrar sesión
-                  </button>
-                </div>
-              )}
+             
             </div>
           </div>
         </div>

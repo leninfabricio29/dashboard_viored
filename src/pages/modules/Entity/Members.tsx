@@ -2,7 +2,6 @@ import { useState, useMemo, useEffect, useCallback } from "react";
 import { entityUsersService } from "../../../services/entity.service";
 import authService from "../../../services/auth-service";
 import { FiUser, FiRefreshCw } from "react-icons/fi";
-import { IoClose } from "react-icons/io5";
 import { User, CreateUserInput, UserView } from "../../../types/user.types";
 //import { Hourglass } from "react-loader-spinner";
 
@@ -112,11 +111,6 @@ const Members = () => {
 
   const totalPages = Math.ceil(filteredUsers.length / itemsPerPage);
 
-  const handleClose = () => {
-    alert(
-      "Cerrar panel (puedes conectar esta función con navegación o cerrar modal)"
-    );
-  };
 
   const handleStatusToggle = async () => {
     if (!selectedUser || isBusy) return;
@@ -172,19 +166,12 @@ const Members = () => {
     <div className="relative h-full flex flex-col p-2 rounded-md shadow-sm bg-white">
      
       {/* Botón de cierre */}
-      <button
-        onClick={handleClose}
-        className="absolute top-1 right-2 bg-red-500 text-white rounded-full p-1 text-lg hover:bg-red-600"
-        aria-label="Cerrar"
-        title="Cerrar"
-      >
-        <IoClose />
-      </button>
+      
 
       {/* Encabezado */}
       <div className="mb-2 text-center">
         <h2 className="text-[1rem] font-semibold text-blue-600 flex justify-center items-center gap-1">
-          <FiUser /> Gestión de miembros
+          <FiUser /> Gestión de colaboradores
         </h2>
       </div>
 
@@ -320,7 +307,7 @@ const Members = () => {
               onClick={handleCreateSonUser}
               className="bg-blue-600 hover:bg-blue-700 text-white text-sm px-5 py-2 rounded-md transition-colors"
             >
-              "Crear miembro"
+              Crear colaborador
             </button>
           </div>
         </div>

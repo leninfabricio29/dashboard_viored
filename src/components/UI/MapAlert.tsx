@@ -19,8 +19,9 @@ type MapAlertProps = {
 };
 
 export const mapboxStyles: string[] = [
-  'mapbox://styles/mapbox/light-v11',
   'mapbox://styles/mapbox/navigation-night-v1',
+    'mapbox://styles/mapbox/light-v11',
+
   'mapbox://styles/mapbox/satellite-streets-v11'
 ];
 
