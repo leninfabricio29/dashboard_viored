@@ -1,90 +1,109 @@
-// ✅ CORREGIDO - AlertMapContainer.tsx
 import React, { useEffect, useRef, useState } from "react";
 import { socket } from "../../utils/socket";
 import MapAlert from "./MapAlert";
 
-export type AlertData = {
-  id: string;
-  notifyId: string;
+/** --- Tipos --- */
+export interface AlertData {
+  id: string;            // Identificador interno (para la key)
+  alertId: string;       // ID real del backend
   lat: number;
   lng: number;
   emitterName: string;
   emitterPhone: string;
   emitterId: string;
-};
+}
 
+/** --- Componente principal --- */
 const AlertMapContainer: React.FC = () => {
   const [emergencies, setEmergencies] = useState<AlertData[]>([]);
   const audioRef = useRef<HTMLAudioElement | null>(null);
 
-  useEffect(() => {
-    const entityId = localStorage.getItem("entity_sonId");
+  /** ────────────────── FUNCIONES HANDLER ────────────────── */
+  const handlePanicAlert = (data: any) => {
+    console.log("🔔 Nueva alerta recibida:", data);
 
-    socket.on("connect", () => {
-      console.log("✅ Conectado al socket:", socket.id);
-      socket.emit("join-entity", entityId);
-      console.log("🔗 Unido a la entidad:", entityId);
-    });
+    const match = data.locationUrl?.match(/query=(-?\d+\.\d+),(-?\d+\.\d+)/);
+    if (!match) return;
 
-    socket.on("panicAlert", (data) => {
-      console.log("🔔 Nueva alerta recibida:", data);
-      const match = data.locationUrl?.match(/query=(-?\d+\.\d+),(-?\d+\.\d+)/);
-      if (!match) return;
-      const lat = parseFloat(match[1]);
-      const lng = parseFloat(match[2]);
+    const lat = parseFloat(match[1]);
+    const lng = parseFloat(match[2]);
 
-      const newAlert: AlertData = {
-        id: String(data.notifyId || Date.now()),
-        notifyId: data.notifyId,
-        lat,
-        lng,
-        emitterName: data.emitterName,
-        emitterPhone: data.emitterPhone,
-        emitterId: data.userId,
-      };
-
-      setEmergencies((prev) => [...prev, newAlert]);
-
-      if (audioRef.current) {
-        audioRef.current.play().catch((err) => {
-          console.error("❌ Error al reproducir sonido:", err.message);
-        });
-      }
-    });
-
-    socket.on("alerta-atendida", ({ notifyId }) => {
-      console.log(`🚫 Eliminar alerta atendida: ${notifyId}`);
-      setEmergencies((prev) => prev.filter((alert) => alert.notifyId !== notifyId));
-        if (audioRef.current) {
-            audioRef.current.pause();
-            audioRef.current.currentTime = 0;
-        }
-    });
-
-    return () => {
-      socket.off("connect");
-      socket.off("panicAlert");
-      socket.off("alerta-atendida");
+    const newAlert: AlertData = {
+      id: `${data.alertId}`,
+      alertId: data.alertId,
+      lat,
+      lng,
+      emitterName: data.emitterName,
+      emitterPhone: data.emitterPhone,
+      emitterId: data.userId,
     };
-  }, []);
 
-  const handleAttend = (id: string, notifyId: string, userId: string, recipientId: string) => {
-    if (audioRef.current) {
+    setEmergencies((prev) => [...prev, newAlert]);
+
+    audioRef.current?.play().catch((err) =>
+      console.error("❌ Error al reproducir sonido:", err.message)
+    );
+  };
+
+  const handleAlertaAtendida = ({ alertId }: { alertId: string }) => {
+    console.log(`🚫 Alerta atendida: ${alertId}`);
+    setEmergencies((prev) => prev.filter((a) => a.alertId !== alertId));
+
+    if (audioRef.current && emergencies.length <= 1) {
       audioRef.current.pause();
       audioRef.current.currentTime = 0;
     }
+  };
 
-     recipientId = localStorage.getItem('userId') || ''; // Asegurarse de que recipientId tenga un valor válido
-    console.log(`✅ Atender alerta: ${id}, notifyId: ${notifyId}, userId: ${userId}, recipientId: ${recipientId}`);
+  const handleAttend = (id: string, alertId: string, emitterId: string) => {
+    const recipientId = localStorage.getItem("userId") || "";
+
+    console.log(
+      `✅ Atender alerta: id(${id}) alertId(${alertId}) userId(${emitterId}) recipientId(${recipientId})`
+    );
+
     socket.emit("atender-alerta", {
-      notifyId,
-      userId,
+      alertId,
+      userId: emitterId,
       recipientId,
     });
 
     setEmergencies((prev) => prev.filter((e) => e.id !== id));
+
+    if (audioRef.current && emergencies.length <= 1) {
+      audioRef.current.pause();
+      audioRef.current.currentTime = 0;
+    }
   };
 
+  /** ────────────────── SOCKET LISTENERS ────────────────── */
+  useEffect(() => {
+    const entityId = localStorage.getItem("entity_sonId");
+    if (!entityId) return;
+
+    if (socket.connected) {
+      socket.emit("join-entity", entityId);
+      console.log("🔗 Ya conectado. Emitiendo join-entity:", entityId);
+    }
+
+    const handleConnect = () => {
+      console.log("✅ Conectado al socket:", socket.id);
+      socket.emit("join-entity", entityId);
+      console.log("🔗 Emitido join-entity tras connect:", entityId);
+    };
+
+    socket.on("connect", handleConnect);
+    socket.on("panicAlert", handlePanicAlert);
+    socket.on("alerta-atendida", handleAlertaAtendida);
+
+    return () => {
+      socket.off("connect", handleConnect);
+      socket.off("panicAlert", handlePanicAlert);
+      socket.off("alerta-atendida", handleAlertaAtendida);
+    };
+  }, [emergencies.length]);
+
+  /** ────────────────── RENDER ────────────────── */
   return (
     <>
       <audio ref={audioRef} src="/sounds/alarm.mp3" loop preload="auto" />
@@ -94,8 +113,3 @@ const AlertMapContainer: React.FC = () => {
 };
 
 export default AlertMapContainer;
-
-
-
-
-

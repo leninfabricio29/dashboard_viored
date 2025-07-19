@@ -1,4 +1,5 @@
 import React, { useEffect, useState } from "react";
+import { FiX } from "react-icons/fi";
 
 import { entityUsersService } from "../../services/entity.service";
 import { Entity } from "../../types/user.types";
@@ -19,14 +20,13 @@ export const DetailEntityModel: React.FC<Props> = ({
   const [error, setError] = useState<string | null>(null);
 
   const handleToggle = async (id: string, newStatus: boolean) => {
-    try {
-      //await entityUsersService.updateEntityStatus(id, { is_active: newStatus });
-      console.log(id)
-      setEntity((prev: any) => ({ ...prev, is_active: newStatus }));
-    } catch (err) {
-      console.error("Error al actualizar estado:", err);
-    }
-  };
+  try {
+    await entityUsersService.updateEntityStatus(id, newStatus); // ← aquí se hace el PUT real
+    setEntity((prev: any) => prev ? { ...prev, is_active: newStatus } : prev);
+  } catch (err) {
+    console.error("Error al actualizar estado:", err);
+  }
+};
 
   const getTypeLabel = (type: string) => {
     const types = {
@@ -79,141 +79,144 @@ export const DetailEntityModel: React.FC<Props> = ({
     : null;
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50">
-      <div className="bg-white rounded-xl shadow-lg w-full max-w-sm max-h-[85vh] overflow-hidden border border-slate-100">
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4">
+      <div className="bg-white rounded-lg shadow-xl w-full max-w-sm overflow-hidden">
         {/* Header */}
-        <div className="bg-blue-950 p-4 text-white relative">
+        <div className="bg-blue-600 px-4 py-3 text-white flex items-center justify-between">
+          <h2 className="text-lg font-semibold">Detalles de Entidad</h2>
           <button
             onClick={onClose}
-            className="absolute top-2 right-2 p-1 hover:bg-white hover:bg-opacity-20 rounded-full transition-all"
+            className="p-1 hover:bg-blue-700 rounded transition-colors"
           >
-            <svg
-              className="w-4 h-4"
-              fill="none"
-              stroke="currentColor"
-              viewBox="0 0 24 24"
-            >
-              <path
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                strokeWidth="2"
-                d="M6 18L18 6M6 6l12 12"
-              />
-            </svg>
+            <FiX className="w-5 h-5" />
           </button>
-
-          <div className="flex items-center gap-2">
-            <h2 className="text-xl font-bold">Detalles de Entidad</h2>
-          </div>
         </div>
 
         {/* Content */}
-        <div className="p-4 overflow-y-auto max-h-[calc(85vh-120px)]">
+        <div className="p-6 overflow-y-auto max-h-[calc(90vh-140px)]">
           {loading && (
-            <div className="flex items-center justify-center py-4">
-              <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-blue-600"></div>
-              <span className="ml-2 text-slate-600 text-sm">Cargando...</span>
+            <div className="flex flex-col items-center justify-center py-12">
+              <div className="animate-spin rounded-full h-10 w-10 border-4 border-blue-200 border-t-blue-600 mb-4"></div>
+              <span className="text-gray-600 text-sm">Cargando información...</span>
             </div>
           )}
 
           {error && (
-            <div className="bg-red-50 border border-red-200 rounded-lg p-3 mb-3 flex items-start gap-2">
-              <svg
-                className="w-4 h-4 text-red-500 mt-0.5"
-                fill="none"
-                stroke="currentColor"
-                viewBox="0 0 24 24"
-              >
-                <path
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  strokeWidth="2"
-                  d="M10 14l2-2m0 0l2-2m-2 2l-2-2m2 2l2 2m7-2a9 9 0 11-18 0 9 9 0 0118 0z"
-                />
-              </svg>
-              <p className="text-red-700 text-xs">{error}</p>
+            <div className="bg-red-50 border border-red-200 rounded-xl p-4 mb-6 flex items-start gap-3">
+              <div className="w-6 h-6 bg-red-100 rounded-full flex items-center justify-center flex-shrink-0 mt-0.5">
+                <svg
+                  className="w-4 h-4 text-red-500"
+                  fill="none"
+                  stroke="currentColor"
+                  viewBox="0 0 24 24"
+                >
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth="2"
+                    d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"
+                  />
+                </svg>
+              </div>
+              <div>
+                <p className="text-red-800 font-medium text-sm">Error</p>
+                <p className="text-red-600 text-sm">{error}</p>
+              </div>
             </div>
           )}
 
           {entity && (
-            <div className="space-y-4">
-              {/* Main Title */}
-              <div className="text-center">
-                <h3 className="text-xl font-bold text-slate-800">
+            <div className="space-y-6">
+              {/* Entity Header */}
+              <div className="text-center pb-4 border-b border-gray-100">
+                <div className="w-16 h-16 bg-gradient-to-br from-blue-100 to-blue-200 rounded-2xl flex items-center justify-center mx-auto mb-3">
+                  <span className="text-2xl font-bold text-blue-600">
+                    {entity.name.charAt(0).toUpperCase()}
+                  </span>
+                </div>
+                <h3 className="text-2xl font-bold text-gray-800 mb-1">
                   {entity.name}
                 </h3>
-                <p className="text-slate-500 text-xs">Entidad registrada</p>
+                <p className="text-gray-500 text-sm">{entity.email}</p>
               </div>
 
-              {/* Info Box */}
-              <div className="bg-white rounded-lg p-4 border border-slate-200 shadow-sm">
-                <div className="grid grid-cols-2 gap-3 text-xs">
-                  {/* Email */}
-                  <div className="col-span-2">
-                    <p className="text-slate-500 font-semibold mb-0.5">Email</p>
-                    <p className="text-slate-800">{entity.email}</p>
-                  </div>
-
-                  {/* Type */}
-                  <div>
-                    <p className="text-slate-500 font-semibold mb-0.5">Tipo</p>
-                    <p className="text-slate-800">
+              {/* Information Grid */}
+              <div className="space-y-4">
+                {/* Type and Collaborators Row */}
+                <div className="grid grid-cols-2 gap-4">
+                  <div className="bg-gray-50 rounded-xl p-4">
+                    <div className="flex items-center gap-2 mb-2">
+                      
+                      <p className="text-gray-500 font-medium text-sm">Tipo</p>
+                    </div>
+                    <p className="text-gray-800 font-semibold">
                       {getTypeLabel(entity.type)}
                     </p>
                   </div>
 
-                  {/* Collaborators */}
-                  <div>
-                    <p className="text-slate-500 font-semibold mb-0.5">
-                      Colaboradores
-                    </p>
-                    <p className="text-slate-800">
+                  <div className="bg-gray-50 rounded-xl p-4">
+                    <div className="flex items-center gap-2 mb-2">
+                     
+                      <p className="text-gray-500 font-medium text-sm">Colaboradores</p>
+                    </div>
+                    <p className="text-gray-800 font-semibold text-xl">
                       {entity.users_sons?.length || 0}
                     </p>
                   </div>
+                </div>
 
-                  {/* Subscription */}
-                  <div>
-                    <p className="text-slate-500 font-semibold mb-0.5">
-                      Suscripción
-                    </p>
+                {/* Subscription */}
+                <div className="bg-gray-50 rounded-xl p-4">
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-2">
+                      
+                      <p className="text-gray-500 font-medium text-sm">Suscripción</p>
+                    </div>
                     <span
-                      className={`inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium ${subscriptionBadge.color}`}
+                      className={`inline-flex items-center px-3 py-1.5 rounded-full text-sm font-medium shadow-sm ${subscriptionBadge.color}`}
                     >
                       {subscriptionBadge.label}
                     </span>
                   </div>
-
-                  {/* Status with Toggle */}
-                  <div>
-                    <p className="text-slate-500 font-semibold mb-0.5">
-                      Estado
-                    </p>
-                    <div className="flex items-center gap-2">
-                      <span
-                        className={`text-xs font-medium ${
-                          entity.is_active ? "text-green-600" : "text-red-500"
-                        }`}
-                      >
-                        {entity.is_active ? "Activo" : "Inactivo"}
-                      </span>
-                      <button
-                        onClick={() =>
-                          handleToggle(entity._id, !entity.is_active)
-                        }
-                        className={`relative inline-flex h-4 w-8 items-center rounded-full transition-colors ${
-                          entity.is_active ? "bg-green-500" : "bg-gray-300"
-                        }`}
-                      >
-                        <span
-                          className={`inline-block h-3 w-3 transform rounded-full bg-white transition-transform ${
-                            entity.is_active ? "translate-x-4" : "translate-x-1"
-                          }`}
-                        />
-                      </button>
-                    </div>
-                  </div>
                 </div>
+
+                {/* Status with Toggle */}
+                {/* Status with Toggle */}
+{/* Estado con Toggle */}
+<div className="bg-gray-50 rounded-xl p-4">
+  <div className="flex items-center justify-between">
+    {/* Estado textual e indicador */}
+    <div className="flex items-center gap-3">
+      <div className={`w-3 h-3 rounded-full ${
+        entity.is_active ? "bg-green-500" : "bg-red-500"
+      }`} />
+      <div>
+        <p className="text-gray-500 font-medium text-sm">Estado</p>
+        <p className={`text-sm font-semibold ${
+          entity.is_active ? "text-green-600" : "text-red-600"
+        }`}>
+          {entity.is_active ? "Activo" : "Inactivo"}
+        </p>
+      </div>
+    </div>
+
+    {/* Toggle visual */}
+    <div
+      onClick={() => handleToggle(entity._id, !entity.is_active)}
+      className={`relative w-12 h-6 flex items-center rounded-full cursor-pointer transition-colors ${
+        entity.is_active ? "bg-green-500" : "bg-gray-300"
+      }`}
+    >
+      <div
+        className={`absolute w-5 h-5 bg-white rounded-full shadow transform transition-transform duration-200 ${
+          entity.is_active ? "translate-x-6" : "translate-x-1"
+        }`}
+      />
+    </div>
+  </div>
+</div>
+
+
               </div>
             </div>
           )}

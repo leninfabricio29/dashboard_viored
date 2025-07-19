@@ -80,7 +80,21 @@ export const entityUsersService = {
       console.error("Error al aceptar la petición:", error);
       throw error;
     }
+  },
+  
+  updateEntityStatus: async (id: string, isActive: boolean): Promise<Entity> => {
+  try {
+    const response = await api.put<Entity>(`/api/entity/${id}`, {
+      isActive
+    });
+    return response.data;
+  } catch (error) {
+    console.error("Error al actualizar el estado de la entidad:", error);
+    throw error;
   }
+},
+
+
 
 };
 

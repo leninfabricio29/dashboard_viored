@@ -4,7 +4,7 @@ import { Popup } from "react-map-gl";
 type EmergencyMarkerProps = {
   alert: {
     id: string;
-    notifyId: string;
+    alertId: string;
     lat: number;
     lng: number;
     name: string;
@@ -13,7 +13,7 @@ type EmergencyMarkerProps = {
   };
   onAttend: (
     id: string,
-    notifyId: string,
+    alertId: string,
     userId: string,
     recipientId: string
   ) => void;
@@ -54,7 +54,7 @@ export const EmergencyMarker = ({ alert, onAttend }: EmergencyMarkerProps) => {
             <p className="text-gray-800 font-bold truncate">Llamar a: {alert.phone}</p>
             <button
               onClick={() =>
-                onAttend(alert.id, alert.notifyId, alert.emitterId, alert.emitterId)
+                onAttend(alert.id, alert.alertId, alert.emitterId, alert.emitterId)
               }
               className="w-full py-1.5 bg-green-600 hover:bg-green-700 text-white text-xs font-semibold rounded"
             >

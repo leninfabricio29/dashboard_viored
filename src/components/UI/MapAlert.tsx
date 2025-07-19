@@ -12,7 +12,7 @@ type MapAlertProps = {
   width?: string;
   onAttend: (
     id: string,
-    notifyId: string,
+    alertId: string,
     userId: string,
     recipientId: string
   ) => void;
@@ -129,7 +129,7 @@ const MapAlert: React.FC<MapAlertProps> = ({
         <EmergencyMarker
           alert={{
             id: alert.id,
-            notifyId: alert.notifyId,
+            alertId: alert.alertId,
             lat: alert.lat,
             lng: alert.lng,
             name: alert.emitterName,
