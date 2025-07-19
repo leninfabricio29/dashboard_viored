@@ -18,15 +18,26 @@ type MapAlertProps = {
   ) => void;
 };
 
-export const mapboxStyles: string[] = [
-  'mapbox://styles/mapbox/navigation-night-v1',
-    'mapbox://styles/mapbox/light-v11',
-
-  'mapbox://styles/mapbox/satellite-streets-v11'
+export const mapboxStyles: { key: string; value: string; name: string }[] = [
+  {
+    key: 'dark',
+    value: 'mapbox://styles/mapbox/navigation-night-v1',
+    name: 'Oscuro'
+  },
+  {
+    key: 'light',
+    value: 'mapbox://styles/mapbox/light-v11',
+    name: 'Claro'
+  },
+  {
+    key: 'satellite',
+    value: 'mapbox://styles/mapbox/satellite-streets-v11',
+    name: 'Satélite'
+  }
 ];
 
 function getMapboxStyle(index: number = 0): string {
-  return mapboxStyles[index] || mapboxStyles[0];
+  return mapboxStyles[index]?.value || mapboxStyles[0].value;
 }
 
 // Componente interno que usa useMap()
@@ -100,11 +111,11 @@ const MapAlert: React.FC<MapAlertProps> = ({
           onChange={(e) => setStyleIndex(Number(e.target.value))}
           className="px-3 py-1 rounded border border-gray-300 bg-white text-sm outline-none cursor-pointer focus:ring-2 focus:ring-blue-400"
         >
-          {mapboxStyles.map((style, idx) => (
-            <option key={style} value={idx}>
-              {style.split('/').pop()}
+            {mapboxStyles.map((style, idx) => (
+            <option key={style.key} value={idx}>
+              {style.name}
             </option>
-          ))}
+            ))}
         </select>
       </div>
       
