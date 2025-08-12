@@ -1,4 +1,5 @@
 import { Routes, Route, Navigate } from "react-router-dom";
+import RoleProtectedRoute from "./components/RoleProtectedRoute";
 import { DashboardLayout } from "./components/layout/DashboardLayout";
 import Dashboard from "./pages/Dashboard";
 import UsersList from "./pages/modules/Users/UsersList";
@@ -51,11 +52,12 @@ function App() {
         path="/"
         element={
           <ProtectedRoute>
-            <DashboardLayout />
+            <RoleProtectedRoute allowedRoles={["admin"]}>
+              <DashboardLayout />
+            </RoleProtectedRoute>
           </ProtectedRoute>
         }
       >
-
         <Route index element={<Dashboard />} />
 
         {/* Rutas para módulo de usuarios */}
@@ -109,13 +111,15 @@ function App() {
 
        
     <Route
-  path="/monitoring/*"
-  element={
-    <ProtectedRoute>
-      <DashboardEntity />
-    </ProtectedRoute>
-  }
-/>
+      path="/monitoring/*"
+      element={
+        <ProtectedRoute>
+          <RoleProtectedRoute allowedRoles={["entity", "son"]}>
+            <DashboardEntity />
+          </RoleProtectedRoute>
+        </ProtectedRoute>
+      }
+    />
       
 
     </Routes>

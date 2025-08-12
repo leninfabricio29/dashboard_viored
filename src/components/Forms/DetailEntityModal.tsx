@@ -126,99 +126,66 @@ export const DetailEntityModel: React.FC<Props> = ({
           )}
 
           {entity && (
-            <div className="space-y-6">
-              {/* Entity Header */}
-              <div className="text-center pb-4 border-b border-gray-100">
-                <div className="w-16 h-16 bg-gradient-to-br from-blue-100 to-blue-200 rounded-2xl flex items-center justify-center mx-auto mb-3">
-                  <span className="text-2xl font-bold text-blue-600">
-                    {entity.name.charAt(0).toUpperCase()}
-                  </span>
-                </div>
-                <h3 className="text-2xl font-bold text-gray-800 mb-1">
-                  {entity.name}
-                </h3>
-                <p className="text-gray-500 text-sm">{entity.email}</p>
-              </div>
-
-              {/* Information Grid */}
-              <div className="space-y-4">
-                {/* Type and Collaborators Row */}
-                <div className="grid grid-cols-2 gap-4">
-                  <div className="bg-gray-50 rounded-xl p-4">
-                    <div className="flex items-center gap-2 mb-2">
-                      
-                      <p className="text-gray-500 font-medium text-sm">Tipo</p>
-                    </div>
-                    <p className="text-gray-800 font-semibold">
-                      {getTypeLabel(entity.type)}
-                    </p>
+              <div className="space-y-6">
+                {/* Entity Header */}
+                <div className="text-center pb-4 border-b border-gray-100">
+                  <div className="w-16 h-16 bg-gradient-to-br from-blue-100 to-blue-200 rounded-2xl flex items-center justify-center mx-auto mb-3">
+                    <span className="text-2xl font-bold text-blue-600">
+                      {entity.name.charAt(0).toUpperCase()}
+                    </span>
                   </div>
-
-                  <div className="bg-gray-50 rounded-xl p-4">
-                    <div className="flex items-center gap-2 mb-2">
-                     
-                      <p className="text-gray-500 font-medium text-sm">Colaboradores</p>
-                    </div>
-                    <p className="text-gray-800 font-semibold text-xl">
-                      {entity.users_sons?.length || 0}
-                    </p>
-                  </div>
+                  <h3 className="text-2xl font-bold text-gray-800 mb-1">
+                    {entity.name}
+                  </h3>
+                  <p className="text-gray-500 text-sm">{entity.email}</p>
                 </div>
 
-                {/* Subscription */}
-                <div className="bg-gray-50 rounded-xl p-4">
-                  <div className="flex items-center justify-between">
-                    <div className="flex items-center gap-2">
-                      
-                      <p className="text-gray-500 font-medium text-sm">Suscripción</p>
+                {/* Information Grid Mejorada */}
+                <div className="grid grid-cols-1 gap-4">
+                  <div className="grid grid-cols-2 gap-4">
+                    {/* Tipo */}
+                    <div className="bg-gray-50 rounded-xl p-4 flex flex-col items-center justify-center">
+                      <p className="text-gray-500 font-medium text-sm mb-1">Tipo</p>
+                      <p className="text-gray-800 font-semibold text-base">{getTypeLabel(entity.type)}</p>
                     </div>
-                    <span
-                      className={`inline-flex items-center px-3 py-1.5 rounded-full text-sm font-medium shadow-sm ${subscriptionBadge.color}`}
-                    >
+                    {/* Colaboradores */}
+                    <div className="bg-gray-50 rounded-xl p-4 flex flex-col items-center justify-center">
+                      <p className="text-gray-500 font-medium text-sm mb-1">Tu grupo</p>
+                      <p className="text-gray-800 font-semibold text-xl">{entity.users_sons?.length || 0}</p>
+                    </div>
+                  </div>
+                  {/* Suscripción */}
+                  <div className="bg-gray-50 rounded-xl p-4 flex flex-col items-center justify-center">
+                    <p className="text-gray-500 font-medium text-sm mb-1">Suscripción</p>
+                    <span className={`inline-flex items-center px-3 py-1.5 rounded-full text-sm font-medium shadow-sm ${subscriptionBadge.color}`}>
                       {subscriptionBadge.label}
                     </span>
                   </div>
+                  {/* Estado con Toggle Mejorado */}
+                  <div className="bg-gray-50 rounded-xl p-4 flex flex-col items-center justify-center">
+                    <div className="flex items-center gap-4 w-full justify-between">
+                      <div className="flex items-center gap-3">
+                        <div className={`w-3 h-3 rounded-full ${entity.is_active ? "bg-green-500" : "bg-red-500"}`} />
+                        <div>
+                          <p className="text-gray-500 font-medium text-sm">Estado</p>
+                          <p className={`text-sm font-semibold ${entity.is_active ? "text-green-600" : "text-red-600"}`}>{entity.is_active ? "Activo" : "Inactivo"}</p>
+                        </div>
+                      </div>
+                      {/* Toggle visual mejorado */}
+                      <button
+                        onClick={() => handleToggle(entity._id, !entity.is_active)}
+                        className={`relative w-12 h-7 flex items-center rounded-full transition-colors duration-200 focus:outline-none border-2 ${entity.is_active ? "bg-green-500 border-green-600" : "bg-gray-300 border-gray-400"}`}
+                        aria-label="Cambiar estado"
+                      >
+                        <span
+                          className={`absolute left-0 top-0 w-7 h-7 rounded-full shadow-md bg-white border transition-transform duration-200 ${entity.is_active ? "translate-x-5 border-green-500" : "translate-x-0 border-gray-400"}`}
+                          style={{ boxShadow: "0 2px 8px 0 rgba(0,0,0,0.10)" }}
+                        />
+                      </button>
+                    </div>
+                  </div>
                 </div>
-
-                {/* Status with Toggle */}
-                {/* Status with Toggle */}
-{/* Estado con Toggle */}
-<div className="bg-gray-50 rounded-xl p-4">
-  <div className="flex items-center justify-between">
-    {/* Estado textual e indicador */}
-    <div className="flex items-center gap-3">
-      <div className={`w-3 h-3 rounded-full ${
-        entity.is_active ? "bg-green-500" : "bg-red-500"
-      }`} />
-      <div>
-        <p className="text-gray-500 font-medium text-sm">Estado</p>
-        <p className={`text-sm font-semibold ${
-          entity.is_active ? "text-green-600" : "text-red-600"
-        }`}>
-          {entity.is_active ? "Activo" : "Inactivo"}
-        </p>
-      </div>
-    </div>
-
-    {/* Toggle visual */}
-    <div
-      onClick={() => handleToggle(entity._id, !entity.is_active)}
-      className={`relative w-12 h-6 flex items-center rounded-full cursor-pointer transition-colors ${
-        entity.is_active ? "bg-green-500" : "bg-gray-300"
-      }`}
-    >
-      <div
-        className={`absolute w-5 h-5 bg-white rounded-full shadow transform transition-transform duration-200 ${
-          entity.is_active ? "translate-x-6" : "translate-x-1"
-        }`}
-      />
-    </div>
-  </div>
-</div>
-
-
               </div>
-            </div>
           )}
         </div>
       </div>

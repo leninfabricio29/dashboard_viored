@@ -14,10 +14,12 @@ import authService from "../../services/auth-service";
 import userService from "../../services/user-service";
 import Footer from "./Footer";
 import { Link, useLocation } from "react-router-dom";
+
 import MonitoringMap from "../../pages/modules/Entity/MonitoringMap";
 import Members from "../../pages/modules/Entity/Members";
 import AlertsHistory from "../../pages/modules/Entity/AlertsHistory";
 import HistoryAdmin from "../../pages/modules/Entity/HistoryAdmin";
+import SettingsEntity from "../../pages/modules/Entity/SettingsEntity";
 import Modal from "./Modal";
 
 export const DashboardEntity = () => {
@@ -268,9 +270,17 @@ export const DashboardEntity = () => {
   </Modal>
 )}
 
+
 {modalType === "history" && (
   <Modal isOpen onClose={() => setModalType(null)} title="Bitácora del Sistema">
     <HistoryAdmin />
+  </Modal>
+)}
+
+{modalType === "settings" && (
+  <Modal isOpen onClose={() => setModalType(null)} title="Configuración">
+    {/* Se asume que el usuario logueado tiene su id en localStorage bajo 'userId' */}
+    <SettingsEntity id={localStorage.getItem("userId") || ""} />
   </Modal>
 )}
 

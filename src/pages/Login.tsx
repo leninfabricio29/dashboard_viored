@@ -29,12 +29,15 @@ const Login = () => {
       setIsLoading(false);
       return;
     }
+    // Guardar el rol y el id del usuario en el localStorage
+    localStorage.setItem("role", response.user.role);
+    localStorage.setItem("userId", response.user._id);
+    if (response.user.role === "entity" || response.user.role === "son") {
+      localStorage.setItem("entity_sonId", response.entidadId || '');
+    }
     if (response.user.role === "admin") {
       navigate("/");
     } else if (response.user.role === "entity" || response.user.role === "son") {
-      //Guardar el id del usuario en el localStorage
-      localStorage.setItem("userId", response.user._id);
-      localStorage.setItem("entity_sonId", response.entidadId || '');
       navigate("/monitoring");
     } else {
       setError("No tienes permisos para acceder a esta página");

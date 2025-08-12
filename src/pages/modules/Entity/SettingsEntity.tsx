@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { useNavigate, useParams } from "react-router-dom";
+import { useNavigate } from "react-router-dom";
 import authService from "../../../services/auth-service";
 import userService from "../../../services/user-service";
 import ButtonIndicator from "../../../components/UI/ButtonIndicator";
@@ -12,9 +12,13 @@ const TABS = [
     { key: "password", label: "Contraseña", icon: <FiLock /> },
 ];
 
-const UserProfile = () => {
+interface SettingsEntityProps {
+    id: string;
+}
+
+const SettingsEntity = ({ id }: SettingsEntityProps) => {
     const [activeTab, setActiveTab] = useState("profile");
-    const { id } = useParams();
+    // id viene por props ahora
     const [userEmail, setUserEmail] = useState("");
     const [passwordData, setPasswordData] = useState({
         currentPassword: "",
@@ -535,4 +539,4 @@ const UserProfile = () => {
     );
 };
 
-export default UserProfile;
+export default SettingsEntity;
