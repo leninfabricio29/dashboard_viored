@@ -8,7 +8,7 @@ import {
   markNotificationAsRead,
 } from "../../services/notifications-service";
 import NotificationsDropdown from "./NotificationDropdown";
-import Logo from "../../assets/Icono de advertencia y letra P.png";
+import Logo from "../../assets/icon.png";
 
 interface User {
   name: string;
@@ -116,7 +116,7 @@ const Header = () => {
   };
 
   return (
-    <header className="bg-gradient-to-r from-slate-900 to-slate-800 shadow-lg">
+    <header className="bg-slate-700 shadow-lg">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="flex justify-between items-center h-20">
           {/* Logo */}
@@ -173,7 +173,7 @@ const Header = () => {
               </button>
 
               {isUserDropdownOpen && (
-                <div className="absolute right-0 mt-2 w-52 bg-slate-800 rounded-xl shadow-xl ring-1 ring-slate-700 z-50 overflow-hidden">
+                <div className="absolute right-0 mt-2 w-52 bg-slate-700 rounded-xl shadow-xl ring-1 ring-slate-700 z-50 overflow-hidden">
                   <Link
                     to={`/settings/${userId}`}
                     className="flex items-center gap-2 px-4 py-3 text-sm text-slate-200 hover:bg-slate-700 hover:text-white hover:border-l-4 hover:border-blue-500 transition-all duration-150"

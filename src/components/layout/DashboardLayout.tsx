@@ -109,8 +109,8 @@ export const DashboardLayout = () => {
     <div className="flex h-screen bg-gray-50">
       {/* Sidebar */}
       <aside
-        className={`${sidebarOpen ? "w-80" : "w-32"} 
-          relative top-0 left-0 z-10 h-screen shadow-lg bg-gradient-to-r from-slate-900 to-slate-800 
+        className={`${sidebarOpen ? "w-60" : "w-32"} 
+          relative top-0 left-0 z-10 h-screen shadow-lg bg-slate-700
           transition-all duration-300 overflow-hidden`}
         style={{
           // Opcional: comentar si no usas imagen

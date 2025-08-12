@@ -105,10 +105,10 @@ const Dashboard = () => {
   const registerNeighborhood = neighborhoods.length;
 const usersFilteres = users.filter(user => user.role === 'user')
   const stats = [
-    { name: "Usuarios activos", value: usersFilteres.length, icon: FiUsers, trend: "up" },
-    { name: "Barrios registrados", value: registerNeighborhood, icon: FiMap, trend: "up" },
-    { name: "Alertas por día", value: alertasDia, icon: FiActivity, trend: "down" },
-    { name: "Total de Alertas", value: totalAlertas, icon: FiAlertCircle, trend: "down" },
+    { name: "Usuarios activos", value: usersFilteres.length, icon: FiUsers,  },
+    { name: "Barrios registrados", value: registerNeighborhood, icon: FiMap,  },
+    { name: "Alertas por día", value: alertasDia, icon: FiActivity,  },
+    { name: "Total de Alertas", value: totalAlertas, icon: FiAlertCircle, },
   ];
 
   return (
@@ -119,28 +119,31 @@ const usersFilteres = users.filter(user => user.role === 'user')
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
-        {stats.map((stat, index) => (
-          <div
-            key={index}
-            className="bg-white rounded-xl shadow-sm border border-slate-200 p-6 hover:shadow-md transition-shadow"
-          >
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-sm font-medium text-slate-500">{stat.name}</p>
-                <p className="text-2xl font-semibold text-slate-800 mt-1">{stat.value}</p>
-              </div>
-              <div
-                className={`p-3 rounded-lg ${
-                  stat.trend === "up"
-                    ? "bg-emerald-50 text-emerald-600"
-                    : "bg-red-50 text-red-600"
-                }`}
-              >
-                <stat.icon className="w-6 h-6" />
-              </div>
+        {stats.map((stat, index) => {
+          // Define a different bg color for each card
+          const bgColors = [
+        "bg-blue-100",
+        "bg-emerald-100",
+        "bg-yellow-100",
+        "bg-red-100"
+          ];
+          return (
+        <div
+          key={index}
+          className={`${bgColors[index % bgColors.length]} rounded-xl shadow-sm border border-slate-200 p-6 hover:shadow-md transition-shadow`}
+        >
+          <div className="flex items-center justify-between">
+            <div>
+          <p className="text-sm font-medium text-slate-500">{stat.name}</p>
+          <p className="text-2xl font-semibold text-slate-800 mt-1">{stat.value}</p>
+            </div>
+            <div className="text-gray-800">
+          <stat.icon className="w-6 h-6" />
             </div>
           </div>
-        ))}
+        </div>
+          );
+        })}
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-8">

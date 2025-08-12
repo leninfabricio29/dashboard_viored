@@ -2,7 +2,8 @@ import { useState, FormEvent } from "react";
 import { useNavigate } from "react-router-dom";
 import { FiUser, FiKey, FiEyeOff, FiEye } from "react-icons/fi";
 import authService from "../../src/services/auth-service";
-import { FiShield } from "react-icons/fi";
+import Logo from "../assets/icon.png";
+
 const Login = () => {
   const navigate = useNavigate();
   const [email, setEmail] = useState("");
@@ -58,25 +59,22 @@ const Login = () => {
 
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-slate-100 px-4">
-      <div className="max-w-md w-full bg-white rounded-2xl shadow-xl overflow-hidden p-8 space-y-6">
+    <div className="min-h-screen flex items-center justify-center ">
+      <div className="max-w-md w-full bg-white/90 backdrop-blur-md rounded-3xl shadow-2xl overflow-hidden p-10 space-y-8 border border-indigo-100">
         <div className="flex flex-col items-center text-center">
-          <div className="bg-slate-700 rounded-full p-4 mb-4 shadow-lg">
-            <FiShield className="h-10 w-10 text-white" />
+          <div className="rounded-full px-5 mb-5">
+           <img
+              src={Logo}
+              alt="Logo de la empresa"
+              className="w-32 h-32 object-contain"
+            />
           </div>
-          <h1 className="text-3xl font-extrabold text-slate-800">
-            V-SOS Gestión
-          </h1>
-          <p className="text-slate-500 mt-2 text-sm">
-            Ingrese sus credenciales para continuar
-          </p>
+          <h1 className="text-4xl font-extrabold text-slate-700 tracking-tight drop-shadow">V-SOS Gestión</h1>
+          <p className="text-slate-400 mt-2 text-base font-medium">Accede a tu panel de emergencias</p>
         </div>
 
-        
-
-
         {error && (
-          <div className="bg-red-50 border-l-4 border-red-500 text-red-700 p-4 rounded flex items-center text-sm">
+          <div className="bg-red-100 border-l-4 border-red-500 text-red-700 p-4 rounded-xl flex items-center text-sm shadow">
             <svg
               xmlns="http://www.w3.org/2000/svg"
               className="h-5 w-5 mr-2"
@@ -93,12 +91,9 @@ const Login = () => {
           </div>
         )}
 
-        <form onSubmit={handleSubmit} className="space-y-5">
-          <div className="space-y-1">
-            <label
-              htmlFor="email"
-              className="block text-sm font-medium text-slate-700"
-            >
+        <form onSubmit={handleSubmit} className="space-y-6">
+          <div className="space-y-2">
+            <label htmlFor="email" className="block text-base font-semibold text-slate-700">
               <div className="flex items-center">
                 <FiUser className="h-5 w-5 mr-2 text-slate-400" />
                 Email
@@ -107,19 +102,17 @@ const Login = () => {
             <input
               type="email"
               id="email"
-              className="w-full px-4 py-3 rounded-lg border border-slate-300 focus:ring-2 focus:ring-slate-500 focus:border-slate-500 transition duration-300"
+              className="w-full px-5 py-3 rounded-xl border border-indigo-200 focus:ring-2 focus:ring-indigo-400 focus:border-indigo-400 bg-white/80 text-slate-700 placeholder-slate-300 font-medium shadow-sm transition duration-300"
               placeholder="correo@ejemplo.com"
               value={email}
               onChange={(e) => setEmail(e.target.value)}
               required
+              autoComplete="username"
             />
           </div>
 
-          <div className="space-y-1">
-            <label
-              htmlFor="password"
-              className="block text-sm font-medium text-slate-700"
-            >
+          <div className="space-y-2">
+            <label htmlFor="password" className="block text-base font-semibold text-slate-700">
               <div className="flex items-center">
                 <FiKey className="h-5 w-5 mr-2 text-slate-400" />
                 Contraseña
@@ -129,16 +122,18 @@ const Login = () => {
               <input
                 type={showPassword ? "text" : "password"}
                 id="password"
-                className="w-full px-4 py-3 pr-12 rounded-lg border border-slate-300 focus:ring-2 focus:ring-slate-500 focus:border-slate-500 transition duration-300"
+                className="w-full px-5 py-3 pr-12 rounded-xl border border-indigo-200 focus:ring-2 focus:ring-indigo-400 focus:border-indigo-400 bg-white/80 text-slate-700 placeholder-slate-300 font-medium shadow-sm transition duration-300"
                 placeholder="Ingrese su contraseña"
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
                 required
+                autoComplete="current-password"
               />
               <button
                 type="button"
                 onClick={() => setShowPassword((prev) => !prev)}
-                className="absolute right-3 top-1/2 transform -translate-y-1/2 text-slate-500 hover:text-slate-700"
+                className="absolute right-3 top-1/2 transform -translate-y-1/2 text-slate-400 hover:text-indigo-600"
+                tabIndex={-1}
               >
                 {showPassword ? (
                   <FiEyeOff className="h-5 w-5" />
@@ -151,7 +146,7 @@ const Login = () => {
 
           <button
             type="submit"
-            className="w-full bg-slate-700 text-white py-3 px-4 rounded-lg font-medium hover:bg-slate-800 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-slate-500 transition duration-300 flex justify-center items-center"
+            className="w-full bg-slate-700 text-white py-3 px-4 rounded-xl font-bold text-lg shadow-lg hover:from-indigo-700 hover:to-pink-600 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-400 transition duration-300 flex justify-center items-center gap-2"
             disabled={isLoading}
           >
             {isLoading ? (
@@ -184,10 +179,10 @@ const Login = () => {
           </button>
         </form>
 
-        <div className="text-center text-sm text-slate-500 mt-4">
+        <div className="text-center text-sm text-indigo-400 mt-6">
           <button
             onClick={() => navigate("/reset-password")}
-            className="text-slate-600 hover:text-slate-800 font-medium"
+            className="text-indigo-600 hover:text-pink-500 font-semibold underline underline-offset-2 transition"
           >
             ¿Olvidaste tu contraseña?
           </button>
