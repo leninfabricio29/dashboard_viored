@@ -195,7 +195,7 @@ const Neighborhood = () => {
                   scope="col"
                   className="px-6 py-3 text-left text-sm font-medium text-white uppercase"
                 >
-                  Puerto Reley
+                  Puerto Relay
                 </th>
                 <th
                   scope="col"
