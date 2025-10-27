@@ -1,4 +1,7 @@
 import { Routes, Route, Navigate } from "react-router-dom";
+import { useEffect } from "react";
+import authService from "./services/auth-service";
+import userService from "./services/user-service";
 import RoleProtectedRoute from "./components/RoleProtectedRoute";
 import { DashboardLayout } from "./components/layout/DashboardLayout";
 import Dashboard from "./pages/Dashboard";
@@ -41,6 +44,43 @@ const ProtectedRoute = ({ children }: { children: JSX.Element }) => {
 };
 
 function App() {
+  useEffect(() => {
+    // Polling: comprobar periódicamente si el usuario fue desactivado en el backend
+    const currentUserId = authService.getUserIdFromToken() || localStorage.getItem("userId");
+    if (!currentUserId) return;
+
+    let cancelled = false;
+
+    const checkActive = async () => {
+      try {
+        const user = await userService.getUserById(String(currentUserId));
+        // Dependiendo del backend, el campo puede llamarse isActive o is_active
+        const active = (user as any).isActive ?? (user as any).is_active ?? true;
+        if (!active && !cancelled) {
+          authService.logout();
+          localStorage.removeItem("role");
+          localStorage.removeItem("userId");
+          // Redirigir al login
+          window.location.href = "/login";
+        }
+      } catch (err) {
+        console.error("Error comprobando estado de usuario:", err);
+        // No interrumpimos el polling por errores temporales
+      }
+    };
+
+    // Primera comprobación inmediata
+    checkActive();
+
+    // Comprobar cada 30 segundos (ajustable)
+    const interval = setInterval(checkActive, 30 * 1000);
+
+    return () => {
+      cancelled = true;
+      clearInterval(interval);
+    };
+  }, []);
+
   return (
     <Routes>
       {/* Ruta pública */}
