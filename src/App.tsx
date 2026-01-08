@@ -17,6 +17,7 @@ import Notifications from "./pages/modules/Notifications/Notifications";
 import StatisticsPage from "./pages/modules/Statistics/StatisticsPage";
 import Neighborhood from "./pages/modules/Neighborhood/Neighborhood";
 import HistoryLogs from "./pages/modules/History/HistoryLogs";
+import Devices from "./pages/modules/Devices/Devices";
  //import PackageTable from "./pages/modules/Multimedia/PackageTable";
 //import PackageDetailView from "./pages/modules/Multimedia/PackageDetailView"; 
 import UserProfile from "./pages/modules/Settings/UserProfile";
@@ -109,6 +110,8 @@ function App() {
         <Route path="entities">
           <Route index  element={<EntityList />} />
         </Route>
+
+        <Route path="devices" element={<Devices />} />
 
         {/* Rutas para el modulo maps */}
         <Route path="maps" element={<MapIndicator />} />

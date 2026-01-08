@@ -11,7 +11,8 @@ import {
   FiSettings,
   FiLogOut,
   FiUser,
-  FiCodepen
+  FiCodepen,
+  FiCpu
 } from "react-icons/fi";
 import { useEffect, useState } from "react";
 import { useNavigate, Outlet } from "react-router-dom";
@@ -46,6 +47,11 @@ export const DashboardLayout = () => {
       icon: <FiCodepen className="h-5 w-5" />,
       path: "/entities",
     },
+    /*{
+      title: "Botones Físicos",
+      icon: <FiCpu className="h-5 w-5" />,
+      path: "/devices",
+    },*/
     {
       title: "Usuarios",
       icon: <FiUsers className="h-5 w-5" />,

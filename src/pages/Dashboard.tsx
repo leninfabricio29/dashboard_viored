@@ -169,7 +169,12 @@ const usersFilteres = users.filter(user => user.role === 'user')
                 </div>
                 <div className="ml-3">
                   <p className="text-sm font-medium text-slate-800">
-                    <span className="text-blue-600">{typeof log.user === "string" ? log.user : log.user.name}</span> {log.action} {" "}
+                    <span className="text-blue-600">
+                      {typeof log.user === "string"
+                      ? log.user
+                      : log.user?.name || "SIN USUARIO"}
+                    </span>{" "}
+                    {log.action}{" "}
                     <span className="text-slate-600">{log.target}</span>
                   </p>
                   <p className="text-xs text-slate-500 mt-1">{log.time}</p>
