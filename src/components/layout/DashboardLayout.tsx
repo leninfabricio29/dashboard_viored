@@ -11,8 +11,7 @@ import {
   FiSettings,
   FiLogOut,
   FiUser,
-  FiCodepen,
-  FiCpu
+  FiCodepen
 } from "react-icons/fi";
 import { useEffect, useState } from "react";
 import { useNavigate, Outlet } from "react-router-dom";
