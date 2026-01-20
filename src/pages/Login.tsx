@@ -114,7 +114,7 @@ const Login = () => {
           <div className="space-y-2 ">
             <label htmlFor="password" className="block text-base font-semibold text-slate-700">
               <div className="flex items-center">
-                <FiKey className="h-5 w-5 mr-2 text-slate-400" />
+                <FiKey className="h-5 w-5 mr-2 text-slate-500" />
                 Contraseña
               </div>
             </label>
