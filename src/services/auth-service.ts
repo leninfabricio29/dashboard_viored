@@ -129,8 +129,28 @@ const authService = {
       console.error('Error al decodificar el token:', error);
       return null;
     }
-  }
+  },
 
+  /**
+   * Obtener el ID de la entidad desde el token o localStorage
+   */
+  getEntityIdFromToken: (): string | null => {
+    // Primero buscar en localStorage (guardado explícitamente)
+    const storedEntityId = localStorage.getItem('entity_sonId');
+    if (storedEntityId) return storedEntityId;
+
+    // Luego intentar obtener del token JWT
+    const token = localStorage.getItem('token');
+    if (!token) return null;
+
+    try {
+      const payload = JSON.parse(atob(token.split('.')[1]));
+      return payload.entityId || payload.id; // El backend puede incluir entityId en el token
+    } catch (error) {
+      console.error('Error al obtener ID de entidad:', error);
+      return null;
+    }
+  },
 
 };
 

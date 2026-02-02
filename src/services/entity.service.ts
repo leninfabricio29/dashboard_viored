@@ -94,9 +94,22 @@ export const entityUsersService = {
   }
 },
 
-
-
+  /**
+   * Atender una alerta de pánico
+   * NOTA: Ahora esto encola un job en attendQueue (no es Socket.IO directo)
+   */
+  attendAlert: async (alertId: string, userId: string, recipientId: string): Promise<any> => {
+    try {
+      const response = await api.post('/api/alert/attend', {
+        alertId,
+        userId,
+        recipientId,
+      });
+      console.log('✅ Alerta atendida:', response.data);
+      return response.data;
+    } catch (error) {
+      console.error("Error al atender la alerta:", error);
+      throw error;
+    }
+  },
 };
-
-
-

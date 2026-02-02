@@ -93,7 +93,7 @@ const ResetPassword = () => {
         {!message && (
           <form onSubmit={handleSubmit} className="space-y-5">
             <div className="space-y-2">
-              <label htmlFor="email" className="block text-sm font-medium text-gray-700 flex items-center">
+              <label htmlFor="email" className=" text-sm font-medium text-gray-700 flex items-center">
                <FiUser className="h-5 w-5 mr-2 text-gray-400"></FiUser>
                 Email
               </label>
@@ -110,7 +110,7 @@ const ResetPassword = () => {
             
             <button
               type="submit"
-              className="w-full bg-slate-700 text-white py-3 px-4 rounded-lg font-medium hover:bg-slate-800 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-slate-500 transition duration-300 flex justify-center items-center"
+              className="w-full cursor-pointer bg-slate-700 text-white py-3 px-4 rounded-lg font-medium hover:bg-slate-800 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-slate-500 transition duration-300 flex justify-center items-center"
               disabled={isLoading}
             >
               {isLoading ? (

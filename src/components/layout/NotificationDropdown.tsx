@@ -1,7 +1,6 @@
-import { useState, useRef } from "react";
-import { Link } from "react-router-dom";
-import { FiBell, FiChevronRight } from "react-icons/fi";
-import useClickOutside from "../../hooks/useClickOutside";
+// NotificationDropdown.tsx actualizado
+import { useState, useRef, useEffect } from "react";
+import { FiBell, FiCheck, FiAlertCircle, FiInfo, FiAlertTriangle } from "react-icons/fi";
 
 interface Notification {
   _id: string;
@@ -9,264 +8,139 @@ interface Notification {
   message: string;
   isRead: boolean;
   createdAt: string;
-  type: "registro" | "peticion" | "reseteo" | "emergencia";
+  type: "registro" | "peticion" | "reseteo";
 }
 
 interface NotificationsDropdownProps {
   notifications: Notification[];
-  onNotificationClick?: (id: string) => void; // Nueva prop para manejar el clic
+  onNotificationClick: (id: string) => void;
 }
 
-const NotificationsDropdown = ({
-  notifications,
-  onNotificationClick,
-}: NotificationsDropdownProps) => {
-
-  const getSortedNotifications = () => {
-    return notifications
-      .filter(n => n.type !== 'emergencia')
-      .sort((a, b) => {
-        const dateA = new Date(a.createdAt).getTime();
-        const dateB = new Date(b.createdAt).getTime();
-        return dateB - dateA; // Orden descendente (más reciente a más antigua)
-      });
-  };
-
-  // Uso en el renderizado
-  const displayedNotifications = getSortedNotifications().slice(0, 5);
-
-
-  const [showNotifications, setShowNotifications] = useState(false);
+const NotificationsDropdown = ({ notifications, onNotificationClick }: NotificationsDropdownProps) => {
+  const [isOpen, setIsOpen] = useState(false);
   const dropdownRef = useRef<HTMLDivElement>(null);
 
-  useClickOutside(dropdownRef, () => {
-    setShowNotifications(false);
-  });
+  const unreadCount = notifications.filter(n => !n.isRead).length;
 
-  const toggleNotifications = () => {
-    setShowNotifications(!showNotifications);
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (dropdownRef.current && !dropdownRef.current.contains(event.target as Node)) {
+        setIsOpen(false);
+      }
+    };
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => document.removeEventListener("mousedown", handleClickOutside);
+  }, []);
+
+  const getTypeIcon = (type: string) => {
+    switch (type) {
+      case "registro": return <FiCheck className="h-4 w-4 text-green-500" />;
+      case "peticion": return <FiAlertCircle className="h-4 w-4 text-blue-500" />;
+      case "reseteo": return <FiAlertTriangle className="h-4 w-4 text-amber-500" />;
+      default: return <FiInfo className="h-4 w-4 text-gray-500" />;
+    }
   };
 
   const formatDate = (dateString: string) => {
     const date = new Date(dateString);
-    return date.toLocaleDateString([], { year: "numeric", month: "2-digit", day: "2-digit" }) + 
-           " " + 
-           date.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" });
-  };
-
-  const handleNotificationClick = (id: string) => {
-    setShowNotifications(false);
-    if (onNotificationClick) {
-      onNotificationClick(id); // Esto marcará la notificación como leída
-    }
-  };
-
-  const getNotificationStyle = (type: string) => {
-    switch (type) {
-      case "registro":
-        return {
-          borderColor: "border-blue-500",
-          textColor: "text-blue-500",
-          bgColor: "bg-blue-500",
-          icon: (
-            <svg
-              className="w-4 h-4 mr-1 text-blue-500"
-              fill="none"
-              stroke="currentColor"
-              viewBox="0 0 24 24"
-            >
-              <path
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                strokeWidth="2"
-                d="M18 9v3m0 0v3m0-3h3m-3 0h-3m-2-5a4 4 0 11-8 0 4 4 0 018 0zM3 20a6 6 0 0112 0v1H3v-1z"
-              />
-            </svg>
-          ),
-        };
-      case "peticion":
-        return {
-          borderColor: "border-yellow-500",
-          textColor: "text-yellow-500",
-          bgColor: "bg-yellow-500",
-          icon: (
-            <svg
-              className="w-4 h-4 mr-1 text-yellow-500"
-              fill="none"
-              stroke="currentColor"
-              viewBox="0 0 24 24"
-            >
-              <path
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                strokeWidth="2"
-                d="M8 10h.01M12 10h.01M16 10h.01M9 16H5a2 2 0 01-2-2V6a2 2 0 012-2h14a2 2 0 012 2v8a2 2 0 01-2 2h-5l-5 5v-5z"
-              />
-            </svg>
-          ),
-        };
-      case "reseteo":
-        return {
-          borderColor: "border-purple-500",
-          textColor: "text-purple-500",
-          bgColor: "bg-purple-500",
-          icon: (
-            <svg
-              className="w-4 h-4 mr-1 text-purple-500"
-              fill="none"
-              stroke="currentColor"
-              viewBox="0 0 24 24"
-            >
-              <path
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                strokeWidth="2"
-                d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"
-              />
-            </svg>
-          ),
-        };
-      case "emergencia":
-        return {
-          borderColor: "border-red-500",
-          textColor: "text-red-500",
-          bgColor: "bg-red-500",
-          icon: (
-            <svg
-              className="w-4 h-4 mr-1 text-red-500"
-              fill="none"
-              stroke="currentColor"
-              viewBox="0 0 24 24"
-            >
-              <path
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                strokeWidth="2"
-                d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"
-              />
-            </svg>
-          ),
-        };
-      default:
-        return {
-          borderColor: "border-gray-500",
-          textColor: "text-gray-500",
-          bgColor: "bg-gray-500",
-          icon: <FiBell className="w-4 h-4 mr-1 text-gray-500" />,
-        };
-    }
+    return new Intl.DateTimeFormat('es-ES', {
+      hour: '2-digit',
+      minute: '2-digit',
+      day: '2-digit',
+      month: 'short'
+    }).format(date);
   };
 
   return (
-    <div className="relative m-2" ref={dropdownRef}>
+    <div className="relative" ref={dropdownRef}>
       <button
-        className="relative p-4 rounded-lg hover:bg-white/10 transition-colors duration-200 cursor-pointer"
-        onClick={toggleNotifications}
-        aria-expanded={showNotifications}
+        onClick={() => setIsOpen(!isOpen)}
+        className="p-2 rounded-lg bg-red-500  cursor-pointer transition-colors relative"
         aria-label="Notificaciones"
       >
-        <FiBell className="h-5 w-5 text-white" />
-        {notifications.filter((n) => !n.isRead).length > 0 && (
-          <span className="absolute -top-1 -right-1 bg-red-500 text-white rounded-full w-4 h-4 flex items-center justify-center text-[10px]">
-            {notifications.filter((n) => !n.isRead).length}
+        <FiBell className="h-5 w-5 text-gray-100" />
+        {unreadCount > 0 && (
+          <span className="absolute -top-1 -right-1 h-5 w-5 bg-red-500 text-white text-xs rounded-full flex items-center justify-center">
+            {unreadCount}
           </span>
         )}
       </button>
 
-      {showNotifications && (
-         <div className="absolute right-0 mt-2 w-80 bg-white rounded-lg shadow-xl z-[9999] overflow-hidden border border-gray-100">
-
-          {/* Header */}
-          <div className="flex justify-between items-center p-4 bg-gradient-to-r from-slate-900 to-slate-800">
-            <h3 className="font-semibold text-white">Notificaciones</h3>
-            <span className="text-xs text-blue-100 font-bold">
-              {notifications.filter((n) => !n.isRead).length} sin leer
-            </span>
+      {isOpen && (
+        <div className="absolute right-0 mt-2 w-80 bg-white rounded-xl shadow-lg ring-1 ring-gray-200 z-50 overflow-hidden">
+          <div className="p-4 border-b border-gray-100">
+            <div className="flex items-center justify-between">
+              <h3 className="font-semibold text-gray-900">Notificaciones</h3>
+              {unreadCount > 0 && (
+                <span className="px-2 py-1 bg-blue-100 text-blue-600 text-xs rounded-full">
+                  {unreadCount} sin leer
+                </span>
+              )}
+            </div>
           </div>
 
-          {/* Lista de notificaciones */}
           <div className="max-h-96 overflow-y-auto">
-            {displayedNotifications.length === 0 ? (
+            {notifications.length === 0 ? (
               <div className="p-4 text-center text-gray-500">
-                No hay notificaciones nuevas
+                No hay notificaciones
               </div>
             ) : (
-                <ul className="divide-y divide-gray-100">
-                {displayedNotifications.slice(0, 5).map((notif) => {
-                  const style = getNotificationStyle(notif.type);
-                  const typePathMap: Record<string, string> = {
-                    registro: "register",
-                    peticion: "request",
-                    reseteo: "reset",
-                    emergencia: "emergency"
-                  };
-                  const notificationPath = typePathMap[notif.type] || "unknown";
-
-                  return (
-                  <li
-                    key={notif._id}
-                    className={`px-4 py-3 transition-colors ${
-                    !notif.isRead
-                      ? `bg-blue-50 border-l-4 ${style.borderColor}`
-                      : "bg-white"
+              <div className="divide-y divide-gray-100">
+                {notifications.map((notification) => (
+                  <div
+                    key={notification._id}
+                    onClick={() => {
+                      onNotificationClick(notification._id);
+                      setIsOpen(false);
+                    }}
+                    className={`p-4 hover:bg-gray-50 transition-colors cursor-pointer ${
+                      !notification.isRead ? 'bg-blue-50/50' : ''
                     }`}
                   >
-                    <div className="flex items-start">
-                    <div className="flex-shrink-0">{style.icon}</div>
-                    <div className="ml-1 flex-1">
-                      <div className="flex justify-between items-start">
-                      <div className="flex items-center">
-                        <h4
-                        className={`text-sm ${
-                          !notif.isRead
-                          ? "font-semibold text-gray-900"
-                          : "font-normal text-gray-700"
-                        }`}
-                        >
-                        {notif.title}
-                        </h4>
-                        <span className={`ml-2 text-xs px-2 py-0.5 rounded-full font-bold capitalize ${style.textColor, style.bgColor}`}>
-                        {notif.type}
-                        </span>
+                    <div className="flex gap-3">
+                      <div className="flex-shrink-0 mt-0.5">
+                        {getTypeIcon(notification.type)}
                       </div>
-                      <span className="text-xs text-gray-400 ml-2">
-                        {formatDate(notif.createdAt)}
-                      </span>
-                      </div>
-                      <p
-                      className={`text-xs mt-1 line-clamp-2 ${
-                        !notif.isRead ? "text-gray-600" : "text-gray-500"
-                      }`}
-                      >
-                      {notif.message}
-                      </p>
-                      <div className="mt-2">
-                      <Link
-                        to={`/notificaciones/${notificationPath}/${notif._id}`}
-                        className="text-xs flex items-center text-blue-600 hover:text-blue-800"
-                        onClick={() => handleNotificationClick(notif._id)}
-                      >
-                        Ver detalles <FiChevronRight className="ml-1" />
-                      </Link>
+                      <div className="flex-1 min-w-0">
+                        <div className="flex items-start justify-between gap-2">
+                          <p className="text-sm font-medium text-gray-900 truncate">
+                            {notification.title}
+                          </p>
+                          <span className="text-xs text-gray-500 whitespace-nowrap">
+                            {formatDate(notification.createdAt)}
+                          </span>
+                        </div>
+                        <p className="text-sm text-gray-600 mt-1 line-clamp-2">
+                          {notification.message}
+                        </p>
+                        {!notification.isRead && (
+                          <div className="inline-flex items-center gap-1 mt-2">
+                            <span className="h-2 w-2 bg-blue-500 rounded-full"></span>
+                            <span className="text-xs text-blue-600">No leído</span>
+                          </div>
+                        )}
                       </div>
                     </div>
-                    </div>
-                  </li>
-                  );
-                })}
-                </ul>
+                  </div>
+                ))}
+              </div>
             )}
           </div>
 
-          {/* Footer */}
-          <div className="border-t border-gray-100 bg-gray-50 p-2 text-center">
-            <Link
-              to="/notifications"
-              className="text-xs font-medium text-blue-600 hover:text-blue-800 inline-flex items-center"
-              onClick={() => setShowNotifications(false)}
+          <div className="p-3 border-t border-gray-100 bg-gray-50/50">
+            <button
+              onClick={() => {
+                // Marcar todas como leídas
+                notifications.forEach(n => {
+                  if (!n.isRead) onNotificationClick(n._id);
+                });
+                setIsOpen(false);
+              }}
+              className="w-full text-center text-sm text-blue-600 hover:text-blue-700 font-medium py-2"
+              disabled={unreadCount === 0}
             >
-              Ver todas las notificaciones
-            </Link>
+              Marcar todas como leídas
+            </button>
           </div>
         </div>
       )}

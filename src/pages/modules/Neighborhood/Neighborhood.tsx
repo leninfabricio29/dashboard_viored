@@ -195,7 +195,7 @@ const Neighborhood = () => {
                   scope="col"
                   className="px-6 py-3 text-left text-sm font-medium text-white uppercase"
                 >
-                  Puerto Relay
+                  Sirenas en barrio
                 </th>
                 <th
                   scope="col"
@@ -298,22 +298,9 @@ const Neighborhood = () => {
                         onClick={() => handleViewUsers(n)}
                         className="flex items-center justify-center"
                       >
-                        <div className="relative w-8 h-8">
-                          <svg
-                            className="w-8 h-8 text-blue-200"
-                            viewBox="0 0 30 30"
-                            fill="currentColor"
-                          >
-                            <path d="M15 30c8.284 0 15-6.716 15-15 0-8.284-6.716-15-15-15C6.716 0 0 6.716 0 15c0 8.284 6.716 15 15 15z" />
-                          </svg>
-                          <div className="absolute inset-0 flex items-center justify-center">
-                            <svg
-                              className="w-4 h-4 text-blue-600"
-                              viewBox="0 0 20 20"
-                              fill="currentColor"
-                            >
-                              <path d="M10 9a3 3 0 100-6 3 3 0 000 6zm-7 9a7 7 0 1114 0H3z" />
-                            </svg>
+                        <div className="relative bg-amber-400 rounded-md cursor-pointer px-2 py-1 hover:bg-amber-400 transition-colors">
+                          <strong className="text-white">Ver usuarios</strong> 
+                          <div>
                           </div>
                         </div>
                       </button>
@@ -398,8 +385,9 @@ const Neighborhood = () => {
                       placeholder="Ej: Centro"
                     />
                   </div>
-
-                  <div>
+                   {/*
+                   
+                    <div>
                     <label className="block text-sm font-medium text-gray-700 mb-1">
                       Puerto de activación Rele *
                     </label>
@@ -415,7 +403,8 @@ const Neighborhood = () => {
                       }
                       placeholder="Ingresar el puerto del barrio (ej: 8080)"
                     />
-                  </div>
+                  </div>*/}     
+                 
 
                   <div className="pt-2">
                     <h4 className="text-sm font-medium text-gray-700 mb-2">

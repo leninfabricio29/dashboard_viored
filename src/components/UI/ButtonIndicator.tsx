@@ -16,6 +16,7 @@ const ButtonIndicator: React.FC = () => {
     history: "Bitácora",
     settings: "Configuración",
     maps: "Mapas",
+    devices: "Dispositivos",
   };
 
   const getPathSegments = () => {

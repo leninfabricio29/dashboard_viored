@@ -121,16 +121,16 @@ const usersFilteres = users.filter(user => user.role === 'user')
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
         {stats.map((stat, index) => {
           // Define a different bg color for each card
-          const bgColors = [
-        "bg-blue-100",
-        "bg-emerald-100",
-        "bg-yellow-100",
-        "bg-red-100"
+          const borderColors = [
+        "border-yellow-500",
+        "border-blue-500",
+        "border-green-500",
+        "border-red-500"
           ];
           return (
         <div
           key={index}
-          className={`${bgColors[index % bgColors.length]} rounded-xl shadow-sm border border-slate-200 p-6 hover:shadow-md transition-shadow`}
+          className={`${borderColors[index % borderColors.length]} rounded-xl shadow-sm border-2 border-dotted p-6 hover:shadow-md transition-shadow`}
         >
           <div className="flex items-center justify-between">
             <div>

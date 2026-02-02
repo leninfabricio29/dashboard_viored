@@ -378,9 +378,9 @@ const UserProfile = () => {
       </div>
 
       <div className="max-w-3xl mx-auto bg-white rounded-lg shadow-md overflow-hidden">
-        <div className="flex border-b bg-slate-800">
+        <div className="flex border-b bg-gradient-to-b from-slate-900 to-slate-800">
           <button
-            className={`py-4 px-6 font-medium ${
+            className={`py-4 px-6 font-medium cursor-pointer ${
               activeTab === "profile"
                 ? "text-white border-b-2 border-indigo-600"
                 : "text-gray-500"
@@ -390,7 +390,7 @@ const UserProfile = () => {
             Mi cuenta
           </button>
           <button
-            className={`py-4 px-6 font-medium ${
+            className={`py-4 px-6 font-medium cursor-pointer ${
               activeTab === "password"
                 ? "text-white border-b-2 border-indigo-600"
                 : "text-gray-500"
@@ -433,7 +433,7 @@ const UserProfile = () => {
                 </label>
                 <div className="relative">
                   <input
-                    className="w-full px-4 py-2 pr-12 border rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                    className="w-full border-2 border-indigo-600 px-4 py-2 pr-12 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500"
                     id="currentPassword"
                     type={showPasswords.current ? "text" : "password"}
                     name="currentPassword"
@@ -461,7 +461,7 @@ const UserProfile = () => {
                 </label>
                 <div className="relative">
                   <input
-                    className="w-full px-4 py-2 pr-12 border rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                    className="w-full border-2 border-indigo-600 px-4 py-2 pr-12 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500"
                     id="newPassword"
                     type={showPasswords.new ? "text" : "password"}
                     name="newPassword"
@@ -490,7 +490,7 @@ const UserProfile = () => {
                 </label>
                 <div className="relative">
                   <input
-                    className="w-full px-4 py-2 pr-12 border rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                    className="w-full border-2 border-indigo-600 px-4 py-2 pr-12 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500"
                     id="confirmPassword"
                     type={showPasswords.confirm ? "text" : "password"}
                     name="confirmPassword"
@@ -512,7 +512,7 @@ const UserProfile = () => {
               <div className="flex justify-end">
                 <button
                   type="submit"
-                  className="bg-indigo-600 text-white px-6 py-2 rounded-lg hover:bg-indigo-700 transition duration-200 flex items-center justify-center"
+                  className="bg-indigo-600  text-white px-6 py-2 rounded-lg hover:bg-indigo-700 transition duration-200 flex items-center justify-center"
                   disabled={isLoading}
                 >
                   {isLoading ? (
@@ -571,7 +571,7 @@ const UserProfile = () => {
                   Email
                 </label>
                 <input
-                  className="w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                  className="w-full px-4 py-2  text-gray-700 border-indigo-600 border-2 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500"
                   id="email"
                   type="email"
                   name="email"
@@ -589,7 +589,7 @@ const UserProfile = () => {
                   Teléfono
                 </label>
                 <input
-                  className="w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                  className="w-full border-2 border-indigo-600 px-4 py-2 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500"
                   id="phone"
                   type="tel"
                   name="phone"
@@ -611,7 +611,7 @@ const UserProfile = () => {
                     <img
                       src={userData.avatar}
                       alt="Avatar actual"
-                      className="h-20 w-20 rounded-full object-cover"
+                      className="h-20 w-20 border-2 border-indigo-400 rounded-full object-cover"
                     />
                   )}
 

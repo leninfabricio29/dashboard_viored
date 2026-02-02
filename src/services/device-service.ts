@@ -18,7 +18,7 @@ const deviceService = {
   },
   createDevice: async (data: CreateDevicePayload): Promise<Device> => {
     // En creación, si el backend genera serial/qr, basta enviar name
-    const payload: Partial<CreateDevicePayload> = { name: data.name };
+    const payload: Partial<CreateDevicePayload> = { name: data.name, type: data.type };
     const response = await api.post<Device>(BASE_PATH, payload);
     return response.data;
   },

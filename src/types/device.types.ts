@@ -20,13 +20,20 @@ export interface Device {
   status?: DeviceStatus;
   createdAt?: string;
   updatedAt?: string;
+  type: string;
+  neighborhood?: { _id: string; name: string } | null;
+  activationCount?: number;
+  lastActivation?: string | null;
 }
 
 export interface CreateDevicePayload {
   name: string;
+
   serial?: string; // opcional: backend lo genera automáticamente
   description?: string;
   userId?: string | null;
+  type?: string;
+  status?: DeviceStatus;
 }
 
 export interface UpdateDevicePayload {

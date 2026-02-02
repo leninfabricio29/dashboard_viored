@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef } from "react";
-import { useNavigate, Link } from "react-router-dom";
-import { FiLogOut, FiSettings, FiChevronDown } from "react-icons/fi";
+import {  Link } from "react-router-dom";
+import {  FiMenu, FiUser } from "react-icons/fi";
 import authService from "../../services/auth-service";
 import userService from "../../services/user-service";
 import {
@@ -25,32 +25,32 @@ interface Notification {
   type: "registro" | "peticion" | "reseteo";
 }
 
-const Header = () => {
-  const navigate = useNavigate();
-  const [isUserDropdownOpen, setIsUserDropdownOpen] = useState(false);
+interface HeaderProps {
+  onMenuClick?: () => void;
+  sidebarOpen?: boolean;
+}
+
+const Header = ({ onMenuClick, sidebarOpen }: HeaderProps) => {
   const [user, setUser] = useState<User>({
-  name: "",
-  role: "",
-  avatar: "",
-});
+    name: "",
+    role: "",
+    avatar: "",
+  });
 
   const [loading, setLoading] = useState(true);
   const [notifications, setNotifications] = useState<Notification[]>([]);
   const userDropdownRef = useRef<HTMLDivElement>(null);
-  const [userId, setUserId] = useState<string | null>(null);
 
   useEffect(() => {
     const fetchUserData = async () => {
       try {
         const userIdFromToken = authService.getUserIdFromToken();
         if (userIdFromToken) {
-          setUserId(userIdFromToken);
           const userData = await userService.getUserById(userIdFromToken);
           setUser({
             name: userData.name,
             role: userData.role,
-            avatar: userData.avatar
-            //avatar: userData. ?? "",
+            avatar: userData.avatar || "",
           });
         }
       } catch (error) {
@@ -88,7 +88,7 @@ const Header = () => {
         userDropdownRef.current &&
         !userDropdownRef.current.contains(event.target as Node)
       ) {
-        setIsUserDropdownOpen(false);
+        // Cerrar dropdown de usuario si se hace clic fuera
       }
     };
     document.addEventListener("mousedown", handleClickOutside);
@@ -97,10 +97,7 @@ const Header = () => {
     };
   }, []);
 
-  const handleLogout = () => {
-    authService.logout();
-    navigate("/login");
-  };
+ 
 
   const handleNotificationRead = async (notificationId: string) => {
     try {
@@ -116,81 +113,87 @@ const Header = () => {
   };
 
   return (
-    <header className="bg-slate-700 shadow-lg">
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        <div className="flex justify-between items-center h-20">
-          {/* Logo */}
-          <Link to="/" className="flex items-center space-x-2 group">
-            <img
-              src={Logo}
-              alt="Logo de la empresa"
-              className="w-16 h-16 object-contain"
-            />
+    <header className="sticky top-0 z-10 bg-gradient-to-b from-slate-900 to-slate-800 backdrop-blur-sm border-b border-gray-200">
+      <div className="px-4 py-3 sm:px-6 lg:px-8">
+        <div className="flex items-center justify-between">
+          {/* Logo y botón de menú móvil */}
+          <div className="flex items-center gap-4">
+            {onMenuClick && (
+              <div className="flex items-center gap-3">
+                <button
+                  onClick={onMenuClick}
+                  className="p-2 rounded-lg hover:bg-gray-100 transition-colors"
+                  aria-label="Toggle menu"
+                >
+                  {sidebarOpen ? (
+                    <FiMenu className="h-5 w-5 text-gray-100" />
+                  ) : (
+                    <FiMenu className="h-5 w-5 text-gray-100" />
+                  )}
+                </button>
+                
+                <div className="md:hidden">
+                  <Link to="/" className="flex items-center space-x-2">
+                    <img
+                      src={Logo}
+                      alt="Logo"
+                      className="w-10 h-10 object-contain"
+                    />
+                    <span className="font-bold text-lg text-gray-800 tracking-tight">
+                      V-<span className="text-blue-600">SOS</span>
+                    </span>
+                  </Link>
+                </div>
+              </div>
+            )}
+            
+            {/* Logo desktop */}
+            <div className="hidden md:block">
+              <Link to="/" className="flex items-center space-x-2">
+                <img
+                  src={Logo}
+                  alt="Logo"
+                  className="w-12 h-12 object-contain"
+                />
+                <span className="font-bold text-xl text-blue-400 tracking-tight">
+                  V-<span className="text-red-400">SOS</span>
+                </span>
+              </Link>
+            </div>
+          </div>
 
-            <span className="font-bold text-xl text-white hidden md:block tracking-tight">
-              V-<span className="text-blue-200">SOS</span>
-            </span>
-          </Link>
-
+          
           {/* Notificaciones y Usuario */}
-          <div className="flex items-center space-x-4">
+          <div className="flex items-center gap-4">
             <NotificationsDropdown
               notifications={notifications}
               onNotificationClick={handleNotificationRead}
             />
 
-            {/* Usuario Dropdown */}
-            <div className="relative hidden md:block" ref={userDropdownRef}>
-              <button
-                onClick={() => setIsUserDropdownOpen(!isUserDropdownOpen)}
-                className="flex items-center space-x-2 cursor-pointer"
-              >
-                <div className="w-10 h-10 rounded-full overflow-hidden border-2 border-white">
+            {/* Información de usuario en móvil */}
+            <div className="md:hidden">
+              <div className="flex items-center gap-3">
+                <div className="text-right hidden sm:block">
+                  <p className="text-sm font-medium text-gray-700 truncate max-w-[120px]">
+                    {loading ? "Cargando..." : user.name}
+                  </p>
+                    <p className="text-xs text-gray-500">{user.role}</p>
+                </div>
+                <div className="h-9 w-9 rounded-full bg-gradient-to-br from-blue-500 to-indigo-600 flex items-center justify-center">
                   {user.avatar ? (
                     <img
                       src={user.avatar}
                       alt={`Avatar de ${user.name}`}
-                      className="w-full h-full object-cover"
+                      className="w-full h-full object-cover rounded-full"
                     />
                   ) : (
-                    <div className="w-full h-full bg-blue-500 flex items-center justify-center text-white text-sm font-bold">
-                      {user.name.charAt(0).toUpperCase()}
-                    </div>
+                    <FiUser className="h-4 w-4 text-white" />
                   )}
                 </div>
-
-                <div className="text-right">
-                  <div className="text-sm font-medium text-white">
-                    {loading ? (
-                      <span className="animate-pulse">Cargando...</span>
-                    ) : (
-                      user.name
-                    )}
-                  </div>
-                  <div className="text-xs text-blue-200">{user.role}</div>
-                </div>
-                <FiChevronDown className="text-white" />
-              </button>
-
-              {isUserDropdownOpen && (
-                <div className="absolute right-0 mt-2 w-52 bg-slate-700 rounded-xl shadow-xl ring-1 ring-slate-700 z-50 overflow-hidden">
-                  <Link
-                    to={`/settings/${userId}`}
-                    className="flex items-center gap-2 px-4 py-3 text-sm text-slate-200 hover:bg-slate-700 hover:text-white hover:border-l-4 hover:border-blue-500 transition-all duration-150"
-                  >
-                    <FiSettings className="w-4 h-4" />
-                    Configuración
-                  </Link>
-                  <button
-                    onClick={handleLogout}
-                    className="w-full flex items-center gap-2 px-4 py-3 text-sm text-slate-200 hover:bg-slate-700 hover:text-white hover:border-l-4 hover:border-red-500 transition-all duration-150"
-                  >
-                    <FiLogOut className="w-4 h-4" />
-                    Cerrar sesión
-                  </button>
-                </div>
-              )}
+              </div>
             </div>
+
+            
           </div>
         </div>
       </div>
