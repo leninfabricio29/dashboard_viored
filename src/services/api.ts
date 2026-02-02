@@ -3,8 +3,8 @@ import axios from 'axios';
 
 // Creamos una instancia de axios con la URL base
 const api = axios.create({
-  baseURL: "http://localhost:3000",
-  //baseURL: 'https://apipanic.viryx.net',
+  //baseURL: "http://localhost:3000",
+  baseURL: 'https://apipanic.viryx.net',
   //baseURL: 'http://localhost:5000',
   headers: {
     'Content-Type': 'application/json',
