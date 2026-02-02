@@ -23,7 +23,8 @@ const AlertMapContainer: React.FC = () => {
   // ====================================================================
   // SOCKET.IO: Obtener IDs y conectar
   // ====================================================================
-  const userId = authService.getUserIdFromToken() || "";
+  //const userId = authService.getUserIdFromToken() || "";
+
   const entityId = authService.getEntityIdFromToken?.() || authService.getUserIdFromToken() || "";
 
   // Conectar al socket
