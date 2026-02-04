@@ -45,7 +45,7 @@ class SocketService {
     }
 
     // Conectar al worker - usar WebSocket solo (no polling)
-    this.socket = io('http://localhost:4000', {
+    this.socket = io('https://apipanic.viryx.net', {
       transports: ['websocket'], // Solo WebSocket, no polling
       reconnection: true,
       reconnectionDelay: 1000,
