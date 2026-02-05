@@ -14,14 +14,12 @@ export const useSocketListener = (
   alertId?: string
 ) => {
   useEffect(() => {
-    console.log(`🎧 Registrando listener para: ${eventName}${alertId ? ` [alertId: ${alertId}]` : ''}`);
 
     // Registrar el listener con socketService
     socketService.on(eventName, onEvent, alertId);
 
     // Cleanup: Desregistrar listener al desmontar componente
     return () => {
-      console.log(`🎧 Desregistrando listener para: ${eventName}${alertId ? ` [alertId: ${alertId}]` : ''}`);
       socketService.off(eventName, onEvent, alertId);
     };
   }, [eventName, onEvent, alertId]);

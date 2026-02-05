@@ -1,0 +1,134 @@
+.container {
+  display: flex;
+  flex-direction: column;
+  height: 100vh;
+  background: #f5f5f5;
+}
+
+/* ────── Header ────── */
+.header {
+  background: white;
+  border-bottom: 2px solid #e5e7eb;
+  padding: 1rem 1.5rem;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
+}
+
+.headerContent {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+}
+
+.backBtn {
+  background: #f3f4f6;
+  border: 1px solid #d1d5db;
+  padding: 0.5rem 1rem;
+  border-radius: 6px;
+  cursor: pointer;
+  font-weight: 600;
+  color: #374151;
+  transition: all 0.2s ease;
+}
+
+.backBtn:hover {
+  background: #e5e7eb;
+  border-color: #9ca3af;
+}
+
+.headerContent h1 {
+  margin: 0;
+  font-size: 1.5rem;
+  color: #1f2937;
+}
+
+.alertIdBadge {
+  background: #dbeafe;
+  color: #1e40af;
+  padding: 0.5rem 1rem;
+  border-radius: 6px;
+  font-size: 0.875rem;
+  font-weight: 600;
+  font-family: "Courier New", monospace;
+}
+
+/* ────── Map Container ────── */
+.mapContainer {
+  flex: 1;
+  overflow: hidden;
+  position: relative;
+}
+
+.mapContainer > div {
+  width: 100%;
+  height: 100%;
+}
+
+/* ────── Footer ────── */
+.footer {
+  background: white;
+  border-top: 2px solid #e5e7eb;
+  padding: 1rem 1.5rem;
+  text-align: center;
+  color: #6b7280;
+  font-size: 0.875rem;
+  box-shadow: 0 -2px 4px rgba(0, 0, 0, 0.05);
+}
+
+/* ────── Error ────── */
+.errorContainer {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  height: 100vh;
+  background: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%);
+  gap: 1rem;
+}
+
+.errorContainer h2 {
+  font-size: 1.5rem;
+  color: #1f2937;
+}
+
+.errorContainer p {
+  color: #6b7280;
+}
+
+.errorContainer button {
+  background: #3b82f6;
+  color: white;
+  padding: 0.75rem 1.5rem;
+  border: none;
+  border-radius: 6px;
+  cursor: pointer;
+  font-weight: 600;
+  transition: all 0.2s ease;
+}
+
+.errorContainer button:hover {
+  background: #2563eb;
+}
+
+/* ────── Responsive ────── */
+@media (max-width: 768px) {
+  .header {
+    flex-direction: column;
+    gap: 1rem;
+    align-items: flex-start;
+  }
+
+  .headerContent {
+    width: 100%;
+  }
+
+  .alertIdBadge {
+    align-self: flex-start;
+  }
+
+  .headerContent h1 {
+    font-size: 1.25rem;
+  }
+}

@@ -16,6 +16,7 @@ import Footer from "./Footer";
 import { Link, useLocation } from "react-router-dom";
 
 import MonitoringMap from "../../pages/modules/Entity/MonitoringMap";
+import TrackingDetail from "../../pages/modules/Entity/TrackingDetail";
 import Members from "../../pages/modules/Entity/Members";
 import AlertsHistory from "../../pages/modules/Entity/AlertsHistory";
 import HistoryAdmin from "../../pages/modules/Entity/HistoryAdmin";
@@ -222,41 +223,55 @@ export const DashboardEntity = () => {
       {/* Main Content */}
       <div className="flex-1 flex flex-col overflow-hidden">
         
-        <main className="relative flex-1 overflow-y-auto p-4 md:p-6 bg-gray-50">
-          <div className="max-w-7xl mx-auto">
-            <MonitoringMap />
+        <main className="relative flex-1 overflow-y-auto bg-gray-50">
+          {/* Rastreo detallado - fullscreen */}
+          {pathname.match(/^\/monitoring\/tracking\/[^\/]+$/) && (() => {
+            // Extraer alertId de la URL: /monitoring/tracking/:alertId
+            const match = pathname.match(/^\/monitoring\/tracking\/([^\/]+)$/);
+            const alertId = match ? match[1] : null;
             
-            {/* Contextual Modules */}
-            {pathname.includes("/monitoring/members") && (
-              <div className="mt-6 bg-white rounded-xl shadow-md overflow-hidden">
-                <div className="p-4 border-b border-gray-200">
-                  <h2 className="text-xl font-semibold text-gray-800">Gestión de Usuarios</h2>
-                </div>
-                <Members />
+            return alertId ? <TrackingDetail alertId={alertId} /> : null;
+          })()}
+
+          {/* Monitoreo normal - con padding y layout */}
+          {!pathname.match(/^\/monitoring\/tracking\/[^\/]+$/) && (
+            <div className="p-4 md:p-6">
+              <div className="max-w-7xl mx-auto">
+                <MonitoringMap />
+                
+                {/* Contextual Modules */}
+                {pathname.includes("/monitoring/members") && (
+                  <div className="mt-6 bg-white rounded-xl shadow-md overflow-hidden">
+                    <div className="p-4 border-b border-gray-200">
+                      <h2 className="text-xl font-semibold text-gray-800">Gestión de Usuarios</h2>
+                    </div>
+                    <Members />
+                  </div>
+                )}
+                
+                {pathname.includes("/monitoring/alerts-history") && (
+                  <div className="mt-6 bg-white rounded-xl shadow-md overflow-hidden">
+                    <div className="p-4 border-b border-gray-200">
+                      <h2 className="text-xl font-semibold text-gray-800">Historial de Alertas</h2>
+                    </div>
+                    <AlertsHistory />
+                  </div>
+                )}
+                
+                {pathname.includes("/monitoring/history-admin") && (
+                  <div className="mt-6 bg-white rounded-xl shadow-md overflow-hidden">
+                    <div className="p-4 border-b border-gray-200">
+                      <h2 className="text-xl font-semibold text-gray-800">Bitácora del Sistema</h2>
+                    </div>
+                    <HistoryAdmin />
+                  </div>
+                )}
               </div>
-            )}
-            
-            {pathname.includes("/monitoring/alerts-history") && (
-              <div className="mt-6 bg-white rounded-xl shadow-md overflow-hidden">
-                <div className="p-4 border-b border-gray-200">
-                  <h2 className="text-xl font-semibold text-gray-800">Historial de Alertas</h2>
-                </div>
-                <AlertsHistory />
-              </div>
-            )}
-            
-            {pathname.includes("/monitoring/history-admin") && (
-              <div className="mt-6 bg-white rounded-xl shadow-md overflow-hidden">
-                <div className="p-4 border-b border-gray-200">
-                  <h2 className="text-xl font-semibold text-gray-800">Bitácora del Sistema</h2>
-                </div>
-                <HistoryAdmin />
-              </div>
-            )}
-          </div>
+            </div>
+          )}
         </main>
 
-        <Footer />
+        {!pathname.match(/^\/monitoring\/tracking\/[^\/]+$/) && <Footer />}
       </div>
       {modalType === "members" && (
   <Modal isOpen onClose={() => setModalType(null)} title="Gestión de Usuarios">

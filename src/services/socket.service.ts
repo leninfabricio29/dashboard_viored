@@ -44,14 +44,18 @@ class SocketService {
       return this.socket;
     }
 
-    // Conectar al worker - usar WebSocket solo (no polling)
-    this.socket = io('https://apipanic.viryx.net', {
+    // Conectar al worker socket.io en la URL principal (sin puerto)
+    const socketURL = 'https://apipanic.viryx.net';
+    console.log(`🔌 Intentando conectar a socket en: ${socketURL}`);
+    
+    this.socket = io(socketURL, {
       transports: ['websocket'], // Solo WebSocket, no polling
       reconnection: true,
       reconnectionDelay: 1000,
       reconnectionDelayMax: 5000,
       reconnectionAttempts: this.maxReconnectAttempts,
       autoConnect: true,
+      rejectUnauthorized: false, // Para HTTPS con certificados auto-firmados
     });
 
     // Evento: Conexión exitosa
@@ -77,15 +81,38 @@ class SocketService {
     });
 
     // Evento: Error de conexión
-    this.socket.on('connect_error', (error) => {
+    this.socket.on('connect_error', (error: any) => {
       this.reconnectAttempts++;
       console.error(
         `❌ Error de conexión Socket.IO (intento ${this.reconnectAttempts}/${this.maxReconnectAttempts}):`,
-        error.message
+        error?.message || error
       );
 
+      // Log detallado
+      if (error?.code === 'ECONNREFUSED') {
+        console.error('❌ ECONNREFUSED: MongoDB o servidor no disponible');
+      } else if (error?.type === 'UnauthorizedError') {
+        console.error('❌ UnauthorizedError: Token inválido');
+      } else if (error?.statusCode === 403) {
+        console.error('❌ CORS Error: El servidor rechazó la conexión por CORS');
+      }
+
       if (this.reconnectAttempts >= this.maxReconnectAttempts) {
-        console.error('❌ No se pudo conectar al worker Socket.IO después de', this.maxReconnectAttempts, 'intentos');
+        console.error(
+          `❌ No se pudo conectar al worker Socket.IO después de ${this.maxReconnectAttempts} intentos.`,
+          `Próxima URL a intentar: https://apipanic.viryx.net (sin puerto)`
+        );
+
+        // Opcional: intentar reconectarse sin puerto después de fallar con puerto
+        // Descomenta si es necesario un fallback
+        /*
+        setTimeout(() => {
+          console.log('🔄 Intentando fallback sin puerto...');
+          this.socket?.disconnect();
+          this.reconnectAttempts = 0;
+          this.connect(entityId, alertId);
+        }, 5000);
+        */
       }
     });
 
@@ -139,7 +166,7 @@ class SocketService {
       }
     }
 
-    // Si es location-update, guardar por alertId
+    /*Si es location-update, guardar por alertId
     if (eventName === 'location-update' && alertId) {
       if (!this.listeners[eventName][alertId]) {
         this.listeners[eventName][alertId] = [];
@@ -153,11 +180,11 @@ class SocketService {
       }
       this.listeners[eventName]['global'].push(callback);
       console.log(`📌 Listener registrado para: ${eventName} [global]`);
-    } else {
+    } else {*/
       // Para otros eventos, es un array normal
       this.listeners[eventName].push(callback);
       console.log(`📌 Listener registrado para: ${eventName}`);
-    }
+    
   }
 
   /**
@@ -242,15 +269,24 @@ class SocketService {
 
     const room = `entity:${entityId}`;
     
+    // Escuchar confirmación de la sala
+    this.socket.once('room-joined', (response: any) => {
+      if (response.success) {
+        console.log(`✅ Confirmado: Unido a sala ${room} [Socket: ${response.socketId}]`);
+      } else {
+        console.error(`❌ Error al unirse a sala ${room}:`, response.error);
+      }
+    });
+    
     // Esperar a que esté conectado antes de emitir
     if (this.socket.connected) {
       this.socket.emit('join-room', { room });
-      console.log(`✅ Unido a sala: ${room}`);
+      console.log(`📤 Emitido join-room para: ${room}`);
     } else {
-      // Si aún no está conectado, esperar y luego emitir
+      console.warn(`⏳ Socket no conectado aún. Esperando conexión...`);
       this.socket.once('connect', () => {
         this.socket?.emit('join-room', { room });
-        console.log(`✅ Unido a sala (post-connect): ${room}`);
+        console.log(`📤 Emitido join-room (post-connect) para: ${room}`);
       });
     }
   }
@@ -271,13 +307,23 @@ class SocketService {
 
     const room = `alert:${alertId}`;
     
+    // Escuchar confirmación de la sala
+    this.socket.once('room-joined', (response: any) => {
+      if (response.success) {
+        console.log(`✅ Confirmado: Unido a sala ${room} [Socket: ${response.socketId}]`);
+      } else {
+        console.error(`❌ Error al unirse a sala ${room}:`, response.error);
+      }
+    });
+    
     if (this.socket.connected) {
       this.socket.emit('join-room', { room });
-      console.log(`✅ Unido a sala: ${room}`);
+      console.log(`📤 Emitido join-room para: ${room}`);
     } else {
+      console.warn(`⏳ Socket no conectado aún. Esperando conexión...`);
       this.socket.once('connect', () => {
         this.socket?.emit('join-room', { room });
-        console.log(`✅ Unido a sala (post-connect): ${room}`);
+        console.log(`📤 Emitido join-room (post-connect) para: ${room}`);
       });
     }
   }
@@ -318,13 +364,6 @@ class SocketService {
     this.socket.once('attend-alert-error', (error) => {
       console.error('❌ Error en attend-alert:', error);
     });
-  }
-
-  /**
-    if (this.socket?.connected) {
-      this.socket.disconnect();
-      console.log('🛑 Desconectado del worker Socket.IO');
-    }
   }
 
   /**
