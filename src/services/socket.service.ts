@@ -167,7 +167,6 @@ class SocketService {
       }
     }
 
-    /*Si es location-update, guardar por alertId
     if (eventName === 'location-update' && alertId) {
       if (!this.listeners[eventName][alertId]) {
         this.listeners[eventName][alertId] = [];
@@ -181,11 +180,11 @@ class SocketService {
       }
       this.listeners[eventName]['global'].push(callback);
       console.log(`📌 Listener registrado para: ${eventName} [global]`);
-    } else {*/
+    } else {
       // Para otros eventos, es un array normal
       this.listeners[eventName].push(callback);
       console.log(`📌 Listener registrado para: ${eventName}`);
-    
+    }
   }
 
   /**
