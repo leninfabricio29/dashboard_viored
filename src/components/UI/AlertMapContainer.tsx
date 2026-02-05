@@ -158,7 +158,7 @@ const AlertMapContainer: React.FC<AlertMapContainerProps> = ({ alertId }) => {
   }, [alertId]);
 
   /** ────────────────── FUNCIONES HANDLER ────────────────── */
-  const handleAttend = async (id: string, alertId: string, emitterId: string) => {
+  const handleAttend = async (alertId: string, emitterId: string) => {
     const recipientId = entityId || "";
 
     console.log(
