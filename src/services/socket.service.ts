@@ -158,6 +158,7 @@ class SocketService {
    * Para location-update, se puede especificar un alertId para independencia
    */
   on(eventName: string, callback: EventCallback, alertId?: string) {
+    console.log(`🎧 Registrando listener para: ${eventName}${alertId ? ` [alertId: ${alertId}]` : ''}`);
     if (!this.listeners[eventName]) {
       if (eventName === 'location-update') {
         this.listeners[eventName] = {};
