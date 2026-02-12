@@ -25,6 +25,7 @@ import { DashboardEntity } from "./components/layout/DashboardEntity";
 
 
 import EntityList from "./pages/modules/Users/Entitylist";
+import { KeysPage } from "./pages/modules/keys/Keys";
 //import LoginEntity from "./pages/LoginEntity";
 //import LogsComponent from "./components/logs/LogsComponent";
 
@@ -113,6 +114,7 @@ function App() {
 
         <Route path="devices" element={<Devices />} />
 
+        <Route path="keys" element={<KeysPage />} />
         {/* Rutas para el modulo maps */}
         <Route path="maps" element={<MapIndicator />} />
         <Route

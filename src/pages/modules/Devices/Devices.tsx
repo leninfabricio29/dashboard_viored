@@ -233,7 +233,7 @@ const Devices = () => {
         <div className="bg-white mt-4 rounded-xl shadow-sm p-1 inline-flex gap-1">
           <button
             onClick={() => setActiveSegment("siren")}
-            className={`px-6 py-2.5 rounded-lg font-medium transition-all ${
+            className={`px-6 py-2.5 rounded-lg cursor-pointerfont-medium transition-all ${
               activeSegment === "siren"
                 ? "bg-blue-600 text-white shadow-sm"
                 : "text-slate-600 hover:bg-slate-50"
@@ -244,7 +244,7 @@ const Devices = () => {
           </button>
           <button
             onClick={() => setActiveSegment("button")}
-            className={`px-6 py-2.5 rounded-lg font-medium transition-all ${
+            className={`px-6 py-2.5 rounded-lg cursor-pointer font-medium transition-all ${
               activeSegment === "button"
                 ? "bg-blue-600 text-white shadow-sm"
                 : "text-slate-600 hover:bg-slate-50"
@@ -275,7 +275,7 @@ const Devices = () => {
         <div className="flex gap-2">
           <button
             onClick={openCreateForm}
-            className="flex items-center gap-2 px-4 py-2 rounded-lg bg-blue-600 text-white hover:bg-blue-700 shadow-sm"
+            className=" cursor-pointer flex items-center gap-2 px-4 py-2 rounded-lg bg-blue-600 text-white hover:bg-blue-700 shadow-sm"
           >
             <span className="text-lg font-bold">+</span>
             {activeSegment === "siren" ? "Crear sirena" : "Crear botón físico"}

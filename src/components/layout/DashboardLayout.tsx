@@ -16,7 +16,8 @@ import {
   FiChevronRight,
   FiCreditCard,
   FiHelpCircle,
-  FiCamera
+  FiCamera,
+  FiKey
 } from "react-icons/fi";
 import { useEffect, useState } from "react";
 import { useNavigate, Outlet, NavLink, useLocation } from "react-router-dom";
@@ -76,7 +77,7 @@ export const DashboardLayout = () => {
         {
           title: "Infraestructura",
           icon: <FiCpu className="h-5 w-5" />,
-          path: "/devicesa",
+          path: "/devices",
         },
         {
           title: "Usuarios",
@@ -87,16 +88,23 @@ export const DashboardLayout = () => {
           title: "Barrios",
           icon: <FiRadio className="h-5 w-5" />,
           path: "/neighborhood",
-        },{
+        },
+        /*{
           title: "Multimedia",
           icon: <FiCamera className="h-5 w-5" />,
           path: "/multimedia",
         },
         
-        {
+        
+        /*{
           title: "Suscripciones",
           icon: <FiCreditCard className="h-5 w-5" />,
           path: "/subscriptions",
+        },*/
+        {
+          title: "Tokens",
+          icon: <FiKey className="h-5 w-5" />,
+          path: "/keys",
         }
       ],
     },
@@ -114,11 +122,12 @@ export const DashboardLayout = () => {
           icon: <FiClock className="h-5 w-5" />,
           path: "/history",
         },
+        /*
         {
           title: "Soporte y FAQ",
           icon: <FiHelpCircle className="h-5 w-5" />,
           path: "/support",
-        }
+        }*/
         
       ],
     },
