@@ -37,6 +37,12 @@ const UsersList = () => {
     fetchUsers();
   }, []);
 
+  const getInitials = (name: string) => {
+    const names = name.split(" ");
+    const initials = names.slice(0, 2).map((n) => n.charAt(0).toUpperCase()).join("");
+    return initials;
+  };
+
   const filteredUsers = useMemo(() => {
   return users.filter((user) => {
     const matchesSearch =
@@ -164,29 +170,26 @@ const UsersList = () => {
                 className="bg-white rounded-xl shadow-md overflow-hidden transition-all duration-300 hover:shadow-lg hover:-translate-y-0.5 border border-gray-100"
               >
                 {/* Header con indicador de estado */}
-                <div
-                  className={`h-1.5 ${
-                    user.isActive
-                      ? "bg-gradient-to-r from-emerald-400 to-sky-500"
-                      : "bg-gradient-to-r from-amber-400 to-rose-400"
-                  }`}
-                ></div>
+                
 
                 <div className="p-5">
                   <div className="flex items-center space-x-4">
                     <div className="relative">
+                      {user.avatar ? (
                       <img
-                        src={
-                          user.avatar ||
-                          "https://cdn-icons-png.flaticon.com/512/3607/3607444.png"
-                        }
+                        src={user.avatar}
                         alt={user.name}
                         className="w-16 h-16 rounded-full border-4 border-white shadow-sm object-cover"
                       />
+                      ) : (
+                      <div className="w-16 h-16 rounded-full border-4 border-white shadow-sm bg-orange-600 flex items-center justify-center text-white font-semibold">
+                        {getInitials(user.name)}
+                      </div>
+                      )}
                       {user.isActive && (
-                        <div className="absolute bottom-0 right-0 bg-emerald-500 rounded-full p-1.5 border-2 border-white shadow-xs">
-                          <div className="w-3 h-3"></div>
-                        </div>
+                      <div className="absolute bottom-0 right-0 bg-emerald-500 rounded-full p-1.5 border-2 border-white shadow-xs">
+                        <div className="w-3 h-3"></div>
+                      </div>
                       )}
                     </div>
                     <div className="flex-1 min-w-0">
@@ -217,7 +220,7 @@ const UsersList = () => {
                     <div className="flex space-x-2">
                       <Link
                         to={`/users/${user._id}`}
-                        className="inline-flex items-center px-4 py-2 bg-gradient-to-r from-sky-500 to-blue-600 text-white text-sm font-medium rounded-lg shadow-xs hover:shadow-sm hover:from-sky-600 hover:to-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-sky-300 transition-all duration-200"
+                        className="inline-flex items-center px-4 py-2 bg-blue-600 text-white text-sm font-medium rounded-lg shadow-xs hover:shadow-sm hover:from-sky-600 hover:to-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-sky-300 transition-all duration-200"
                       >
                         <FiEye className="mr-2 w-4 h-4" />
                         Ver detalles

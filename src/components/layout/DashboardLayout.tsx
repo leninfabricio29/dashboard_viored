@@ -215,7 +215,7 @@ export const DashboardLayout = () => {
   }, [sidebarOpen]);
 
   return (
-    <div className="flex h-screen bg-gray-50 relative">
+    <div className="flex h-screen  bg-gray-50 relative">
       {/* Overlay para móvil */}
       <div
         id="sidebar-overlay"
