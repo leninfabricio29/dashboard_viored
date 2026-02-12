@@ -14,9 +14,9 @@ import {
   FiCpu,
   FiChevronDown,
   FiChevronRight,
-  FiCreditCard,
-  FiHelpCircle,
-  FiCamera,
+  //FiCreditCard,
+  //FiHelpCircle,
+  //FiCamera,
   FiKey
 } from "react-icons/fi";
 import { useEffect, useState } from "react";
