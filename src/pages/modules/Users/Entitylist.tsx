@@ -17,8 +17,7 @@ const EntityList = () => {
   const [searchTerm, setSearchTerm] = useState("");
   const [currentPage, setCurrentPage] = useState(1);
   const [subscriptionType] = useState("all");
-  const [selectedUsers, setSelectedUsers] = useState<string[]>([]);
-  console.log("Selected Users:", setSelectedUsers);
+  const [selectedUsers] = useState<string[]>([]);
   
   const [showCreateModal, setShowCreateModal] = useState(false);
   const [showDetailModal, setShowDetailModal] = useState(false);

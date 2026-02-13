@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { entityUsersService } from '../../services/entity.service'; // ajusta si está en otra ruta
 import { FiCheck, FiLock, FiMail, FiUser, FiUsers, FiX } from 'react-icons/fi';
+import Swal from 'sweetalert2';
 
 interface Props {
   isOpen: boolean;
@@ -19,7 +20,6 @@ export const CreateEntityModal: React.FC<Props> = ({ isOpen, onClose, onCreated 
 
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [success, setSuccess] = useState(false);
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
     setForm({ ...form, [e.target.name]: e.target.value });
@@ -30,15 +30,24 @@ export const CreateEntityModal: React.FC<Props> = ({ isOpen, onClose, onCreated 
     setError(null);
     try {
       await entityUsersService.createEntity(form);
-      setSuccess(true);
+
+      Swal.fire({
+        icon: 'success',
+        title: 'Entidad creada',
+        text: 'La entidad ha sido creada exitosamente.',
+      });
+
       if (onCreated) onCreated();
-      setTimeout(() => {
-        setSuccess(false);
-        onClose();
-      }, 1500);
+
+      
     } catch (err: any) {
       if (err.response?.data?.error) {
-        setError(err.response.data.error);
+        Swal.fire({
+          icon: 'error',
+          title: 'Error al crear entidad',
+          text: err.response.data.error,
+        });
+
       } else {
         setError('Error al crear la entidad');
       }
@@ -122,12 +131,7 @@ export const CreateEntityModal: React.FC<Props> = ({ isOpen, onClose, onCreated 
         {error}
       </div>
     )}
-    {success && (
-      <div className="text-green-600 text-sm flex items-center gap-2">
-        <FiCheck className="w-4 h-4" />
-        Entidad creada correctamente
-      </div>
-    )}
+   
 
     {/* Botones */}
     <div className="flex justify-end gap-3 pt-2">
@@ -151,7 +155,7 @@ export const CreateEntityModal: React.FC<Props> = ({ isOpen, onClose, onCreated 
         ) : (
           <>
             <FiCheck />
-            Crear
+            Guardar
           </>
         )}
       </button>

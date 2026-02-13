@@ -25,7 +25,8 @@ interface AlertMapContainerProps {
 const AlertMapContainer: React.FC<AlertMapContainerProps> = ({ alertId }) => {
   const [emergencies, setEmergencies] = useState<AlertData[]>([]);
   const pollingIntervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
-  const audioRef = useRef<HTMLAudioElement | null>(null);
+  const [route, setRoute] = useState<{lat: number; lng: number}[]>([]);
+
   const navigate = useNavigate();
 
   // ====================================================================
@@ -39,51 +40,65 @@ const AlertMapContainer: React.FC<AlertMapContainerProps> = ({ alertId }) => {
   // ====================================================================
   // POLLING: Obtener ubicaciones actualizadas del endpoint
   // ====================================================================
-  const pollAlertLocation = async () => {
-    try {
-      const response = await api.get(`/api/alerts/${alertId}`);
-      const alert = response.data?.alert || response.data;
 
-      if (!alert) return;
+ 
 
-      const [lng, lat] = alert.lastLocation?.coordinates || [0, 0];
+ const pollAlertLocation = async () => {
+  try {
+    const response = await api.get(`/api/alerts/${alertId}`);
+    const alert = response.data?.alert || response.data;
 
-      if (isNaN(lat) || isNaN(lng)) {
-        console.warn("⚠️ Coordenadas inválidas:", { lat, lng });
-        return;
+    if (!alert) return;
+
+    const [lng, lat] = alert.lastLocation?.coordinates || [0, 0];
+
+    if (isNaN(lat) || isNaN(lng)) {
+      console.warn("⚠️ Coordenadas inválidas:", { lat, lng });
+      return;
+    }
+
+    console.log(`📍 Alerta ${alertId} ubicación actualizada:`, { lat, lng });
+
+    // 🔥 ACUMULAR RUTA
+    setRoute((prev) => {
+      const lastPoint = prev[prev.length - 1];
+
+      // Evitar duplicados innecesarios
+      if (lastPoint && lastPoint.lat === lat && lastPoint.lng === lng) {
+        return prev;
       }
 
-      console.log(`📍 Alerta ${alertId} ubicación actualizada:`, { lat, lng });
+      const nextRoute = [...prev, { lat, lng }];
+      return nextRoute;
+    });
+    // Actualizar marcador
+    setEmergencies((prev) => {
+      const exists = prev.find((e) => e.alertId === alertId);
 
-      // Actualizar o crear el marcador en el mapa
-      setEmergencies((prev) => {
-        const exists = prev.find((e) => e.alertId === alertId);
+      if (exists) {
+        return prev.map((el) =>
+          el.alertId === alertId ? { ...el, lat, lng } : el
+        );
+      } else {
+        return [
+          {
+            id: alertId,
+            alertId,
+            lat,
+            lng,
+            emitterName: alert.reporter?.name || "Desconocido",
+            emitterPhone: alert.reporter?.phone || "-",
+            emitterId: alert.reporter?._id || "",
+          },
+        ];
+      }
+    });
 
-        if (exists) {
-          return prev.map((el) =>
-            el.alertId === alertId
-              ? { ...el, lat, lng }
-              : el
-          );
-        } else {
-          // Primera vez que obtenemos la alerta
-          return [
-            {
-              id: alertId,
-              alertId,
-              lat,
-              lng,
-              emitterName: alert.reporter?.name || "Desconocido",
-              emitterPhone: alert.reporter?.phone || "-",
-              emitterId: alert.reporter?._id || "",
-            },
-          ];
-        }
-      });
-    } catch (error: any) {
-      console.error("❌ Error polando ubicación:", error?.response?.data || error.message);
-    }
-  };
+  } catch (error: any) {
+    console.error("❌ Error polando ubicación:", error?.response?.data || error.message);
+  }
+};
+
 
   // Iniciar polling al montar
   useEffect(() => {
@@ -99,6 +114,10 @@ const AlertMapContainer: React.FC<AlertMapContainerProps> = ({ alertId }) => {
       }
     };
   }, [alertId]);
+
+  useEffect(() => {
+    if (route.length === 0) return;
+  }, [route]);
 
   // ====================================================================
   // SOCKET LISTENERS: Detectar cambios de estado
@@ -116,7 +135,6 @@ const AlertMapContainer: React.FC<AlertMapContainerProps> = ({ alertId }) => {
   });
 
   useSocketListener("alerta-finalizada", (data: any) => {
-    console.log(`🛑 Alerta finalizada desde socket: ${data.alertId}`);
     if (data.alertId === alertId) {
       if (pollingIntervalRef.current) {
         clearInterval(pollingIntervalRef.current);
@@ -129,7 +147,6 @@ const AlertMapContainer: React.FC<AlertMapContainerProps> = ({ alertId }) => {
   // LISTENER ALTERNATIVO: location-update si sigue usando sockets
   // ====================================================================
   const handleLocationUpdate = (data: any) => {
-    console.log("📍 Ubicación actualizada desde socket:", data);
 
     if (!data?.alertId || data.alertId !== alertId) return;
 
@@ -157,6 +174,10 @@ const AlertMapContainer: React.FC<AlertMapContainerProps> = ({ alertId }) => {
     };
   }, [alertId]);
 
+  // ====================================================================
+  // AUDIO: Manejado globalmente en DashboardEntity
+  // ====================================================================
+
   /** ────────────────── FUNCIONES HANDLER ────────────────── */
   const handleAttend = async (alertId: string, emitterId: string) => {
     const recipientId = entityId || "";
@@ -172,20 +193,12 @@ const AlertMapContainer: React.FC<AlertMapContainerProps> = ({ alertId }) => {
       clearInterval(pollingIntervalRef.current);
     }
 
-    if (audioRef.current) {
-      audioRef.current.pause();
-      audioRef.current.currentTime = 0;
-    }
-
     setEmergencies([]);
     window.alert("Emergencia atendida correctamente.");
     navigate("/monitoring", { replace: true });
   };
   return (
-    <>
-      <audio ref={audioRef} src="/sounds/alarm.mp3" loop preload="auto" />
-      <MapAlert markers={emergencies} onAttend={handleAttend} />
-    </>
+    <MapAlert markers={emergencies} route={route} onAttend={handleAttend} />
   );
 };
 

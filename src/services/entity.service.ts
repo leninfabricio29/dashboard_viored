@@ -77,7 +77,6 @@ export const entityUsersService = {
       });
       return response.data;
     } catch (error) {
-      console.error("Error al aceptar la petición:", error);
       throw error;
     }
   },

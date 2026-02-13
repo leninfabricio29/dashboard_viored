@@ -69,11 +69,11 @@ const authService = {
     }
   },
 
-  // Cerrar sesión (eliminar token)
+  // Cerrar sesión (eliminar todos los datos del localStorage)
   logout: (): void => {
-    localStorage.removeItem('token');
-    localStorage.removeItem('entity_sonId'); // Eliminar el ID de la entidad si existe
+    localStorage.clear();
   },
+
 
   // Verificar si el usuario está autenticado
   isAuthenticated: (): boolean => {

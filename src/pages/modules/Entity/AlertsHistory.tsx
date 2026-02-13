@@ -3,6 +3,9 @@ import { getAllNotifications } from "../../../services/notifications-service";
 import authService from "../../../services/auth-service";
 import { entityUsersService } from "../../../services/entity.service";
 import { FiBell, FiCheck, FiEye } from "react-icons/fi";
+import Swal from 'sweetalert2'
+import axios from "axios";
+
 
 interface Notification {
   _id: string;
@@ -64,12 +67,45 @@ const AlertsHistory: React.FC = () => {
     setDetailsModal("");
   };
 
-  const handleAcceptRequest = (id: string, userId: string, entityId: string) => {
-    const response  = entityUsersService.acceptPetition(userId, entityId)
-    console.log("repo se", response)
+  const handleAcceptRequest = async (
+  id: string,
+  userId: string,
+  entityId: string
+) => {
+  try {
+    const response = await entityUsersService.acceptPetition(userId, entityId);
+
+    console.log("Respuesta de aceptación:", response);
+
     markAsRead(id);
     closeModal();
-  };
+
+    Swal.fire({
+      icon: 'success',
+      title: 'Petición aceptada',
+      text: 'Un nuevo usuario pertenece a tu entidad.',
+      timer: 3000,
+      showConfirmButton: true,
+    });
+
+  } catch (error: unknown) {
+
+  if (axios.isAxiosError(error)) {
+
+    Swal.fire({
+      icon: 'error',
+      title: 'Error',
+      text: error.response?.data?.message || 'Error inesperado',
+      timer: 3000,
+      showConfirmButton: true,
+    });
+    closeModal();
+
+  } else {
+    console.error("Error desconocido:", error);
+  }
+}
+};
 
   useEffect(() => {
     let filtered = [...notifications];
@@ -170,8 +206,6 @@ const AlertsHistory: React.FC = () => {
     return buttons;
   };
 
-  const unreadCount = notifications.filter((n) => !n.read).length;
-  console.log(unreadCount);
 
   if (loading) {
     return (

@@ -90,7 +90,7 @@ export const EmergencyMarker = ({ alert, onAttend }: EmergencyMarkerProps) => {
               }
               className="w-full py-2 bg-red-600 hover:bg-red-700 text-white text-sm font-bold rounded shadow-md transition"
             >
-              🚨 Atender Emergencia
+               Atender Emergencia
             </button>
           </div>
         </Popup>

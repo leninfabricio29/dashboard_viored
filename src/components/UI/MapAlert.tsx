@@ -1,5 +1,5 @@
 import React, { useEffect, useState, useRef } from 'react';
-import Map, { Marker, useMap } from 'react-map-gl';
+import Map, { Marker, useMap, Source, Layer } from 'react-map-gl';
 import 'mapbox-gl/dist/mapbox-gl.css';
 import { AlertData } from './AlertMapContainer';
 import { EmergencyMarker } from './EmergencyMarket';
@@ -8,6 +8,7 @@ type MapAlertProps = {
   markers: AlertData[];
   zoom?: number;
   alertZoom?: number; // Nuevo prop para el zoom de alertas
+  route?: {lat: number; lng: number}[]; // Nueva prop para la ruta
   height?: string;
   width?: string;
   onAttend: (
@@ -86,6 +87,7 @@ const MapController: React.FC<{ markers: AlertData[], zoom: number, alertZoom?: 
 
 const MapAlert: React.FC<MapAlertProps> = ({ 
   markers, 
+  route = [],
   zoom = 14, 
   alertZoom = 17, // Zoom muy cercano por defecto
   height = '100vh', 
@@ -120,7 +122,7 @@ const MapAlert: React.FC<MapAlertProps> = ({
       </div>
       
       <Map
-        mapboxAccessToken={"pk.eyJ1IjoibGVuaW5mYWJyaWNpbyIsImEiOiJjbWQ2YXRtOXkwN2hjMm1vbHR4ajB3aWZ1In0.jqum9A3LkzXukkDLBLO9kQ"}
+        mapboxAccessToken={import.meta.env.VITE_MAPBOX_TOKEN}
         initialViewState={{
           longitude: initialCenter.longitude,
           latitude: initialCenter.latitude,
@@ -129,6 +131,29 @@ const MapAlert: React.FC<MapAlertProps> = ({
         style={{ width: '100%', height: '100%' }}
         mapStyle={getMapboxStyle(styleIndex)}
       >
+        {route.length > 1 && (
+  <Source
+    id="route"
+    type="geojson"
+    data={{
+      type: "Feature",
+      geometry: {
+        type: "LineString",
+        coordinates: route.map(point => [point.lng, point.lat])
+      },
+      properties: {}
+    }}
+  >
+    <Layer
+      id="route-line"
+      type="line"
+      paint={{
+        "line-color": "#ff0000",
+        "line-width": 4
+      }}
+    />
+  </Source>
+)}
         {/* Componente que maneja la navegación del mapa */}
         <MapController markers={markers} zoom={zoom} alertZoom={alertZoom} />
         

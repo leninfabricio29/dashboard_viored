@@ -4,13 +4,13 @@ import { getNotificationById } from "../../../services/notifications-service";
 import userService from "../../../services/user-service";
 import ButtonIndicator from "../../../components/UI/ButtonIndicator";
 import ButtonHome from "../../../components/UI/ButtonHome";
+import Swal from "sweetalert2";
 import {
   FiUser,
   FiMail,
   FiSmartphone,
   FiClock,
   FiCheckCircle,
-  FiAlertTriangle,
   FiInfo,
   FiShield,
   FiActivity,
@@ -21,8 +21,6 @@ const NotificationDetail = () => {
   const [notification, setNotification] = useState<any>(null);
   const [emitter, setEmitter] = useState<any>(null);
   const [loading, setLoading] = useState(true);
-  const [successMessage, setSuccessMessage] = useState<string | null>(null);
-  const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const [type_suscription, setTypeSuscription] = useState<string | null>(null);
 
   useEffect(() => {
@@ -45,8 +43,11 @@ const NotificationDetail = () => {
 
   const handleValidate = async () => {
     if (!type_suscription) {
-      setErrorMessage("❗ Debes seleccionar un tipo de suscripción antes de validar.");
-      setSuccessMessage(null);
+      Swal.fire({
+        icon: "warning",
+        title: "Tipo de suscripción requerido",
+        text: "Por favor, selecciona un tipo de suscripción antes de validar el usuario.",
+      });
       return;
     }
 
@@ -54,15 +55,19 @@ const NotificationDetail = () => {
 
     try {
       await userService.validateUser(emitter._id, type_suscription);
-      setSuccessMessage(
-        `✅ Registro validado correctamente.\n\n📧 Correo: ${emitter.email}\n🔐 Contraseña: ${emitter.ci}`
-      );
-      setErrorMessage(null);
+      Swal.fire({
+        icon: "success",
+        title: "Usuario validado",
+        text: "El usuario ha sido validado exitosamente. Se le ha asignado la suscripción correspondiente.",
+      });
       setEmitter({ ...emitter, isActive: true });
     } catch (error) {
-      setErrorMessage("❌ Hubo un error al validar el usuario. Inténtalo nuevamente.");
-      setSuccessMessage(null);
-      console.error("Error al validar usuario:", error);
+      Swal.fire({
+        icon: "error",
+        title: "Error al validar usuario",
+        text: "Ocurrió un error al validar el usuario. Por favor, intenta nuevamente.",
+      });
+      
     }
   };
 
@@ -96,27 +101,7 @@ const NotificationDetail = () => {
         <ButtonHome />
       </div>
 
-      {successMessage && (
-        <div className="bg-green-50 border-l-4 border-green-500 text-green-700 p-4 rounded mb-6">
-          <div className="flex items-start">
-            <FiCheckCircle className="w-5 h-5 mr-2 mt-0.5 flex-shrink-0 text-green-500" />
-            <div>
-              <div className="font-bold mb-1">¡Operación exitosa!</div>
-              <div className="whitespace-pre-line">{successMessage}</div>
-            </div>
-          </div>
-        </div>
-      )}
-
-      {errorMessage && (
-        <div className="bg-red-50 border-l-4 border-red-500 text-red-700 p-4 rounded mb-6 flex items-start">
-          <FiAlertTriangle className="w-5 h-5 mr-2 mt-0.5 flex-shrink-0 text-red-500" />
-          <div>
-            <div className="font-bold mb-1">Error</div>
-            <div>{errorMessage}</div>
-          </div>
-        </div>
-      )}
+      
 
       <div className="bg-white shadow-lg rounded-xl border border-gray-100 overflow-hidden">
         <div className="bg-gradient-to-r from-blue-600 to-blue-700 px-6 py-4">

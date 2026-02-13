@@ -10,7 +10,6 @@ import {
 import ButtonHome from "../../../components/UI/ButtonHome";
 import ButtonIndicator from "../../../components/UI/ButtonIndicator";
 import Modal from "../../../components/layout/Modal";
-import DeleteConfirmationModal from "../../../components/layout/DeleteConfirmationModal";
 import deviceService from "../../../services/device-service";
 import {
   CreateDevicePayload,
@@ -18,6 +17,7 @@ import {
   DeviceStatus,
   UpdateDevicePayload,
 } from "../../../types/device.types";
+import Swal from "sweetalert2";
 
 const DEFAULT_FORM: CreateDevicePayload & { status: DeviceStatus } = {
   name: "",
@@ -41,7 +41,6 @@ const Devices = () => {
   const [selectedDevice, setSelectedDevice] = useState<Device | null>(null);
   const [detailOpen, setDetailOpen] = useState(false);
   const [formOpen, setFormOpen] = useState(false);
-  const [deleteOpen, setDeleteOpen] = useState(false);
   const [submitting, setSubmitting] = useState(false);
   const [detailLoading, setDetailLoading] = useState(false);
   const [testingConnectivity, setTestingConnectivity] = useState<string | null>(null);
@@ -144,9 +143,13 @@ const Devices = () => {
           name: formData.name,
           type: activeSegment,
         });
-        console.log("Se creara un dispositivo de typo:", activeSegment);
-        console.log("Dispositivo creado:", created);
         setDevices((prev) => [created, ...prev]);
+        Swal.fire({
+          icon: "success",
+          title: "Dispositivo creado",
+          text: `Registro de ${activeSegment === "siren" ? "sirena" : "botón físico"} ha sido creada exitosamente.`, 
+        });
+
       } else if (selectedDevice?._id) {
         const payload: UpdateDevicePayload = {
           name: formData.name,
@@ -161,6 +164,11 @@ const Devices = () => {
           prev.map((item) => (item._id === updated._id ? updated : item))
         );
         setSelectedDevice(updated);
+        Swal.fire({
+          icon: "success",
+          title: "Dispositivo actualizado",
+          text: `El dispositivo ha sido actualizado exitosamente.`,
+        });
       }
       setFormOpen(false);
       setFormData(DEFAULT_FORM);
@@ -173,22 +181,54 @@ const Devices = () => {
   };
 
   const handleDelete = async () => {
-    if (!selectedDevice?._id) return;
-    try {
-      setSubmitting(true);
-      await deviceService.deleteDevice(selectedDevice._id);
-      setDevices((prev) =>
-        prev.filter((item) => item._id !== selectedDevice._id)
-      );
-      setDeleteOpen(false);
-      setSelectedDevice(null);
-    } catch (err) {
-      console.error("Error al eliminar dispositivo", err);
-      setError("No se pudo eliminar el dispositivo");
-    } finally {
-      setSubmitting(false);
-    }
-  };
+  if (!selectedDevice?._id) return;
+
+  const result = await Swal.fire({
+    icon: "warning",
+    title: "¿Estás seguro?",
+    text: "Esta acción no se puede deshacer. El dispositivo será eliminado permanentemente.",
+    showCancelButton: true,
+    confirmButtonColor: "#d33",
+    cancelButtonColor: "#3085d6",
+    confirmButtonText: "Sí, eliminar",
+    cancelButtonText: "Cancelar",
+  });
+
+  if (!result.isConfirmed) return;
+
+  try {
+    setSubmitting(true);
+
+    await deviceService.deleteDevice(selectedDevice._id);
+
+    setDevices((prev) =>
+      prev.filter((item) => item._id !== selectedDevice._id)
+    );
+
+    setSelectedDevice(null);
+
+    await Swal.fire({
+      icon: "success",
+      title: "Eliminado",
+      text: "El dispositivo fue eliminado correctamente.",
+      timer: 2000,
+      showConfirmButton: false,
+    });
+
+  } catch (err) {
+    console.error("Error al eliminar dispositivo", err);
+
+    Swal.fire({
+      icon: "error",
+      title: "Error",
+      text: "No se pudo eliminar el dispositivo",
+    });
+
+  } finally {
+    setSubmitting(false);
+  }
+};
+
 
   const testConnectivity = async (deviceId: string) => {
     try {
@@ -422,7 +462,7 @@ const Devices = () => {
                           <button
                             onClick={() => {
                               setSelectedDevice(device);
-                              setDeleteOpen(true);
+                              handleDelete();
                             }}
                             className="p-2 rounded-lg border border-red-200 text-red-600 hover:bg-red-50 cursor-pointer"
                             title="Eliminar"
@@ -678,13 +718,7 @@ const Devices = () => {
           )}
         </Modal>
 
-        <DeleteConfirmationModal
-          isOpen={deleteOpen}
-          onClose={() => setDeleteOpen(false)}
-          onConfirm={handleDelete}
-          userName={selectedDevice?.name || ""}
-          entityType={activeSegment === "siren" ? "sirena" : "botón físico"}
-        />
+       
       </div>
     </div>
   );

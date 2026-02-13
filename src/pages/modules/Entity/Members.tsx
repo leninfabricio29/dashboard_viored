@@ -3,6 +3,8 @@ import { entityUsersService } from "../../../services/entity.service";
 import authService from "../../../services/auth-service";
 import { FiUser, FiRefreshCw } from "react-icons/fi";
 import { User, CreateUserInput, UserView } from "../../../types/user.types";
+import Swal from 'sweetalert2'
+
 //import { Hourglass } from "react-loader-spinner";
 
 const Members = () => {
@@ -11,7 +13,6 @@ const Members = () => {
   const [loading, setLoading] = useState<boolean>(true);
   const [error, setError] = useState<string | null>(null);
   const [selectedUser, setSelectedUser] = useState<UserView | null>(null);
-  console.log("Selected User:", selectedUser);
   const [currentPage, setCurrentPage] = useState(1);
   const [showForm, setShowForm] = useState(false);
   const [isBusy, setIsBusy] = useState(false);
@@ -39,17 +40,36 @@ const Members = () => {
       if (!entityId) throw new Error("No se pudo obtener el ID de la entidad.");
 
       if (!newUserData.name || !newUserData.email || !newUserData.password) {
-        showNotification("Nombre, email y contraseña son obligatorios.");
+        Swal.fire({
+          icon: 'warning',
+          title: 'Campos incompletos',
+          text: 'Por favor, completa los campos obligatorios.',
+          timer: 3000,
+          showConfirmButton: true,
+        });
         return;
       }
 
       await entityUsersService.createSonUser(entityId, newUserData);
       setNewUserData({ name: "", email: "", ci: "", password: "" });
       setShowForm(false);
+      Swal.fire({
+        icon: 'success',
+        title: 'Colaborador creado',
+        text: 'El nuevo colaborador ha sido creado exitosamente.',
+        timer: 3000,
+        showConfirmButton: false,
+      });
+
       await fetchUsers();
     } catch (error: any) {
-      console.error("Error creando usuario hijo:", error);
-      showNotification(error.message || "No se pudo crear el usuario.");
+      Swal.fire({
+        icon: 'error',
+        title: 'Error al crear colaborador',
+        text: error.message || 'No se pudo crear el colaborador.',
+        timer: 3000,
+        showConfirmButton: true,
+      });
     } finally {
       setIsBusy(false);
     }
@@ -130,15 +150,21 @@ const Members = () => {
             : u
         )
       );
-      showNotification(
-        `Usuario ${
-          updatedUser.isActive ? "activado" : "desactivado"
-        } correctamente.`
-      );
+      Swal.fire({
+        icon: 'success',
+        title: 'Estado actualizado',
+        text: `El usuario ha sido ${updatedUser.isActive ? "activado" : "desactivado"} correctamente.`,
+        timer: 3000,
+        showConfirmButton: true,
+      });
     } catch (err: any) {
-      showNotification(
-        err?.message || "No se pudo cambiar el estado del usuario."
-      );
+      Swal.fire({
+        icon: 'error',
+        title: 'Error al actualizar estado',
+        text: err.message || 'No se pudo actualizar el estado del usuario.',
+        timer: 3000,
+        showConfirmButton: true,
+      });
     } finally {
       setIsBusy(false);
     }

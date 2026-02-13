@@ -107,6 +107,7 @@ const Header = ({ onMenuClick, sidebarOpen }: HeaderProps) => {
           notif._id === notificationId ? { ...notif, isRead: true } : notif
         )
       );
+      window.location.href = "/notifications";
     } catch (error) {
       console.error("Error al marcar notificación como leída:", error);
     }

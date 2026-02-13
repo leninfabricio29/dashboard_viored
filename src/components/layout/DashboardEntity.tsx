@@ -1,20 +1,11 @@
-import {
-  FiUsers,
-  FiBell,
-  FiClock,
-  FiSettings,
-  FiLogOut,
-  FiHome,
-  FiMenu,
-  FiX
-} from "react-icons/fi";
-import { useEffect, useState } from "react";
+import { FiUsers, FiBell, FiClock, FiSettings, FiLogOut, FiHome, FiMenu, FiX, FiRadio, FiVolume2, FiVolumeX } from "react-icons/fi";
+import { useEffect, useState, useRef } from "react";
 import { useNavigate } from "react-router-dom";
 import authService from "../../services/auth-service";
 import userService from "../../services/user-service";
 import Footer from "./Footer";
-import { Link, useLocation } from "react-router-dom";
-
+import { useLocation } from "react-router-dom";
+import { useSocketListener } from "../../hooks/useSocketListener";
 import MonitoringMap from "../../pages/modules/Entity/MonitoringMap";
 import TrackingDetail from "../../pages/modules/Entity/TrackingDetail";
 import Members from "../../pages/modules/Entity/Members";
@@ -27,24 +18,38 @@ export const DashboardEntity = () => {
   const { pathname } = useLocation();
   const navigate = useNavigate();
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+  const [soundEnabled, setSoundEnabled] = useState(false);
+  const audioRef = useRef<HTMLAudioElement | null>(null);
   const [user, setUser] = useState<{ name: string; role: string; avatar?: string }>({
     name: "",
     role: "",
   });
-  const [modalType, setModalType] = useState<null | "members" | "alerts" | "history" | "settings">(null);
+  const [modalType, setModalType] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
-  loading
+  console.log("DashboardEntity rendered:", { pathname, modalType, user, loading });
 
   const modules = [
-    { title: "Inicio", path: "/monitoring", icon: <FiHome className="text-lg" /> },
-    { title: "Colaboradores", path: "/monitoring/members", icon: <FiUsers className="text-lg" /> },
-    { title: "Notificaciones", path: "/monitoring/alerts-history", icon: <FiBell className="text-lg" /> },
-    { title: "Bitácora", path: "/monitoring/history-admin", icon: <FiClock className="text-lg" /> },
+    { title: "Inicio", path: "/monitoring", icon: <FiHome size={15} /> },
+    { title: "Colaboradores", path: "/monitoring/members", icon: <FiUsers size={15} /> },
+    { title: "Notificaciones", path: "/monitoring/alerts-history", icon: <FiBell size={15} /> },
+    { title: "Bitácora", path: "/monitoring/history-admin", icon: <FiClock size={15} /> },
   ];
 
   const handleLogout = () => {
     authService.logout();
     navigate("/login");
+  };
+
+  const getModalTypeFromPath = (path: string) => {
+    if (path.includes("members")) return "members";
+    if (path.includes("alerts-history")) return "alerts";
+    if (path.includes("history-admin")) return "history";
+    return null;
+  };
+
+  const isActiveModule = (module: (typeof modules)[0]) => {
+    if (module.path === "/monitoring") return pathname === "/monitoring";
+    return pathname.startsWith(module.path);
   };
 
   useEffect(() => {
@@ -56,7 +61,9 @@ export const DashboardEntity = () => {
           setUser({
             name: userData.name,
             role: userData.role,
-            avatar: userData.avatar || `https://ui-avatars.com/api/?name=${encodeURIComponent(userData.name)}&background=random`
+            avatar:
+              userData.avatar ||
+              `https://ui-avatars.com/api/?name=${encodeURIComponent(userData.name)}&background=random`,
           });
         }
       } catch (error) {
@@ -65,240 +72,319 @@ export const DashboardEntity = () => {
         setLoading(false);
       }
     };
-
     fetchUserData();
   }, []);
 
+  const filteredModules = modules.filter((module) => {
+    if (user.role === "entity") return true;
+    if (user.role === "son")
+      return module.title === "Inicio" || module.title === "Notificaciones";
+    return false;
+  });
+
+  const isTrackingRoute = pathname.match(/^\/monitoring\/tracking\/[^\/]+$/);
+  const trackingAlertId = isTrackingRoute
+    ? pathname.match(/^\/monitoring\/tracking\/([^\/]+)$/)?.[1]
+    : null;
+
+  // ====================================================================
+  // AUDIO GLOBAL: Escuchar alertas de pánico
+  // ====================================================================
+  useSocketListener("panic-alert", (data: any) => {
+    console.log("🚨 Alerta de pánico recibida en DashboardEntity:", data);
+    if (soundEnabled && audioRef.current) {
+      console.log("🔊 Reproduciendo sonido de alerta global");
+      audioRef.current.currentTime = 0;
+      audioRef.current.play().catch((err) => {
+        console.error("❌ Error reproduciendo audio:", err);
+      });
+    }
+  });
+
+  // Detener audio cuando se atiende la alerta
+  useSocketListener("alert-attended", (data: any) => {
+    data = data || {};
+    console.log("👤 Alerta atendida, deteniendo sonido");
+    if (audioRef.current) {
+      audioRef.current.pause();
+      audioRef.current.currentTime = 0;
+    }
+  });
+
+  // Detener audio cuando se finaliza la alerta
+  useSocketListener("alert-finalized", (data: any) => {
+    data = data || {};
+    console.log("🛑 Alerta finalizada, deteniendo sonido");
+    if (audioRef.current) {
+      audioRef.current.pause();
+      audioRef.current.currentTime = 0;
+    }
+  });
+
+  // Detener audio cuando se entra al tracking
+  useEffect(() => {
+    if (isTrackingRoute && audioRef.current) {
+      console.log("🚪 Entrando al tracking, deteniendo sonido");
+      audioRef.current.pause();
+      audioRef.current.currentTime = 0;
+    }
+  }, [isTrackingRoute]);
   return (
-    <div className="flex h-screen bg-gray-50">
-      {/* Mobile menu button */}
-      <button
-        className="md:hidden fixed top-4 left-4 z-50 p-2 rounded-md bg-white shadow-lg text-gray-600"
-        onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
-      >
-        {mobileMenuOpen ? <FiX size={24} /> : <FiMenu size={24} />}
-      </button>
+    <div className="flex flex-col min-h-screen bg-gray-50 text-slate-300">
+      {/* Audio global */}
+      <audio 
+        ref={audioRef} 
+        src={`${window.location.origin}/sounds/alarm.mp3`}
+        loop 
+      />
 
-      {/* Sidebar - Desktop */}
-      <aside className={`hidden md:flex flex-col w-64 h-full bg-gradient-to-b from-gray-800 to-gray-600 text-white transition-all duration-300 ease-in-out ${mobileMenuOpen ? 'translate-x-0' : '-translate-x-full md:translate-x-0'}`}>
-        <div className="flex flex-col h-full">
-          {/* Logo/Brand */}
-          <div className="p-4 border-b border-blue-700 flex items-center justify-center">
-            <h1 className="text-xl font-bold text-white ">Monitoreo V1</h1>
+      {/* ── HEADER ── */}
+      <header className="sticky top-0 z-50 flex items-center h-14 px-4 md:px-6 bg-slate-900 border-b border-slate-800 shadow-lg shadow-black/30">
+
+        {/* Brand */}
+        <div className="flex items-center gap-2.5 mr-6 shrink-0">
+          <div className="w-8 h-8 rounded-lg bg-cyan-500/10 border border-cyan-500/20 flex items-center justify-center">
+            <FiRadio size={16} className="text-cyan-400" />
           </div>
+          <span className="font-bold text-sm tracking-wide text-slate-100">Sistema de monitoreo</span>
+          <span className="text-[9px] font-bold tracking-widest text-cyan-400 bg-cyan-400/10 border border-cyan-400/20 rounded px-1.5 py-0.5 animate-pulse">
+            LIVE
+          </span>
+        </div>
 
-          {/* User Profile */}
-          <div className="p-4 flex items-center space-x-3 border-b border-blue-700">
-            <img 
-              src={user.avatar} 
+        {/* Desktop Nav */}
+        <nav className="hidden md:flex items-center gap-1 flex-1">
+          {filteredModules.map((module) => {
+            const active = isActiveModule(module);
+            return (
+              <button
+                key={module.path}
+                onClick={() => {
+                  const mt = getModalTypeFromPath(module.path);
+                  if (mt) setModalType(mt);
+                }}
+                className={`relative flex items-center gap-2 px-3.5 py-2 rounded-lg text-[0.95rem] font-medium transition-all duration-150
+                  ${active ? "text-slate-100   border-slate-700" : "text-slate-300 hover:text-slate-300 hover:bg-slate-800/60 border border-transparent"}`}
+              >
+                <span className={active ? "text-cyan-400" : "text-slate-600"}>
+                  {module.icon}
+                </span>
+                {module.title}
+                
+              </button>
+            );
+          })}
+        </nav>
+
+        {/* Right section */}
+        <div className="flex items-center gap-2 ml-auto shrink-0">
+
+          {/* Settings */}
+          <button
+            onClick={() => setModalType("settings")}
+            className="hidden md:flex w-8 h-8 rounded-lg border border-slate-700 text-slate-500 hover:text-slate-300 hover:border-slate-600 items-center justify-center transition-all"
+            title="Configuración"
+          >
+            <FiSettings size={16} />
+          </button>
+
+          {/* Volume Toggle */}
+          <button
+            onClick={() => setSoundEnabled(!soundEnabled)}
+            className={`hidden md:flex w-8 h-8 rounded-lg border items-center justify-center transition-all ${
+              soundEnabled
+                ? "border-cyan-500/60 text-cyan-400 hover:border-cyan-400"
+                : "border-slate-700 text-slate-500 hover:text-slate-300 hover:border-slate-600"
+            }`}
+            title={soundEnabled ? "Sonido activado" : "Sonido desactivado"}
+          >
+            {soundEnabled ? <FiVolume2 size={16} /> : <FiVolumeX size={16} />}
+          </button>
+
+          {/* Divider */}
+          <div className="hidden md:block w-px h-6 bg-slate-700 mx-1" />
+
+          {/* User chip */}
+          <div className="hidden md:flex items-center gap-2.5 px-2.5 py-1.5 rounded-xl border border-slate-700/60 bg-slate-800/40">
+            <img
+              src={user.avatar}
               alt={user.name}
-              className="w-10 h-10 rounded-full object-cover border-2 border-blue-400"
+              className="w-7 h-7 rounded-lg object-cover border border-slate-600"
+              onError={(e) => {
+                (e.target as HTMLImageElement).src = `https://ui-avatars.com/api/?name=${encodeURIComponent(
+                  user.name || "U"
+                )}&background=1e3a5f&color=22d3ee`;
+              }}
             />
-            <div>
-              <p className="font-medium ">{user.name}</p>
-              <p className="text-xs text-blue-200 capitalize ">{user.role}</p>
+            <div className="flex flex-col leading-tight">
+              <span className="text-xs font-semibold text-slate-200">{user.name || "Usuario"}</span>
+              <span className="text-[10px] text-slate-500 capitalize">{user.role || "—"}</span>
             </div>
           </div>
 
-          {/* Navigation */}
-          <nav className="flex-1 p-4 space-y-1 overflow-y-auto">
-            {modules
-              .filter((module) => {
-                if (user.role === "entity") return true;
-                if (user.role === "son") return (
-                  module.title === "Inicio" || module.title === "Notificaciones"
-                );
-                return false;
-              })
-              .map((module, index) => (
-                <Link
-                  key={index}
-                  to="#"
-                  onClick={() => {
-    if (module.path.includes("members")) setModalType("members");
-    if (module.path.includes("alerts-history")) setModalType("alerts");
-    if (module.path.includes("history-admin")) setModalType("history");
-    }}
-    className="flex items-center space-x-3 p-3 rounded-lg  text-blue-100 hover:bg-blue-900/50"
-    >
-                  <span className="text-blue-300">{module.icon}</span>
-                  <span>{module.title}</span>
-                </Link>
-              ))}
-          </nav>
+          {/* Logout */}
+          <button
+            onClick={handleLogout}
+            className="hidden md:flex items-center gap-1.5 px-3 py-1.5 rounded-lg border border-red-500/20 bg-red-500/5 text-red-400 text-xs font-medium hover:bg-red-500/10 hover:border-red-500/30 transition-all"
+          >
+            <FiLogOut size={14} />
+            <span>Salir</span>
+          </button>
 
-          {/* Bottom Section */}
-          <div className="p-4 border-t border-gray-100 space-y-2 ">
-            <button
-              type="button"
-              className={`w-full flex items-center space-x-3 p-3 rounded-lg transition-colors ${
-              modalType === "settings"
-                ? "bg-blue-900 text-white"
-                : "text-blue-100 hover:bg-blue-900/50"
-              }`}
-              onClick={() => setModalType("settings")}
-            >
-              <FiSettings className="text-blue-300" />
-              <span>Configuración</span>
-            </button>
-            <button
-              onClick={handleLogout}
-              className="w-full flex items-center space-x-3 p-3 cursor-pointer rounded-lg text-blue-100 hover:bg-red-600/30 transition-colors"
-            >
-              <FiLogOut className="text-blue-300" />
-              <span>Cerrar sesión</span>
-            </button>
-          </div>
+          {/* Mobile hamburger */}
+          <button
+            className="flex md:hidden w-9 h-9 rounded-lg border border-slate-700 text-slate-400 items-center justify-center"
+            onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
+          >
+            {mobileMenuOpen ? <FiX size={18} /> : <FiMenu size={18} />}
+          </button>
         </div>
-      </aside>
+      </header>
 
-      {/* Mobile Sidebar */}
+      {/* ── MOBILE DRAWER ── */}
       {mobileMenuOpen && (
-        <div className="md:hidden fixed inset-0 z-40">
-          <div 
-            className="absolute inset-0 bg-black/50"
+        <>
+          <div
+            className="fixed inset-0 z-40 bg-black/60 backdrop-blur-sm"
             onClick={() => setMobileMenuOpen(false)}
           />
-          <div className="absolute left-0 top-0 bottom-0 w-64 bg-gradient-to-b from-blue-800 to-blue-900 text-white transform transition-transform duration-300 ease-in-out">
-            <div className="p-4 flex justify-between items-center border-b border-blue-700">
-              <h1 className="text-xl font-bold">SafeTrack</h1>
-              <button onClick={() => setMobileMenuOpen(false)}>
-                <FiX size={24} />
-              </button>
+          <div className="fixed top-0 right-0 bottom-0 z-50 w-64 bg-slate-900 border-l border-slate-800 flex flex-col p-4 gap-1 overflow-y-auto">
+
+            <div className="flex items-center gap-2 pb-4 mb-2 border-b border-slate-800">
+              <FiRadio size={15} className="text-cyan-400" />
+              <span className="font-bold text-sm text-slate-100">SafeTrack</span>
             </div>
-            {/* Mobile menu content (same as desktop) */}
-            <div className="p-4 flex items-center space-x-3 border-b border-blue-700">
-              <img 
-                src={user.avatar} 
+
+            <div className="flex items-center gap-2.5 p-3 rounded-xl border border-slate-700/60 bg-slate-800/40 mb-3">
+              <img
+                src={user.avatar}
                 alt={user.name}
-                className="w-10 h-10 rounded-full object-cover border-2 border-blue-400"
+                className="w-8 h-8 rounded-lg object-cover border border-slate-600"
               />
-              <div>
-                <p className="font-medium">{user.name}</p>
-                <p className="text-xs text-blue-200 capitalize">{user.role}</p>
+              <div className="flex flex-col leading-tight">
+                <span className="text-xs font-semibold text-slate-200">{user.name}</span>
+                <span className="text-[10px] text-slate-500 capitalize">{user.role}</span>
               </div>
             </div>
-            <nav className="p-4 space-y-1">
-              {modules
-                .filter((module) => {
-                  if (user.role === "entity") return true;
-                  if (user.role === "son") return (
-                    module.title === "Inicio" || module.title === "Notificaciones"
-                  );
-                  return false;
-                })
-                .map((module, index) => (
-                    <Link
-                    key={index}
-                    to={module.path}
-                    className="flex items-center space-x-3 p-3 rounded-lg text-blue-100 hover:bg-blue-700/50 transition-colors"
-                    onClick={() => setMobileMenuOpen(false)}
-                    >
-                    <span className="text-blue-300">{module.icon}</span>
-                    <span>{module.title}</span>
-                    </Link>
-                ))}
-            </nav>
-            <div className="p-4 border-t border-blue-700 space-y-2">
+
+            {filteredModules.map((module) => {
+              const active = isActiveModule(module);
+              return (
                 <button
-                type="button"
-                className="w-full flex items-center space-x-3 p-3 rounded-lg transition-colors text-blue-100 hover:bg-blue-700/50"
-                onClick={() => setModalType("settings")}
+                  key={module.path}
+                  onClick={() => {
+                    const mt = getModalTypeFromPath(module.path);
+                    if (mt) setModalType(mt);
+                    setMobileMenuOpen(false);
+                  }}
+                  className={`flex items-center gap-2.5 px-3 py-2.5 rounded-lg text-xs font-medium transition-all text-left w-full
+                    ${active
+                      ? "bg-slate-800 text-slate-100 border border-slate-700"
+                      : "text-slate-500 hover:text-slate-300 hover:bg-slate-800/60 border border-transparent"
+                    }`}
                 >
-                <FiSettings className="text-blue-300" />
-                <span>Configuración</span>
+                  <span className={active ? "text-cyan-400" : "text-slate-600"}>{module.icon}</span>
+                  {module.title}
                 </button>
-              <button
-                onClick={handleLogout}
-                className="w-full flex items-center space-x-3 p-3 rounded-lg text-blue-100 hover:bg-red-600/30 transition-colors"
-              >
-                <FiLogOut className="text-blue-300" />
-                <span>Cerrar sesión</span>
-              </button>
-            </div>
+              );
+            })}
+
+            <div className="h-px bg-slate-800 my-2" />
+
+            <button
+              onClick={() => { setModalType("settings"); setMobileMenuOpen(false); }}
+              className="flex items-center gap-2.5 px-3 py-2.5 rounded-lg text-xs font-medium text-slate-500 hover:text-slate-300 hover:bg-slate-800/60 transition-all w-full border border-transparent"
+            >
+              <FiSettings size={15} className="text-slate-600" />
+              Configuración
+            </button>
+
+            <button
+              onClick={handleLogout}
+              className="flex items-center gap-2.5 px-3 py-2.5 rounded-lg text-xs font-medium text-red-400 hover:bg-red-500/10 transition-all w-full border border-transparent"
+            >
+              <FiLogOut size={15} />
+              Cerrar sesión
+            </button>
           </div>
-        </div>
+        </>
       )}
 
-      {/* Main Content */}
-      <div className="flex-1 flex flex-col overflow-hidden">
-        
-        <main className="relative flex-1 overflow-y-auto bg-gray-50">
-          {/* Rastreo detallado - fullscreen */}
-          {pathname.match(/^\/monitoring\/tracking\/[^\/]+$/) && (() => {
-            // Extraer alertId de la URL: /monitoring/tracking/:alertId
-            const match = pathname.match(/^\/monitoring\/tracking\/([^\/]+)$/);
-            const alertId = match ? match[1] : null;
-            
-            return alertId ? <TrackingDetail alertId={alertId} /> : null;
-          })()}
+      {/* ── MAIN CONTENT ── */}
+      <main className="flex-1 flex flex-col overflow-y-auto">
 
-          {/* Monitoreo normal - con padding y layout */}
-          {!pathname.match(/^\/monitoring\/tracking\/[^\/]+$/) && (
-            <div className="p-4 md:p-6">
-              <div className="max-w-7xl mx-auto">
-                <MonitoringMap />
-                
-                {/* Contextual Modules */}
-                {pathname.includes("/monitoring/members") && (
-                  <div className="mt-6 bg-white rounded-xl shadow-md overflow-hidden">
-                    <div className="p-4 border-b border-gray-200">
-                      <h2 className="text-xl font-semibold text-gray-800">Gestión de Usuarios</h2>
-                    </div>
-                    <Members />
-                  </div>
-                )}
-                
-                {pathname.includes("/monitoring/alerts-history") && (
-                  <div className="mt-6 bg-white rounded-xl shadow-md overflow-hidden">
-                    <div className="p-4 border-b border-gray-200">
-                      <h2 className="text-xl font-semibold text-gray-800">Historial de Alertas</h2>
-                    </div>
-                    <AlertsHistory />
-                  </div>
-                )}
-                
-                {pathname.includes("/monitoring/history-admin") && (
-                  <div className="mt-6 bg-white rounded-xl shadow-md overflow-hidden">
-                    <div className="p-4 border-b border-gray-200">
-                      <h2 className="text-xl font-semibold text-gray-800">Bitácora del Sistema</h2>
-                    </div>
-                    <HistoryAdmin />
-                  </div>
-                )}
+        {/* Tracking fullscreen */}
+        {isTrackingRoute && trackingAlertId && (
+          <TrackingDetail alertId={trackingAlertId} />
+        )}
+
+        {/* Normal view */}
+        {!isTrackingRoute && (
+          <>
+          <div className="p-4">
+            <MonitoringMap />
+
+          </div>
+
+            {pathname.includes("/monitoring/members") && (
+              <div className="mx-4 md:mx-6 mb-6 rounded-xl border border-slate-800 bg-slate-900 overflow-hidden">
+                <div className="flex items-center gap-2 px-4 py-3 border-b border-slate-800 text-xs font-semibold text-slate-300 tracking-wide">
+                  <FiUsers size={14} className="text-cyan-400" />
+                  Gestión de Usuarios
+                </div>
+                <Members />
               </div>
-            </div>
-          )}
-        </main>
+            )}
 
-        {!pathname.match(/^\/monitoring\/tracking\/[^\/]+$/) && <Footer />}
-      </div>
+            {pathname.includes("/monitoring/alerts-history") && (
+              <div className="mx-4 md:mx-6 mb-6 rounded-xl border border-slate-800 bg-slate-900 overflow-hidden">
+                <div className="flex items-center gap-2 px-4 py-3 border-b border-slate-800 text-xs font-semibold text-slate-300 tracking-wide">
+                  <FiBell size={14} className="text-cyan-400" />
+                  Historial de Alertas
+                </div>
+                <AlertsHistory />
+              </div>
+            )}
+
+            {pathname.includes("/monitoring/history-admin") && (
+              <div className="mx-4 md:mx-6 mb-6 rounded-xl border border-slate-800 bg-slate-900 overflow-hidden">
+                <div className="flex items-center gap-2 px-4 py-3 border-b border-slate-800 text-xs font-semibold text-slate-300 tracking-wide">
+                  <FiClock size={14} className="text-cyan-400" />
+                  Bitácora del Sistema
+                </div>
+                <HistoryAdmin />
+              </div>
+            )}
+          </>
+        )}
+      </main>
+
+      {/* ── FOOTER ── */}
+      {!isTrackingRoute && <Footer />}
+
+      {/* ── MODALS ── */}
       {modalType === "members" && (
-  <Modal isOpen onClose={() => setModalType(null)} title="Gestión de Usuarios">
-    <Members />
-  </Modal>
-)}
-
-{modalType === "alerts" && (
-  <Modal isOpen onClose={() => setModalType(null)} title="Historial de Alertas">
-    <AlertsHistory />
-  </Modal>
-)}
-
-
-{modalType === "history" && (
-  <Modal isOpen onClose={() => setModalType(null)} title="Bitácora del Sistema">
-    <HistoryAdmin />
-  </Modal>
-)}
-
-{modalType === "settings" && (
-  <Modal isOpen onClose={() => setModalType(null)} title="Configuración">
-    {/* Se asume que el usuario logueado tiene su id en localStorage bajo 'userId' */}
-    <SettingsEntity id={localStorage.getItem("userId") || ""} />
-  </Modal>
-)}
-
+        <Modal isOpen onClose={() => setModalType(null)} title="Gestión de Usuarios">
+          <Members />
+        </Modal>
+      )}
+      {modalType === "alerts" && (
+        <Modal isOpen onClose={() => setModalType(null)} title="Historial de Alertas">
+          <AlertsHistory />
+        </Modal>
+      )}
+      {modalType === "history" && (
+        <Modal isOpen onClose={() => setModalType(null)} title="Bitácora del Sistema">
+          <HistoryAdmin />
+        </Modal>
+      )}
+      {modalType === "settings" && (
+        <Modal isOpen onClose={() => setModalType(null)} title="Configuración">
+          <SettingsEntity id={localStorage.getItem("userId") || ""} />
+        </Modal>
+      )}
     </div>
   );
 };
+
+export default DashboardEntity;

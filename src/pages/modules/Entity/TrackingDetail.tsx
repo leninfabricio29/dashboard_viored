@@ -32,7 +32,7 @@ const TrackingDetail: React.FC<TrackingDetailProps> = ({ alertId }) => {
           >
             ← Volver
           </button>
-          <h1>🗺️ Rastreo de Alerta</h1>
+          <h1> Rastreo de Alerta</h1>
         </div>
         <div className={styles.alertIdBadge}>ID: {alertId.slice(-8)}</div>
       </div>

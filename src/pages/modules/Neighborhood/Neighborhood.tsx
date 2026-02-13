@@ -6,6 +6,7 @@ import ButtonIndicator from "../../../components/UI/ButtonIndicator";
 import ButtonHome from "../../../components/UI/ButtonHome";
 import NeighborhoodMapEditor from "../../../components/layout/NeighborhoodMapEditor";
 import DeleteConfirmationModal from "../../../components/layout/DeleteConfirmationModal";
+import Swal from "sweetalert2";
 
 const Neighborhood = () => {
   const [neighborhoods, setNeighborhoods] = useState<Neighborhood[]>([]);
@@ -90,23 +91,32 @@ const Neighborhood = () => {
 
     if (
       !newNeighborhood.name ||
-      !newNeighborhood.port ||
       !hasValidCoords 
     ) {
-      alert(
-        "Debe ingresar nombre, puerto y dibujar un área válida"
-      );
+      Swal.fire({
+        icon: "warning",
+        title: "Datos incompletos",
+        text: "Debe ingresar nombre, puerto y dibujar un área válida",
+      });
       return;
     }
 
     try {
       await neighborhoodService.createNeighborhood(newNeighborhood);
+      Swal.fire({
+        icon: "success",
+        title: "Barrio creado",
+        text: "El barrio ha sido creado exitosamente.",
+      });
       fetchNeighborhoods();
       setShowCreateModal(false);
       resetForm();
     } catch (error) {
-      console.error("Error al guardar barrio:", error);
-      alert("Ocurrió un error al guardar el barrio");
+      Swal.fire({
+        icon: "error",
+        title: "Error al crear barrio",
+        text: "Ocurrió un error al guardar el barrio",
+      });
     }
   };
 
@@ -124,10 +134,20 @@ const Neighborhood = () => {
 
     try {
       await neighborhoodService.disableNeighborhood(selectedNeighborhoodId);
+        Swal.fire({
+        icon: "success",
+        title: "Barrio deshabilitado",
+        text: "El barrio ha sido deshabilitado exitosamente.",
+      });
       fetchNeighborhoods();
       setShowDeleteModal(false); // cerrar el modal
     } catch (err) {
       console.error("Error al deshabilitar barrio:", err);
+      Swal.fire({
+        icon: "error",
+        title: "Error al deshabilitar barrio",
+        text: "Ocurrió un error al deshabilitar el barrio",
+      });
     }
   };
 
@@ -458,7 +478,6 @@ const Neighborhood = () => {
                 onClick={handleCreateNeighborhood}
                 disabled={
                   !newNeighborhood.name.trim() ||
-                  !newNeighborhood.port.trim() ||
                   !Array.isArray(newNeighborhood.area.coordinates[0]) ||
                   newNeighborhood.area.coordinates[0].length < 3
                 }
