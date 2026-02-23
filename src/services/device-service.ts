@@ -32,6 +32,16 @@ const deviceService = {
   deleteDevice: async (id: string): Promise<void> => {
     await api.delete(`${BASE_PATH}/${id}`);
   },
+
+  assignDeviceNeighborHood: async (
+    id: string,
+    neighborhoodId: string,
+  ): Promise<Device> => {
+    const response = await api.patch<Device>(`${BASE_PATH}/${id}/neighborhood`, {
+      neighborhoodId,
+    });
+    return response.data;
+  },
 };
 
 export default deviceService;

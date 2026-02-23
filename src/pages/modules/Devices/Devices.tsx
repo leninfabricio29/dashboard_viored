@@ -11,6 +11,7 @@ import ButtonHome from "../../../components/UI/ButtonHome";
 import ButtonIndicator from "../../../components/UI/ButtonIndicator";
 import Modal from "../../../components/layout/Modal";
 import deviceService from "../../../services/device-service";
+import neighborhoodService, { Neighborhood } from "../../../services/neighborhood-service";
 import {
   CreateDevicePayload,
   Device,
@@ -43,7 +44,10 @@ const Devices = () => {
   const [formOpen, setFormOpen] = useState(false);
   const [submitting, setSubmitting] = useState(false);
   const [detailLoading, setDetailLoading] = useState(false);
-  const [testingConnectivity, setTestingConnectivity] = useState<string | null>(null);
+  const [neighborhoods, setNeighborhoods] = useState<Neighborhood[]>([]);
+  const [loadingNeighborhoods, setLoadingNeighborhoods] = useState(false);
+  const [assigningNeighborhood, setAssigningNeighborhood] = useState(false);
+  const [selectedNeighborhood, setSelectedNeighborhood] = useState<string | null>(null);
 
   useEffect(() => {
     loadDevices();
@@ -85,6 +89,18 @@ const Devices = () => {
     });
   }, [devices, search, activeSegment]);
 
+  const availableNeighborhoods = useMemo(() => {
+    // Obtener los IDs de barrios ya asignados a sirenas
+    const assignedNeighborhoodIds = devices
+      .filter((device) => device.type === "siren" && device.neighborhood?._id)
+      .map((device) => device.neighborhood!._id);
+
+    // Filtrar barrios que no están asignados
+    return neighborhoods.filter(
+      (neighborhood) => !assignedNeighborhoodIds.includes(neighborhood._id)
+    );
+  }, [neighborhoods, devices]);
+
   const formatDate = (value?: string | null) => {
     if (!value) return "-";
     return new Date(value).toLocaleString();
@@ -124,12 +140,89 @@ const Devices = () => {
       setDetailLoading(true);
       const device = await deviceService.getDeviceById(id);
       setSelectedDevice(device);
+      setSelectedNeighborhood(device.neighborhood?._id || null);
+      
+      // Cargar barrios si es una sirena
+      if (device.type === "siren") {
+        await loadNeighborhoods();
+      }
+      
       setDetailOpen(true);
     } catch (err) {
       console.error("Error al obtener detalle", err);
       setError("No se pudo obtener el detalle del dispositivo");
     } finally {
       setDetailLoading(false);
+    }
+  };
+
+  const loadNeighborhoods = async () => {
+    try {
+      setLoadingNeighborhoods(true);
+      const data = await neighborhoodService.getAllNeighborhoods();
+      setNeighborhoods(data);
+    } catch (err) {
+      console.error("Error al cargar barrios", err);
+      Swal.fire({
+        icon: "error",
+        title: "Error",
+        text: "No se pudieron cargar los barrios",
+      });
+    } finally {
+      setLoadingNeighborhoods(false);
+    }
+  };
+
+  const handleAssignNeighborhood = async (neighborhoodId: string | null) => {
+    if (!selectedDevice?._id) return;
+
+    try {
+      setAssigningNeighborhood(true);
+      
+      if (neighborhoodId) {
+        // Asignar barrio
+        const updated = await deviceService.assignDeviceNeighborHood(
+          selectedDevice._id,
+          neighborhoodId
+        );
+        setSelectedDevice(updated);
+        setSelectedNeighborhood(neighborhoodId);
+        setDevices((prev) =>
+          prev.map((item) => (item._id === updated._id ? updated : item))
+        );
+        
+        Swal.fire({
+          icon: "success",
+          title: "Éxito",
+          text: "Barrio asignado correctamente",
+          timer: 2000,
+          showConfirmButton: true,
+        });
+
+        //Cerrar el modal de detalle para que el usuario vuelva a abrirlo y vea el cambio reflejado
+        setDetailOpen(false);
+        //Recargar la pagina para que el cambio se refleje en la tabla principal
+        loadDevices();
+      } else {
+        // Desasignar barrio
+        setSelectedNeighborhood(null);
+        Swal.fire({
+          icon: "success",
+          title: "Éxito",
+          text: "Barrio desasignado correctamente",
+          timer: 2000,
+          showConfirmButton: true,
+        });
+      }
+    } catch (err) {
+      console.error("Error al asignar barrio", err);
+      Swal.fire({
+        icon: "error",
+        title: "Error",
+        text: "No se pudo asignar el barrio",
+      });
+    } finally {
+      setAssigningNeighborhood(false);
     }
   };
 
@@ -230,21 +323,7 @@ const Devices = () => {
 };
 
 
-  const testConnectivity = async (deviceId: string) => {
-    try {
-      setTestingConnectivity(deviceId);
-      // Aquí implementarías la lógica real de prueba de conectividad
-      await new Promise((resolve) => setTimeout(resolve, 2000));
-      // Simulación: podrías hacer una petición al backend
-      // await deviceService.testConnectivity(deviceId);
-      alert("Conectividad exitosa");
-    } catch (err) {
-      console.error("Error al probar conectividad", err);
-      alert("Error al probar conectividad");
-    } finally {
-      setTestingConnectivity(null);
-    }
-  };
+  
 
   return (
     <div className="flex-1 overflow-auto bg-gradient-to-br from-slate-50 to-slate-100">
@@ -431,20 +510,7 @@ const Devices = () => {
                       </td>
                       <td className="px-6 py-4">
                         <div className="flex items-center gap-2">
-                          {activeSegment === "siren" && (
-                            <button
-                              onClick={() => testConnectivity(device._id)}
-                              disabled={testingConnectivity === device._id}
-                              className="p-2 rounded-lg border border-green-200 text-green-600 hover:bg-green-50 cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
-                              title="Probar conectividad"
-                            >
-                              {testingConnectivity === device._id ? (
-                                <div className="h-4 w-4 border-2 border-green-600 border-t-transparent rounded-full animate-spin" />
-                              ) : (
-                                <FiRadio />
-                              )}
-                            </button>
-                          )}
+                        
                           <button
                             onClick={() => openDetail(device._id)}
                             className="p-2 rounded-lg border border-slate-200 text-slate-600 hover:bg-slate-100 cursor-pointer"
@@ -639,9 +705,30 @@ const Devices = () => {
                   <>
                     <div>
                       <p className="text-xs uppercase text-slate-500">Barrio</p>
-                      <p className="text-base font-semibold text-slate-800">
-                        {selectedDevice.neighborhood?.name || "Sin asignar"}
-                      </p>
+                      {selectedDevice.neighborhood ? (
+                        <div>
+                          <span className="inline-flex items-center px-3 py-1 rounded-full text-sm font-medium bg-green-100 text-green-800">
+                            {selectedDevice.neighborhood.name}
+                          </span>
+                          
+                        </div>
+                      ) : (
+                        <select
+                          value={selectedNeighborhood || ""}
+                          onChange={(e) => handleAssignNeighborhood(e.target.value || null)}
+                          disabled={loadingNeighborhoods || assigningNeighborhood}
+                          className="w-full px-3 py-2 rounded-lg border border-slate-200 focus:ring-2 focus:ring-blue-500 focus:border-transparent disabled:opacity-50 disabled:cursor-not-allowed"
+                        >
+                          <option value="">
+                            {loadingNeighborhoods ? "Cargando barrios..." : "Selecciona un barrio"}
+                          </option>
+                          {availableNeighborhoods.map((neighborhood) => (
+                            <option key={neighborhood._id} value={neighborhood._id}>
+                              {neighborhood.name}
+                            </option>
+                          ))}
+                        </select>
+                      )}
                     </div>
                     <div>
                       <p className="text-xs uppercase text-slate-500">
@@ -661,16 +748,18 @@ const Devices = () => {
                     </div>
                   </>
                 ) : (
-                  <div>
-                    <p className="text-xs uppercase text-slate-500">
-                      Asignado a
-                    </p>
-                    <p className="text-base font-semibold text-slate-800">
-                      {selectedDevice.assignedUser
-                        ? selectedDevice.assignedUser.name
-                        : "Sin asignar"}
-                    </p>
-                  </div>
+                  <>
+                    <div>
+                      <p className="text-xs uppercase text-slate-500">
+                        Asignado a
+                      </p>
+                      <p className="text-base font-semibold text-slate-800">
+                        {selectedDevice.assignedUser
+                          ? selectedDevice.assignedUser.name
+                          : "Sin asignar"}
+                      </p>
+                    </div>
+                  </>
                 )}
               </div>
 
