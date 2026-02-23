@@ -42,9 +42,10 @@ function getMapboxStyle(index: number = 0): string {
 }
 
 // Componente interno que usa useMap()
-const MapController: React.FC<{ markers: AlertData[], zoom: number, alertZoom?: number }> = ({ 
+const MapController: React.FC<{ markers: AlertData[], zoom: number, alertZoom?: number, isMapLoaded: boolean }> = ({ 
   markers,  
-  alertZoom = 17 // Zoom muy cercano para ver la alerta
+  alertZoom = 17, // Zoom muy cercano para ver la alerta
+  isMapLoaded
 }) => {
   const { current: map } = useMap();
   const lastMarkerId = useRef<string | null>(null);
@@ -53,10 +54,12 @@ const MapController: React.FC<{ markers: AlertData[], zoom: number, alertZoom?: 
     console.log('MapController useEffect triggered:', { 
       mapExists: !!map, 
       markersLength: markers.length,
-      lastMarkerId: lastMarkerId.current
+      lastMarkerId: lastMarkerId.current,
+      isMapLoaded
     });
 
-    if (!map || markers.length === 0) return;
+    // Esperar a que el mapa esté cargado y haya marcadores
+    if (!map || !isMapLoaded || markers.length === 0) return;
 
     const lastAlert = markers[markers.length - 1];
     console.log('Last alert:', lastAlert);
@@ -65,22 +68,26 @@ const MapController: React.FC<{ markers: AlertData[], zoom: number, alertZoom?: 
     if (lastAlert.id !== lastMarkerId.current) {
       console.log('Flying to alert:', {
         center: [lastAlert.lng, lastAlert.lat],
-        zoom: alertZoom, // SIEMPRE usa alertZoom para TODAS las alertas
+        zoom: alertZoom,
         newAlertId: lastAlert.id,
         previousAlertId: lastMarkerId.current
       });
 
-      map.flyTo({
-        center: [lastAlert.lng, lastAlert.lat],
-        zoom: alertZoom, // SIEMPRE zoom 19 para alertas
-        duration: 2000,
-        essential: true
-      });
+      try {
+        map.flyTo({
+          center: [lastAlert.lng, lastAlert.lat],
+          zoom: alertZoom,
+          duration: 2000,
+          essential: true
+        });
 
-      // Actualizar la referencia de la última alerta procesada
-      lastMarkerId.current = lastAlert.id;
+        // Actualizar la referencia de la última alerta procesada
+        lastMarkerId.current = lastAlert.id;
+      } catch (error) {
+        console.error('Error during flyTo:', error);
+      }
     }
-  }, [map, markers, alertZoom]);
+  }, [map, markers, alertZoom, isMapLoaded]);
 
   return null; // Este componente no renderiza nada
 };
@@ -95,11 +102,23 @@ const MapAlert: React.FC<MapAlertProps> = ({
   onAttend 
 }) => {
   const [styleIndex, setStyleIndex] = useState(0);
+  const [isMapLoaded, setIsMapLoaded] = useState(false);
 
   // Centro inicial basado en la primera alerta o una ubicación por defecto
   const initialCenter = markers.length > 0
     ? { latitude: markers[0].lat, longitude: markers[0].lng }
     : { latitude: -3.6811, longitude: -79.6801 };
+  
+  const handleMapLoad = () => {
+    console.log('✅ Mapa completamente cargado');
+    setIsMapLoaded(true);
+  };
+  
+  // Resetear isMapLoaded cuando cambia el estilo
+  const handleStyleChange = (newIndex: number) => {
+    setIsMapLoaded(false);
+    setStyleIndex(newIndex);
+  };
 
   return (
     <div style={{ width, height }}>
@@ -110,7 +129,7 @@ const MapAlert: React.FC<MapAlertProps> = ({
         <select
           id="map-style-select"
           value={styleIndex}
-          onChange={(e) => setStyleIndex(Number(e.target.value))}
+          onChange={(e) => handleStyleChange(Number(e.target.value))}
           className="px-3 py-1 rounded border border-gray-300 bg-white text-sm outline-none cursor-pointer focus:ring-2 focus:ring-blue-400"
         >
             {mapboxStyles.map((style, idx) => (
@@ -130,6 +149,7 @@ const MapAlert: React.FC<MapAlertProps> = ({
         }}
         style={{ width: '100%', height: '100%' }}
         mapStyle={getMapboxStyle(styleIndex)}
+        onLoad={handleMapLoad}
       >
         {route.length > 1 && (
   <Source
@@ -155,7 +175,7 @@ const MapAlert: React.FC<MapAlertProps> = ({
   </Source>
 )}
         {/* Componente que maneja la navegación del mapa */}
-        <MapController markers={markers} zoom={zoom} alertZoom={alertZoom} />
+        <MapController markers={markers} zoom={zoom} alertZoom={alertZoom} isMapLoaded={isMapLoaded} />
         
         {markers.map((alert) => (
           <Marker
