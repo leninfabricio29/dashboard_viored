@@ -111,4 +111,17 @@ export const entityUsersService = {
       throw error;
     }
   },
+
+  /**
+   * Obtener alertas activas de una entidad
+   */
+  getActiveAlerts: async (entityId: string): Promise<any[]> => {
+    try {
+      const response = await api.get(`/api/entity/${entityId}/active-alerts`);
+      return response.data;
+    } catch (error) {
+      console.error('Error al obtener alertas activas:', error);
+      throw error;
+    }
+  },
 };
