@@ -6,7 +6,6 @@ import RoleProtectedRoute from "./components/RoleProtectedRoute";
 import { DashboardLayout } from "./components/layout/DashboardLayout";
 import Dashboard from "./pages/Dashboard";
 import UsersList from "./pages/modules/Users/UsersList";
-import UserDetail from "./pages/modules/Users/UserDetail";
 import ResetPassword from "./pages/ResetPassword";
 import Login from "./pages/Login";
 import MapIndicator from "./pages/modules/Maps/MapsIndicator";
@@ -18,14 +17,21 @@ import StatisticsPage from "./pages/modules/Statistics/StatisticsPage";
 import Neighborhood from "./pages/modules/Neighborhood/Neighborhood";
 import HistoryLogs from "./pages/modules/History/HistoryLogs";
 import Devices from "./pages/modules/Devices/Devices";
+import SatellitScreen from "./pages/modules/SatelliteTraking/SatellitScreen";
+import Cameras from "./pages/modules/Cameras/Cameras";
  //import PackageTable from "./pages/modules/Multimedia/PackageTable";
 //import PackageDetailView from "./pages/modules/Multimedia/PackageDetailView"; 
 import UserProfile from "./pages/modules/Settings/UserProfile";
-import { DashboardEntity } from "./components/layout/DashboardEntity";
 
 
-import EntityList from "./pages/modules/Users/Entitylist";
 import { KeysPage } from "./pages/modules/keys/Keys";
+import Alerts from "./pages/modules/Alerts/Alerts";
+import Reports from "./pages/modules/Reports/Reports";
+import Permissions from "./pages/modules/RolesPermissions/Permissions";
+import Live from "./pages/modules/Live/Live";
+import { Templates } from "./pages/modules/Templates/Templates";
+import Collaborators from "./pages/modules/Collaborators/Collaborators"
+
 //import LoginEntity from "./pages/LoginEntity";
 //import LogsComponent from "./components/logs/LogsComponent";
 
@@ -94,7 +100,7 @@ function App() {
         path="/"
         element={
           <ProtectedRoute>
-            <RoleProtectedRoute allowedRoles={["admin"]}>
+            <RoleProtectedRoute allowedRoles={["admin", "entity", "son"]}>
               <DashboardLayout />
             </RoleProtectedRoute>
           </ProtectedRoute>
@@ -105,13 +111,13 @@ function App() {
         {/* Rutas para módulo de usuarios */}
         <Route path="users">
           <Route index element={<UsersList />} />
-          <Route path=":id" element={<UserDetail />} />
         </Route>
 
-        <Route path="entities">
-          <Route index  element={<EntityList />} />
-        </Route>
+       
 
+        <Route path="satellite" element={<SatellitScreen />} />
+
+        <Route path="cameras" element ={<Cameras />} />
         <Route path="devices" element={<Devices />} />
 
         <Route path="keys" element={<KeysPage />} />
@@ -129,12 +135,20 @@ function App() {
           path="/notificaciones/request/:id"
           element={<NotificationRequest />}
         />
+        <Route path="/alerts" element={<Alerts />} />
         <Route path="/notifications" element={<Notifications />} />
 
-        <Route path="statistics" element={<StatisticsPage />} />
+        <Route path="/reporty" element={<Reports />} />
+        <Route path="/permissions" element={<Permissions />} />
+
+        <Route path="/live" element={<Live/>} />
+        <Route path="/templates" element={<Templates/>} />
+
+        <Route path="/statistics" element={<StatisticsPage />} />
 
         {/* Rutas para el módulo de barrios */}
         <Route path="/neighborhood" element={<Neighborhood />} />
+        <Route path="/collaborators" element = { <Collaborators/>}/>
 
         {/* Rutas para el módulo de historial */}
         <Route path="/history" element={<HistoryLogs />} />
@@ -156,14 +170,8 @@ function App() {
 
        
     <Route
-      path="/monitoring/*"
-      element={
-        <ProtectedRoute>
-          <RoleProtectedRoute allowedRoles={["entity", "son"]}>
-            <DashboardEntity />
-          </RoleProtectedRoute>
-        </ProtectedRoute>
-      }
+      path="/monitoring"
+      element={<Navigate to="/" replace />}
     />
       
 

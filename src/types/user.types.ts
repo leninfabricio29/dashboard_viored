@@ -1,4 +1,5 @@
 // src/types/user.types.ts
+ import {Role} from "../services/auth-service";
 export interface Location {
     type: string;
     coordinates: number[];
@@ -16,6 +17,8 @@ export interface Location {
   // puedes agregar más campos si los tienes
 }
   
+
+
   export interface User {
     _id: string;
     name: string;
@@ -25,8 +28,10 @@ export interface Location {
     phone: string;
     fcmToken: string | null;
     isActive: boolean;
-    role: string;
+    role: Role;
     neighborhood: string | null;
+    amount_suscribed: number;
+    max_limit_suscribed: number;
     lastLocation: Location;
     createdAt: string;
     updatedAt: string;
@@ -42,6 +47,7 @@ export interface Location {
     email: string;
     password: string;
     ci?: string;
+    phone?: string;
   }
 
   export interface CreateEntityInput {

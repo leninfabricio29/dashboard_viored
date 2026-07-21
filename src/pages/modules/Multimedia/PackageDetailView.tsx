@@ -4,8 +4,6 @@ import {
   getAllPackages,
   uploadImages,
 } from "../../../services/media-service";
-import ButtonIndicator from "../../../components/UI/ButtonIndicator";
-import ButtonHome from "../../../components/UI/ButtonHome";
 import ModalUpload from "../../../components/layout/ModalUpload";
 
 const PackageDetailPage = () => {
@@ -83,8 +81,7 @@ const PackageDetailPage = () => {
   return (
     <div className="container mx-auto px-4 py-8 max-w-7xl">
       <div className="flex justify-between items-center mb-6">
-        <ButtonIndicator />
-        <ButtonHome />
+        
       </div>
 
       {/* Panel principal */}

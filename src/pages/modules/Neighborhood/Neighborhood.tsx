@@ -2,8 +2,6 @@ import { useEffect, useState } from "react";
 import { FiPlus, FiSave, FiX, FiUsers, FiInfo } from "react-icons/fi";
 import neighborhoodService from "../../../services/neighborhood-service";
 import type { Neighborhood } from "../../../services/neighborhood-service";
-import ButtonIndicator from "../../../components/UI/ButtonIndicator";
-import ButtonHome from "../../../components/UI/ButtonHome";
 import NeighborhoodMapEditor from "../../../components/layout/NeighborhoodMapEditor";
 import DeleteConfirmationModal from "../../../components/layout/DeleteConfirmationModal";
 import Swal from "sweetalert2";
@@ -171,8 +169,6 @@ const Neighborhood = () => {
   return (
     <div className="container mx-auto px-4 py-8 max-w-7xl">
       <div className="flex justify-between items-center mb-6">
-        <ButtonIndicator />
-        <ButtonHome />
       </div>
 
       <div className="flex justify-between items-center mb-8 mt-4">

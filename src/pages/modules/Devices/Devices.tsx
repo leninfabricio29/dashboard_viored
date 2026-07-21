@@ -7,8 +7,6 @@ import {
   FiTrash2,
   FiRadio,
 } from "react-icons/fi";
-import ButtonHome from "../../../components/UI/ButtonHome";
-import ButtonIndicator from "../../../components/UI/ButtonIndicator";
 import Modal from "../../../components/layout/Modal";
 import deviceService from "../../../services/device-service";
 import neighborhoodService, { Neighborhood } from "../../../services/neighborhood-service";
@@ -330,7 +328,6 @@ const Devices = () => {
       <div className="p-6 space-y-6">
         <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
           <div>
-            <ButtonIndicator />
             <div className="mt-12">
               <h1 className="text-3xl font-bold text-slate-800 flex items-center gap-3">
               <FiCpu className="text-blue-600" />
@@ -341,11 +338,7 @@ const Devices = () => {
             </p>
             </div>
           </div>
-          <div className="flex gap-3">
-            <ButtonHome
-            />
-            
-          </div>
+          
         </div>
 
         {/* Segmented Control */}

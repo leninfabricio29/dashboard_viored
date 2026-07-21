@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef } from "react";
-import {  Link } from "react-router-dom";
-import {  FiMenu, FiUser } from "react-icons/fi";
+import { Link } from "react-router-dom";
+import { FiMenu, FiUser } from "react-icons/fi";
 import authService from "../../services/auth-service";
 import userService from "../../services/user-service";
 import {
@@ -8,7 +8,6 @@ import {
   markNotificationAsRead,
 } from "../../services/notifications-service";
 import NotificationsDropdown from "./NotificationDropdown";
-import Logo from "../../assets/icon.png";
 
 interface User {
   name: string;
@@ -49,7 +48,7 @@ const Header = ({ onMenuClick, sidebarOpen }: HeaderProps) => {
           const userData = await userService.getUserById(userIdFromToken);
           setUser({
             name: userData.name,
-            role: userData.role,
+            role: userData.role.name,
             avatar: userData.avatar || "",
           });
         }
@@ -97,7 +96,7 @@ const Header = ({ onMenuClick, sidebarOpen }: HeaderProps) => {
     };
   }, []);
 
- 
+
 
   const handleNotificationRead = async (notificationId: string) => {
     try {
@@ -114,7 +113,7 @@ const Header = ({ onMenuClick, sidebarOpen }: HeaderProps) => {
   };
 
   return (
-    <header className="sticky top-0 z-10 bg-gradient-to-b from-slate-900 to-slate-800 backdrop-blur-sm border-b border-gray-200">
+    <header className="sticky top-0 z-10 bg-gray-50 border-gray-100 border-b shadow-sm">
       <div className="px-4 py-3 sm:px-6 lg:px-8">
         <div className="flex items-center justify-between">
           {/* Logo y botón de menú móvil */}
@@ -127,58 +126,57 @@ const Header = ({ onMenuClick, sidebarOpen }: HeaderProps) => {
                   aria-label="Toggle menu"
                 >
                   {sidebarOpen ? (
-                    <FiMenu className="h-5 w-5 text-gray-100" />
+                    <FiMenu className="h-5 w-5 text-blue-800" />
                   ) : (
-                    <FiMenu className="h-5 w-5 text-gray-100" />
+                    <FiMenu className="h-5 w-5 text-blue-800" />
                   )}
                 </button>
-                
-                <div className="md:hidden">
-                  <Link to="/" className="flex items-center space-x-2">
-                    <img
-                      src={Logo}
-                      alt="Logo"
-                      className="w-10 h-10 object-contain"
-                    />
-                    <span className="font-bold text-lg text-gray-800 tracking-tight">
-                      V-<span className="text-blue-600">SOS</span>
+
+                <div className="flex flex-col">
+                  <h1 className="text-[1.2rem] font-bold text-gray-800 tracking-tight">
+                    Hola, {loading ? "Cargando..." : user.name}
+                  </h1>
+                  <p className="text-[0.8rem] font-semibold text-slate-400 t">
+                    <span className="text-gray-800 font-semibold">
+                      Bienvenido al panel unificado de gestión y monitoreo
                     </span>
-                  </Link>
+                  </p>
                 </div>
+
+
+
               </div>
             )}
-            
+
             {/* Logo desktop */}
-            <div className="hidden md:block">
-              <Link to="/" className="flex items-center space-x-2">
-                <img
-                  src={Logo}
-                  alt="Logo"
-                  className="w-12 h-12 object-contain"
-                />
-                <span className="font-bold text-xl text-blue-400 tracking-tight">
-                  V-<span className="text-red-400">SOS</span>
-                </span>
-              </Link>
-            </div>
+
           </div>
 
-          
+
           {/* Notificaciones y Usuario */}
           <div className="flex items-center gap-4">
+
+            {/* Alert para mostrar estado del sistema */}
+            <div className="hidden sm:flex items-center gap-2 rounded-full border border-green-300 bg-green-50 px-3 py-1.5">
+              <span className="relative flex h-2.5 w-2.5">
+                <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-green-400 opacity-75"></span>
+                <span className="relative inline-flex h-2.5 w-2.5 rounded-full bg-green-500"></span>
+              </span>
+
+              <span className="text-sm font-medium text-green-700">
+                Sistema en línea
+              </span>
+            </div>
             <NotificationsDropdown
               notifications={notifications}
               onNotificationClick={handleNotificationRead}
             />
 
             {/* Información de usuario en móvil */}
-            <div className="md:hidden">
+            <div >
               <div className="flex items-center gap-3">
                 <div className="text-right hidden sm:block">
-                  <p className="text-sm font-medium text-gray-700 truncate max-w-[120px]">
-                    {loading ? "Cargando..." : user.name}
-                  </p>
-                    <p className="text-xs text-gray-500">{user.role}</p>
+
                 </div>
                 <div className="h-9 w-9 rounded-full bg-gradient-to-br from-blue-500 to-indigo-600 flex items-center justify-center">
                   {user.avatar ? (
@@ -194,7 +192,7 @@ const Header = ({ onMenuClick, sidebarOpen }: HeaderProps) => {
               </div>
             </div>
 
-            
+
           </div>
         </div>
       </div>

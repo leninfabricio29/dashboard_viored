@@ -1,0 +1,79 @@
+import { useEffect, useState } from "react";
+import { Eye, FilePlus2, FolderPlus, Plus, Trash2, Variable } from "lucide-react";
+import documentService, { type DocumentCategory, type DocumentTemplate, type DocumentVariable, type TemplateInput, type VariableType } from "../../../services/document-service";
+import { TemplateEditor } from "./TemplateEditor";
+import { DocumentPreview } from "./DocumentPreview";
+
+type Tab = "templates" | "categories" | "generated";
+const variableTypes: VariableType[] = ["text", "number", "date", "time", "datetime", "boolean", "currency", "collection"];
+const emptyTemplate = (): TemplateInput => ({ category: "", module: "", name: "", description: "", content: "<p></p>", showHeader: true, showFooter: true, status: true });
+
+export const Templates = () => {
+  const [tab, setTab] = useState<Tab>("templates");
+  const [categories, setCategories] = useState<DocumentCategory[]>([]);
+  const [variables, setVariables] = useState<DocumentVariable[]>([]);
+  const [templates, setTemplates] = useState<DocumentTemplate[]>([]);
+  const [generated, setGenerated] = useState<Awaited<ReturnType<typeof documentService.getGeneratedDocuments>>>([]);
+  const [categoryId, setCategoryId] = useState("");
+  const [template, setTemplate] = useState<TemplateInput>(emptyTemplate);
+  const [editingTemplate, setEditingTemplate] = useState<string | null>(null);
+  const [categoryForm, setCategoryForm] = useState({ name: "", code: "", description: "" });
+  const [variableForm, setVariableForm] = useState({ name: "", variable: "", path: "", type: "text" as VariableType, description: "" });
+  const [loading, setLoading] = useState(true);
+  const [saving, setSaving] = useState(false);
+  const [error, setError] = useState("");
+  const [previewOpen, setPreviewOpen] = useState(false);
+
+  const loadBase = async () => {
+    try { setLoading(true); const [nextCategories, nextTemplates] = await Promise.all([documentService.getCategories(), documentService.getTemplates()]); setCategories(nextCategories); setTemplates(nextTemplates); setCategoryId((current) => current || nextCategories[0]?._id || ""); }
+    catch { setError("No se pudo cargar la gestión documental."); } finally { setLoading(false); }
+  };
+  useEffect(() => { void loadBase(); }, []);
+  useEffect(() => { if (!categoryId) { setVariables([]); return; } void documentService.getVariables(categoryId).then(setVariables).catch(() => setError("No se pudieron cargar las variables.")); }, [categoryId]);
+  useEffect(() => { if (tab === "generated") void documentService.getGeneratedDocuments().then(setGenerated).catch(() => setError("No se pudieron cargar los documentos generados.")); }, [tab]);
+
+  const saveCategory = async (event: React.FormEvent) => { event.preventDefault(); try { setSaving(true); await documentService.createCategory({ ...categoryForm, code: categoryForm.code.toLowerCase(), status: true }); setCategoryForm({ name: "", code: "", description: "" }); await loadBase(); } catch { setError("No se pudo crear la categoría. Verifica que el código sea único."); } finally { setSaving(false); } };
+  const saveVariable = async (event: React.FormEvent) => { event.preventDefault(); if (!categoryId) return; try { setSaving(true); await documentService.createVariable(categoryId, { ...variableForm, variable: variableForm.variable.toLowerCase(), status: true }); setVariableForm({ name: "", variable: "", path: "", type: "text", description: "" }); setVariables(await documentService.getVariables(categoryId)); } catch { setError("No se pudo crear la variable. El identificador debe ser único en la categoría."); } finally { setSaving(false); } };
+  const saveTemplate = async (event: React.FormEvent) => { event.preventDefault(); if (!template.category) return setError("Selecciona una categoría para la plantilla."); try { setSaving(true); if (editingTemplate) await documentService.updateTemplate(editingTemplate, template); else await documentService.createTemplate(template); setTemplate(emptyTemplate()); setEditingTemplate(null); setTemplates(await documentService.getTemplates()); } catch { setError("No se pudo guardar la plantilla."); } finally { setSaving(false); } };
+  const editTemplate = (item: DocumentTemplate) => { const id = typeof item.category === "string" ? item.category : item.category._id; setEditingTemplate(item._id); setCategoryId(id); setTemplate({ category: id, module: item.module, name: item.name, description: item.description || "", content: item.content, showHeader: item.showHeader, showFooter: item.showFooter, status: item.status }); window.scrollTo({ top: 0, behavior: "smooth" }); };
+  const deleteTemplate = async (id: string) => { if (!window.confirm("¿Eliminar esta plantilla?")) return; try { await documentService.deleteTemplate(id); setTemplates((items) => items.filter((item) => item._id !== id)); } catch { setError("La plantilla no puede eliminarse si tiene documentos generados; puedes desactivarla."); } };
+  const categoryName = (category: DocumentTemplate["category"]) => typeof category === "string" ? categories.find((item) => item._id === category)?.name || "—" : category.name;
+  const field = "w-full rounded-lg border border-slate-300 px-3 py-2 text-sm outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-100";
+
+  return <div className="mx-auto max-w-7xl space-y-6 p-4 lg:p-6">
+    <div><h1 className="text-2xl font-bold text-slate-900">Gestión documental</h1><p className="mt-1 text-sm text-slate-500">Administra categorías, variables y plantillas dinámicas.</p></div>
+    {error && <div className="rounded-lg bg-red-50 px-3 py-2 text-sm text-red-700">{error}<button className="ml-3 underline" onClick={() => setError("")}>Cerrar</button></div>}
+    <nav className="flex w-fit rounded-lg bg-slate-100 p-1">{([ ["templates", "Plantillas"], ["categories", "Categorías y variables"], ["generated", "Documentos generados"] ] as Array<[Tab, string]>).map(([id, label]) => <button key={id} onClick={() => setTab(id)} className={`rounded-md px-3 py-2 text-sm ${tab === id ? "bg-white font-medium text-blue-700 shadow-sm" : "text-slate-600"}`}>{label}</button>)}</nav>
+    {loading ? <p className="py-12 text-center text-slate-500">Cargando…</p> : <>
+      {tab === "templates" && <div className="grid gap-6 xl:grid-cols-[minmax(0,1fr)_360px]">
+        <form onSubmit={saveTemplate} className="space-y-4 rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
+          <div className="flex items-center justify-between">
+            <h2 className="font-semibold text-slate-800">{editingTemplate ? "Editar plantilla" : "Nueva plantilla"}</h2>
+            <div className="flex items-center gap-3">
+              <button type="button" onClick={() => setPreviewOpen(true)} className="inline-flex items-center gap-1 text-sm text-slate-600 hover:text-blue-700">
+                <Eye size={16} /> Vista previa
+              </button>
+              {editingTemplate && <button type="button" onClick={() => { setEditingTemplate(null); setTemplate(emptyTemplate()); }} className="text-sm text-slate-500 underline">Cancelar edición</button>}
+            </div>
+          </div>
+          <div className="grid gap-3 md:grid-cols-2"><input required className={field} placeholder="Nombre de plantilla" value={template.name} onChange={(e) => setTemplate({ ...template, name: e.target.value })} /><input required className={field} placeholder="Módulo MongoDB (ej. users)" value={template.module} onChange={(e) => setTemplate({ ...template, module: e.target.value.toLowerCase() })} /><select required className={field} value={template.category} onChange={(e) => { setTemplate({ ...template, category: e.target.value }); setCategoryId(e.target.value); }}><option value="">Categoría</option>{categories.map((item) => <option key={item._id} value={item._id}>{item.name}</option>)}</select><input className={field} placeholder="Descripción" value={template.description} onChange={(e) => setTemplate({ ...template, description: e.target.value })} /></div>
+          <TemplateEditor key={editingTemplate || "new"} content={template.content} onChange={(content) => setTemplate((current) => ({ ...current, content }))} variables={variables} />
+          <div className="flex flex-wrap gap-4 text-sm text-slate-600">{([ ["showHeader", "Mostrar encabezado"], ["showFooter", "Mostrar pie"], ["status", "Activa"] ] as const).map(([key, label]) => <label key={key} className="flex items-center gap-2"><input type="checkbox" checked={template[key]} onChange={(e) => setTemplate({ ...template, [key]: e.target.checked })} />{label}</label>)}</div>
+          <button disabled={saving} className="inline-flex items-center gap-2 rounded-lg bg-blue-600 px-4 py-2 text-sm font-medium text-white disabled:opacity-50"><FilePlus2 size={16} />{saving ? "Guardando…" : editingTemplate ? "Actualizar plantilla" : "Crear plantilla"}</button>
+        </form>
+        <aside className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm"><h2 className="font-semibold text-slate-800">Variables disponibles</h2><p className="mt-1 text-xs text-slate-500">Selecciona una categoría para cargar sus variables.</p><div className="mt-3 space-y-2">{variables.map((item) => <div key={item._id} className="rounded-lg bg-slate-50 p-3"><p className="font-mono text-sm text-blue-700">{`{{${item.variable}}}`}</p><p className="text-xs text-slate-500">{item.name} · {item.path}</p></div>)}{!variables.length && <p className="text-sm text-slate-500">No hay variables para esta categoría.</p>}</div></aside>
+        <section className="xl:col-span-2 overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm"><div className="border-b border-slate-200 p-4"><h2 className="font-semibold text-slate-800">Plantillas registradas</h2></div><div className="overflow-auto"><table className="w-full text-left text-sm"><thead className="bg-slate-50 text-xs uppercase text-slate-500"><tr><th className="p-3">Plantilla</th><th className="p-3">Categoría</th><th className="p-3">Módulo</th><th className="p-3">Versión</th><th className="p-3"></th></tr></thead><tbody>{templates.map((item) => <tr key={item._id} className="border-t border-slate-100"><td className="p-3"><p className="font-medium">{item.name}</p><p className="text-xs text-slate-500">{item.status ? "Activa" : "Inactiva"}</p></td><td className="p-3">{categoryName(item.category)}</td><td className="p-3 font-mono text-xs">{item.module}</td><td className="p-3">v{item.version}</td><td className="p-3 text-right"><button onClick={() => editTemplate(item)} className="mr-3 text-blue-600">Editar</button><button onClick={() => void deleteTemplate(item._id)} className="text-red-600">Eliminar</button></td></tr>)}{!templates.length && <tr><td colSpan={5} className="p-6 text-center text-slate-500">No hay plantillas registradas.</td></tr>}</tbody></table></div></section>
+      </div>}
+      {tab === "categories" && <div className="grid gap-6 lg:grid-cols-2"><form onSubmit={saveCategory} className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm"><h2 className="mb-4 flex items-center gap-2 font-semibold"><FolderPlus size={18} />Nueva categoría</h2><div className="space-y-3"><input required className={field} placeholder="Nombre" value={categoryForm.name} onChange={(e) => setCategoryForm({ ...categoryForm, name: e.target.value })} /><input required className={field} placeholder="Código único (ej. contratos)" value={categoryForm.code} onChange={(e) => setCategoryForm({ ...categoryForm, code: e.target.value })} /><textarea className={field} placeholder="Descripción" value={categoryForm.description} onChange={(e) => setCategoryForm({ ...categoryForm, description: e.target.value })} /><button disabled={saving} className="rounded-lg bg-blue-600 px-4 py-2 text-sm font-medium text-white">Crear categoría</button></div><div className="mt-5 space-y-2">{categories.map((item) => <button type="button" key={item._id} onClick={() => setCategoryId(item._id)} className={`block w-full rounded-lg border p-3 text-left ${categoryId === item._id ? "border-blue-500 bg-blue-50" : "border-slate-200"}`}><b>{item.name}</b><span className="ml-2 font-mono text-xs text-slate-500">{item.code}</span></button>)}</div></form><form onSubmit={saveVariable} className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm"><h2 className="mb-1 flex items-center gap-2 font-semibold"><Variable size={18} />Variables</h2><p className="mb-4 text-sm text-slate-500">Categoría: {categories.find((item) => item._id === categoryId)?.name || "Selecciona una categoría"}</p><div className="grid gap-3"><input required disabled={!categoryId} className={field} placeholder="Nombre visible" value={variableForm.name} onChange={(e) => setVariableForm({ ...variableForm, name: e.target.value })} /><input required disabled={!categoryId} className={field} placeholder="Variable (ej. cliente.nombre)" value={variableForm.variable} onChange={(e) => setVariableForm({ ...variableForm, variable: e.target.value })} /><input required disabled={!categoryId} className={field} placeholder="Ruta del documento (ej. name)" value={variableForm.path} onChange={(e) => setVariableForm({ ...variableForm, path: e.target.value })} /><select className={field} value={variableForm.type} onChange={(e) => setVariableForm({ ...variableForm, type: e.target.value as VariableType })}>{variableTypes.map((type) => <option key={type}>{type}</option>)}</select><input className={field} placeholder="Descripción" value={variableForm.description} onChange={(e) => setVariableForm({ ...variableForm, description: e.target.value })} /><button disabled={!categoryId || saving} className="inline-flex w-fit items-center gap-2 rounded-lg bg-blue-600 px-4 py-2 text-sm font-medium text-white"><Plus size={16} />Crear variable</button></div><div className="mt-5 space-y-2">{variables.map((item) => <div key={item._id} className="flex items-center justify-between rounded-lg bg-slate-50 p-3"><div><p className="font-medium">{item.name} <code className="text-blue-700">{`{{${item.variable}}}`}</code></p><p className="text-xs text-slate-500">{item.path} · {item.type}</p></div><button type="button" onClick={() => void documentService.deleteVariable(categoryId, item._id).then(() => setVariables((items) => items.filter((variable) => variable._id !== item._id)))} className="text-red-600"><Trash2 size={16} /></button></div>)}</div></form></div>}
+      {tab === "generated" && <section className="overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm"><div className="border-b border-slate-200 p-4"><h2 className="font-semibold text-slate-800">Documentos generados</h2></div><div className="overflow-auto"><table className="w-full text-left text-sm"><thead className="bg-slate-50 text-xs uppercase text-slate-500"><tr><th className="p-3">Plantilla</th><th className="p-3">Referencia</th><th className="p-3">Fecha</th></tr></thead><tbody>{generated.map((item) => <tr key={item._id} className="border-t border-slate-100"><td className="p-3">{typeof item.template === "string" ? item.template : `${item.template.name} · v${item.template.version}`}</td><td className="p-3"><code>{item.reference.module}</code> · {item.reference.id}</td><td className="p-3">{new Date(item.createdAt).toLocaleString("es-EC")}</td></tr>)}{!generated.length && <tr><td colSpan={3} className="p-6 text-center text-slate-500">No hay documentos generados.</td></tr>}</tbody></table></div></section>}
+    </>}
+    <DocumentPreview
+      open={previewOpen}
+      onClose={() => setPreviewOpen(false)}
+      title={template.name}
+      content={template.content}
+      showHeader={template.showHeader}
+      showFooter={template.showFooter}
+    />
+  </div>;
+};

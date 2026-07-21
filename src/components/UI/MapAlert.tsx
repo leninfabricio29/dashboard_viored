@@ -11,6 +11,7 @@ type MapAlertProps = {
   route?: {lat: number; lng: number}[]; // Nueva prop para la ruta
   height?: string;
   width?: string;
+  mapRef?: React.MutableRefObject<any>;
   onAttend: (
     id: string,
     alertId: string,
@@ -62,6 +63,9 @@ const MapController: React.FC<{ markers: AlertData[], zoom: number, alertZoom?: 
     if (!map || !isMapLoaded || markers.length === 0) return;
 
     const lastAlert = markers[markers.length - 1];
+    console.log(markers)
+    console.log(markers[0]);
+console.log(markers[0]?.avatar);
     console.log('Last alert:', lastAlert);
 
     // Si es una nueva alerta (diferente a la última procesada)
@@ -99,6 +103,7 @@ const MapAlert: React.FC<MapAlertProps> = ({
   alertZoom = 17, // Zoom muy cercano por defecto
   height = '100vh', 
   width = '100%', 
+  mapRef,
   onAttend 
 }) => {
   const [styleIndex, setStyleIndex] = useState(0);
@@ -141,6 +146,8 @@ const MapAlert: React.FC<MapAlertProps> = ({
       </div>
       
       <Map
+        ref={mapRef}
+        preserveDrawingBuffer={true}
         mapboxAccessToken={import.meta.env.VITE_MAPBOX_TOKEN}
         initialViewState={{
           longitude: initialCenter.longitude,
@@ -188,10 +195,13 @@ const MapAlert: React.FC<MapAlertProps> = ({
             id: alert.id,
             alertId: alert.alertId,
             lat: alert.lat,
+            avatar: alert.avatar,
             lng: alert.lng,
             name: alert.emitterName,
             phone: alert.emitterPhone,
             emitterId: alert.emitterId,
+            createdAt: alert.createdAt,
+            status: alert.status,
           }}
           onAttend={onAttend}
         />

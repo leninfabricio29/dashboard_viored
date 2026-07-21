@@ -14,8 +14,6 @@ import userService from "../../../services/user-service";
 import neighborhoodService, {
   Neighborhood,
 } from "../../../services/neighborhood-service";
-import ButtonIndicator from "../../../components/UI/ButtonIndicator";
-import ButtonHome from "../../../components/UI/ButtonHome";
 import { getNotificationById } from "../../../services/notifications-service";
 import Modal from "../../../components/UI/Modal";
 
@@ -196,8 +194,6 @@ const NotificationRequest = () => {
   return (
     <div className="container mx-auto px-4 py-8 max-w-7xl">
       <div className="flex justify-between items-center mb-6">
-        <ButtonIndicator />
-        <ButtonHome />
       </div>
 
       <div className="bg-white shadow-lg rounded-xl border border-gray-100 overflow-hidden">

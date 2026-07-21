@@ -13,8 +13,6 @@ import neighborhoodService from "../../../services/neighborhood-service";
 import { User } from "../../../types/user.types";
 import { Neighborhood } from "../../../types/neighborhood.types";
 import NeighborhoodsMap from "./NeighborhoodMaps";
-import ButtonHome from "../../../components/UI/ButtonHome";
-import ButtonIndicator from "../../../components/UI/ButtonIndicator";
 
 const MapIndicator = () => {
   const [isUsersMapOpen, setIsUsersMapOpen] = useState(false);
@@ -81,8 +79,7 @@ const MapIndicator = () => {
   return (
     <div className="container mx-auto px-4 py-8 max-w-7xl">
       <div className="flex justify-between items-center mb-6">
-        <ButtonIndicator />
-        <ButtonHome />
+       
       </div>
       {/* Header Section - Mejorado */}
       <div className="flex justify-between items-center mb-8 mt-4">

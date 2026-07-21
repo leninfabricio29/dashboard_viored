@@ -2,8 +2,6 @@ import { useParams } from "react-router-dom";
 import { useEffect, useState } from "react";
 import { getNotificationById } from "../../../services/notifications-service";
 import userService from "../../../services/user-service";
-import ButtonIndicator from "../../../components/UI/ButtonIndicator";
-import ButtonHome from "../../../components/UI/ButtonHome";
 import Swal from "sweetalert2";
 import {
   FiUser,
@@ -15,11 +13,12 @@ import {
   FiShield,
   FiActivity,
 } from "react-icons/fi";
+import { User } from "../../../services/auth-service";
 
 const NotificationDetail = () => {
   const { id } = useParams();
   const [notification, setNotification] = useState<any>(null);
-  const [emitter, setEmitter] = useState<any>(null);
+  const [emitter, setEmitter] = useState<User | null>(null);
   const [loading, setLoading] = useState(true);
   const [type_suscription, setTypeSuscription] = useState<string | null>(null);
 
@@ -30,7 +29,7 @@ const NotificationDetail = () => {
         setNotification(notif);
 
         const user = await userService.getUserById(notif.notification.emitter);
-        setEmitter(user);
+        setEmitter(user as User);
       } catch (error) {
         console.error("Error cargando detalle de notificación:", error);
       } finally {
@@ -97,8 +96,6 @@ const NotificationDetail = () => {
   return (
     <div className="container mx-auto px-4 py-8 max-w-7xl">
       <div className="flex justify-between items-center mb-6">
-        <ButtonIndicator />
-        <ButtonHome />
       </div>
 
       
@@ -149,11 +146,11 @@ const NotificationDetail = () => {
                 label="Rol"
                 value={
                   <span className={`px-2 py-1 rounded-full text-xs font-medium ${
-                    emitter.role === "admin"
+                    emitter.role.name === "admin"
                       ? "bg-red-100 text-red-800"
                       : "bg-blue-100 text-blue-800"
                   }`}>
-                    {emitter.role}
+                    {emitter.role.name === "admin" ? "Administrador" : "Usuario"}
                   </span>
                 }
               />

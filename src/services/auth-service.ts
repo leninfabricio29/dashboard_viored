@@ -1,11 +1,30 @@
 // src/services/auth-service.ts
 import api from './api';
 
+export interface Permission {
+  _id: string;
+  module: Module;
+  name: string;
+}
+
+export interface Module {
+  _id: string;
+  name: string;
+  icon: string;
+  route: string;
+}
+
+export interface Role {
+  name: string;
+  permissions?: Permission[];
+  _id: string;
+}
+
 export interface User {
   _id: string;
   name: string;
   email: string;
-  role: string;
+  role: Role;
   phone: string;
   ci: string;
   avatar: string;
@@ -18,7 +37,6 @@ export interface User {
     coordinates: number[];
     lastUpdated: string;
   };
-  // ... otros campos si los necesitas
 }
 
 interface LoginCredentials {
@@ -29,8 +47,8 @@ interface LoginCredentials {
 interface LoginResponse {
   message: string;
   token: string;
-  user: User,
-  entidadId: string | null; // ID de la entidad si el usuario es un hijo
+  user: User;
+  entidadId: string | null;
 }
 
 interface ResetPasswordData {
@@ -42,26 +60,14 @@ interface ResetPasswordResponse {
   newPassword: string;
 }
 
-
-
 const authService = {
-  // Login de usuario
   login: async (credentials: LoginCredentials): Promise<LoginResponse> => {
     try {
       const response = await api.post<LoginResponse>('/api/auth/login', credentials);
-      console.log(response.data)
-      // Guardar el token en localStorage para mantener la sesión
       const { user, token } = response.data;
-
-      if (user.role === "admin" || user.role === "entity" || user.role === "son") {
-        if (token) {
-          localStorage.setItem('token', token);
-        }
-      }else{
-        console.error('No puedes acceder a este panel de admin')
+      if (token) {
+        localStorage.setItem('token', token);
       }
-
-
       return response.data;
     } catch (error) {
       console.error('Error en login:', error);
@@ -69,23 +75,18 @@ const authService = {
     }
   },
 
-  // Cerrar sesión (eliminar todos los datos del localStorage)
   logout: (): void => {
     localStorage.clear();
   },
 
-
-  // Verificar si el usuario está autenticado
   isAuthenticated: (): boolean => {
     return localStorage.getItem('token') !== null;
   },
 
-  // Obtener el token JWT
   getToken: (): string | null => {
     return localStorage.getItem('token');
   },
 
-  // Solicitar restablecimiento de contraseña
   resetPassword: async (data: ResetPasswordData): Promise<ResetPasswordResponse> => {
     try {
       const response = await api.post<ResetPasswordResponse>('/api/auth/reset-password', data);
@@ -96,19 +97,16 @@ const authService = {
     }
   },
 
-  // Actualizar contraseña
-  // auth-service.ts
-  // auth-service.ts
   updatePassword: async (data: {
-    email: string,
-    currentPassword: string,
-    newPassword: string
+    email: string;
+    currentPassword: string;
+    newPassword: string;
   }): Promise<{ message: string }> => {
     try {
       const response = await api.put<{ message: string }>('/api/auth/update-password', {
         email: data.email,
         currentPassword: data.currentPassword,
-        newPassword: data.newPassword
+        newPassword: data.newPassword,
       });
       return response.data;
     } catch (error) {
@@ -122,36 +120,29 @@ const authService = {
     if (!token) return null;
 
     try {
-      // Decodificar el token JWT (método simple)
       const payload = JSON.parse(atob(token.split('.')[1]));
-      return payload.id; // Asumiendo que el ID del usuario está en la propiedad "id" del payload
+      return payload.id || null;
     } catch (error) {
       console.error('Error al decodificar el token:', error);
       return null;
     }
   },
 
-  /**
-   * Obtener el ID de la entidad desde el token o localStorage
-   */
   getEntityIdFromToken: (): string | null => {
-    // Primero buscar en localStorage (guardado explícitamente)
     const storedEntityId = localStorage.getItem('entity_sonId');
     if (storedEntityId) return storedEntityId;
 
-    // Luego intentar obtener del token JWT
     const token = localStorage.getItem('token');
     if (!token) return null;
 
     try {
       const payload = JSON.parse(atob(token.split('.')[1]));
-      return payload.entityId || payload.id; // El backend puede incluir entityId en el token
+      return payload.entityId || null;
     } catch (error) {
       console.error('Error al obtener ID de entidad:', error);
       return null;
     }
   },
-
 };
 
 export default authService;

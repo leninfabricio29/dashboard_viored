@@ -1,141 +1,83 @@
-// NeighborhoodMapEditor.tsx (nuevo componente basado en NeighborhoodsMap)
-import { useState, useCallback } from 'react';
-import { GoogleMap, useJsApiLoader, Polygon, InfoWindow } from '@react-google-maps/api';
+import { useCallback, useMemo, useState } from "react";
+import Map, { Layer, Marker, NavigationControl, Popup, Source, type MapLayerMouseEvent } from "react-map-gl";
+import "mapbox-gl/dist/mapbox-gl.css";
 
 interface NeighborhoodMapEditorProps {
   initialCoordinates?: [number, number][];
   onPolygonComplete?: (coordinates: [number, number][]) => void;
 }
 
-const containerStyle = {
-  width: '100%',
-  height: '100%',
-  borderRadius: '0.5rem'
-};
+const MAPBOX_TOKEN = import.meta.env.VITE_MAPBOX_TOKEN as string | undefined;
+const mapCenter = { lat: -3.683, lng: -79.675 };
 
-const NeighborhoodMapEditor = ({ 
-  initialCoordinates = [],
-  onPolygonComplete 
-}: NeighborhoodMapEditorProps) => {
-  const [polygonPath, setPolygonPath] = useState<google.maps.LatLng[]>(() => 
-    initialCoordinates.map(coord => new google.maps.LatLng(coord[1], coord[0]))
-  );
-  const [mapCenter] = useState({ lat: -3.683, lng: -79.675 });
+const NeighborhoodMapEditor = ({ initialCoordinates = [], onPolygonComplete }: NeighborhoodMapEditorProps) => {
+  const [polygonPath, setPolygonPath] = useState<[number, number][]>(initialCoordinates);
 
-  const { isLoaded, loadError } = useJsApiLoader({
-    id: 'google-map-script',
-    googleMapsApiKey: import.meta.env.VITE_GOOGLE_MAPS_API_KEY || '',
-    libraries: ['places', 'drawing']
-  });
+  const polygonData = useMemo(() => ({
+    type: "Feature" as const,
+    properties: {},
+    geometry: {
+      type: "Polygon" as const,
+      coordinates: [polygonPath.length >= 3 ? [...polygonPath, polygonPath[0]] : polygonPath],
+    },
+  }), [polygonPath]);
 
-  const onLoad = useCallback(() => {
-    // Inicializar el mapa si es necesario
-  }, []);
+  const handleMapClick = useCallback((event: MapLayerMouseEvent) => {
+    const point: [number, number] = [event.lngLat.lng, event.lngLat.lat];
+    setPolygonPath((currentPath) => {
+      const nextPath = [...currentPath, point];
+      if (nextPath.length >= 3) onPolygonComplete?.([...nextPath, nextPath[0]]);
+      return nextPath;
+    });
+  }, [onPolygonComplete]);
 
-  const onUnmount = useCallback(() => {
-    // Limpiar recursos si es necesario
-  }, []);
+  const resetDrawing = useCallback(() => setPolygonPath([]), []);
 
-  const handleMapClick = useCallback((e: google.maps.MapMouseEvent) => {
-    if (!e.latLng) return;
-    
-    const newPath = [...polygonPath, e.latLng];
-    setPolygonPath(newPath);
-    
-    if (newPath.length >= 3 && onPolygonComplete) {
-      let coordinates = newPath.map(latLng => [latLng.lng(), latLng.lat()] as [number, number]);
-    
-      const isClosed = JSON.stringify(coordinates[0]) === JSON.stringify(coordinates[coordinates.length - 1]);
-      if (!isClosed) {
-        coordinates.push(coordinates[0]); // Cierra el polígono
-      }
-    
-      onPolygonComplete(coordinates);
-    }
-    
-  }, [polygonPath, onPolygonComplete]);
-
-  const resetDrawing = useCallback(() => {
-    setPolygonPath([]);
-  }, []);
-
-  if (loadError) {
-    return (
-      <div className="h-full w-full rounded-md bg-red-100 flex items-center justify-center text-red-500">
-        Error al cargar el mapa. Por favor, verifica tu conexión a internet.
-      </div>
-    );
+  if (!MAPBOX_TOKEN) {
+    return <div className="flex h-full w-full items-center justify-center rounded-md bg-red-100 text-red-600">Configura VITE_MAPBOX_TOKEN para cargar el mapa.</div>;
   }
 
-  if (!isLoaded) {
-    return (
-      <div className="h-full w-full rounded-md bg-gray-100 flex items-center justify-center">
-        Cargando mapa...
-      </div>
-    );
-  }
-
-  if (!import.meta.env.VITE_GOOGLE_MAPS_API_KEY) {
-    return (
-      <div className="h-full w-full rounded-md bg-red-100 flex items-center justify-center text-red-500">
-        Error: API key de Google Maps no configurada
-      </div>
-    );
-  }
-
+const lastPoint = polygonPath[polygonPath.length - 1];
   return (
-    <div className="h-full w-full flex flex-col">
-      <div className="flex justify-between items-center mb-2">
+    <div className="flex h-full w-full flex-col">
+      <div className="mb-2 flex items-center justify-between">
         <h4 className="font-medium">Dibuja el área del barrio</h4>
-        <button 
+        <button
           onClick={resetDrawing}
-          className="px-2 py-1 text-xs bg-gray-200 rounded hover:bg-gray-300 transition-colors"
+          className="rounded bg-gray-200 px-2 py-1 text-xs transition-colors hover:bg-gray-300"
           disabled={polygonPath.length === 0}
         >
           Reiniciar dibujo
         </button>
       </div>
-      
-      <GoogleMap
-        mapContainerStyle={containerStyle}
-        center={mapCenter}
-        zoom={14}
-        onLoad={onLoad}
-        onUnmount={onUnmount}
-        onClick={handleMapClick}
-        options={{
-          fullscreenControl: true,
-          zoomControl: true,
-          streetViewControl: false,
-          mapTypeControl: true,
-          draggableCursor: 'crosshair'
-        }}
-      >
-        {polygonPath.length > 0 && (
-          <Polygon
-            paths={polygonPath}
-            options={{
-              fillColor: '#3b82f6',
-              fillOpacity: 0.4,
-              strokeColor: '#1d4ed8',
-              strokeOpacity: 1,
-              strokeWeight: 2,
-              clickable: false
-            }}
-          />
-        )}
-        
-        {polygonPath.length > 0 && (
-          <InfoWindow
-            position={polygonPath[polygonPath.length - 1]}
-          >
-            <div className="text-xs p-1">
-              {polygonPath.length} puntos<br />
-              {polygonPath.length >= 3 ? 'Polígono válido' : 'Necesitas al menos 3 puntos'}
-            </div>
-          </InfoWindow>
-        )}
-      </GoogleMap>
+
+      <div className="min-h-0 flex-1 overflow-hidden rounded-lg">
+        <Map
+          mapboxAccessToken={MAPBOX_TOKEN}
+          initialViewState={{ longitude: mapCenter.lng, latitude: mapCenter.lat, zoom: 14 }}
+          mapStyle="mapbox://styles/mapbox/streets-v12"
+          style={{ width: "100%", height: "100%" }}
+          cursor="crosshair"
+          onClick={handleMapClick}
+        >
+          <NavigationControl position="top-right" />
+          {polygonPath.length >= 3 && (
+            <Source id="drawing-polygon" type="geojson" data={polygonData}>
+              <Layer id="drawing-polygon-fill" type="fill" paint={{ "fill-color": "#3b82f6", "fill-opacity": 0.4 }} />
+              <Layer id="drawing-polygon-outline" type="line" paint={{ "line-color": "#1d4ed8", "line-width": 2 }} />
+            </Source>
+          )}
+          {polygonPath.map(([lng, lat], index) => <Marker key={`${lng}-${lat}-${index}`} longitude={lng} latitude={lat} color="#1d4ed8" />)}
+          {lastPoint && (
+            <Popup longitude={lastPoint[0]} latitude={lastPoint[1]} closeButton={false} closeOnClick={false} anchor="bottom">
+              <div className="p-1 text-xs">
+                {polygonPath.length} puntos<br />
+                {polygonPath.length >= 3 ? "Polígono válido" : "Necesitas al menos 3 puntos"}
+              </div>
+            </Popup>
+          )}
+        </Map>
+      </div>
     </div>
   );
 };

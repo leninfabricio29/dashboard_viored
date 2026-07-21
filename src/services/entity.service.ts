@@ -2,6 +2,10 @@ import api from './api';
 import { User } from '../types/user.types';
 import { CreateUserInput, CreateEntityInput, Entity} from "../types/user.types";
 
+export interface CreateCollaboratorInput extends CreateUserInput {
+  roleId: string;
+}
+
 
 
 export const entityUsersService = {
@@ -46,14 +50,29 @@ export const entityUsersService = {
   },
 
   createSonUser: async (
-    entityId: string,
-    userData: CreateUserInput
+    _entityId: string,
+    userData: CreateCollaboratorInput
   ): Promise<User> => {
+    const { roleId, ...collaborator } = userData;
     const response = await api.post<{ user: User }>(`/api/entity/son`, {
-      entityId,
-      userData,
+      ...collaborator,
+      roleId,
     });
 
+    return response.data.user;
+  },
+
+  getCollaborators: async (entityId: string): Promise<User[]> => {
+    const response = await api.get<User[]>(`/api/entity/${entityId}/sons`);
+    return response.data;
+  },
+
+  createCollaborator: async (userData: CreateCollaboratorInput): Promise<User> => {
+    const { roleId, ...collaborator } = userData;
+    const response = await api.post<{ user: User }>('/api/entity/son', {
+      ...collaborator,
+      roleId,
+    });
     return response.data.user;
   },
 

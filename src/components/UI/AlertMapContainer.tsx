@@ -13,8 +13,11 @@ export interface AlertData {
   lat: number;
   lng: number;
   emitterName: string;
+  avatar: string;
   emitterPhone: string;
   emitterId: string;
+  createdAt?: string;
+  status?: string;
 }
 
 interface AlertMapContainerProps {
@@ -61,6 +64,13 @@ const AlertMapContainer: React.FC<AlertMapContainerProps> = ({ alertId }) => {
 
     // 🔥 ACUMULAR RUTA
     setRoute((prev) => {
+      if (prev.length === 0 && alert.locations && alert.locations.length > 0) {
+        return alert.locations.map((loc: any) => ({
+          lat: loc.coordinates[1],
+          lng: loc.coordinates[0],
+        }));
+      }
+
       const lastPoint = prev[prev.length - 1];
 
       // Evitar duplicados innecesarios
@@ -87,8 +97,15 @@ const AlertMapContainer: React.FC<AlertMapContainerProps> = ({ alertId }) => {
             lat,
             lng,
             emitterName: alert.reporter?.name || "Desconocido",
+            avatar:
+              (alert.reporter?.avatar && alert.reporter.avatar.trim() !== "")
+                ? alert.reporter.avatar
+                : "https://ui-avatars.com/api/?background=ef4444&color=fff&name=" +
+                  encodeURIComponent(alert.reporter?.name || "Usuario"),
             emitterPhone: alert.reporter?.phone || "-",
             emitterId: alert.reporter?._id || "",
+            createdAt: alert.reportedAt || alert.createdAt,
+            status: alert.status,
           },
         ];
       }
@@ -157,6 +174,8 @@ const AlertMapContainer: React.FC<AlertMapContainerProps> = ({ alertId }) => {
       return;
     }
 
+    
+
     setEmergencies((prev) =>
       prev.map((alert) =>
         alert.alertId === data.alertId
@@ -192,6 +211,8 @@ const AlertMapContainer: React.FC<AlertMapContainerProps> = ({ alertId }) => {
     if (pollingIntervalRef.current) {
       clearInterval(pollingIntervalRef.current);
     }
+
+    
 
     setEmergencies([]);
     window.alert("Emergencia atendida correctamente.");

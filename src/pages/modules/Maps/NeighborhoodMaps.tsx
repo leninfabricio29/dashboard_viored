@@ -1,215 +1,85 @@
-// src/components/ui/NeighborhoodsMap.tsx
-import { useState, useCallback, useEffect } from 'react';
-import { GoogleMap, useJsApiLoader, Polygon, InfoWindow } from '@react-google-maps/api';
-import { Neighborhood } from '../../../types/neighborhood.types';
+import { useEffect, useMemo, useRef, useState } from "react";
+import Map, { Layer, NavigationControl, Popup, Source, type MapRef } from "react-map-gl";
+import "mapbox-gl/dist/mapbox-gl.css";
+import { Neighborhood } from "../../../types/neighborhood.types";
 
 interface NeighborhoodsMapProps {
   neighborhoods: Neighborhood[];
   zoom?: number;
 }
 
-const containerStyle = {
-  width: '100%',
-  height: '100%',
-  borderRadius: '0.5rem'
-};
-
-// Centro por defecto (Piñas, Ecuador)
+const MAPBOX_TOKEN = import.meta.env.VITE_MAPBOX_TOKEN as string | undefined;
 const defaultCenter = { lat: -3.683, lng: -79.675 };
 
-// Función para generar colores aleatorios
-const getRandomColor = () => {
-  const letters = '0123456789ABCDEF';
-  let color = '#';
-  for (let i = 0; i < 6; i++) {
-    color += letters[Math.floor(Math.random() * 16)];
-  }
-  return color;
+const colorFor = (id: string) => {
+  let hash = 0;
+  for (let index = 0; index < id.length; index += 1) hash = id.charCodeAt(index) + ((hash << 5) - hash);
+  return `hsl(${Math.abs(hash) % 360} 70% 45%)`;
 };
 
 const NeighborhoodsMap = ({ neighborhoods, zoom = 12 }: NeighborhoodsMapProps) => {
   const [selectedNeighborhood, setSelectedNeighborhood] = useState<Neighborhood | null>(null);
-  const [map, setMap] = useState<google.maps.Map | null>(null);
-  const [mapCenter, setMapCenter] = useState(defaultCenter);
-  const [neighborhoodColors] = useState(() => {
-    const colors: Record<string, string> = {};
-    neighborhoods.forEach(n => {
-      colors[n._id] = getRandomColor();
-    });
-    return colors;
-  });
+  const mapRef = useRef<MapRef | null>(null);
+  const validNeighborhoods = useMemo(() => neighborhoods.filter((neighborhood) => (neighborhood.area?.coordinates?.[0]?.length ?? 0) >= 3), [neighborhoods]);
 
-  // Logs para debugging
   useEffect(() => {
-    console.log(setMapCenter)
-    neighborhoods.forEach(n => {
-      if (n.area?.coordinates?.[0]) {
-       
-      } else {
-        console.log(`Barrio ${n.name} no tiene coordenadas válidas`);
-      }
-    });
-  }, [neighborhoods]);
-
-  // Cargar la API de Google Maps
-  const { isLoaded, loadError } = useJsApiLoader({
-    id: 'google-map-script',
-    googleMapsApiKey: 'AIzaSyBJV8sX5ObZJB4V0gy6ILSqjEcVOYOMcZ4'
-  });
-
-  // Callbacks para gestionar el mapa
-  const onLoad = useCallback((map: google.maps.Map) => {
-    console.log("Mapa cargado");
-    setMap(map);
-  }, []);
-
-  const onUnmount = useCallback(() => {
-    setMap(null);
-  }, []);
-
-  // Filtrar barrios con coordenadas válidas
-  const validNeighborhoods = neighborhoods.filter(n => 
-    (n.area?.coordinates?.[0]?.length ?? 0) >= 3
-  );
-
-  // Ajustar los límites del mapa para mostrar todos los polígonos
-  useEffect(() => {
-    if (map && validNeighborhoods.length > 0) {
-      try {
-        const bounds = new google.maps.LatLngBounds();
-        let hasValidPoints = false;
-        
-        validNeighborhoods.forEach(neighborhood => {
-          if (neighborhood.area?.coordinates && neighborhood.area.coordinates[0]) {
-            neighborhood.area.coordinates[0].forEach(coord => {
-              // GeoJSON usa [longitud, latitud]
-              const lng = coord[0];
-              const lat = coord[1];
-              
-              console.log(`Punto de ${neighborhood.name}:`, { lat, lng });
-              
-              // Verificar que las coordenadas están en rango
-              if (lat >= -90 && lat <= 90 && lng >= -180 && lng <= 180) {
-                bounds.extend({ lat, lng });
-                hasValidPoints = true;
-              } else {
-                console.warn(`Coordenada fuera de rango en ${neighborhood.name}:`, coord);
-              }
-            });
-          }
-        });
-        
-        if (hasValidPoints) {
-          console.log("Ajustando mapa a los límites");
-          map.fitBounds(bounds);
-        } else {
-          console.log("No hay puntos válidos, usando centro por defecto");
-          map.setCenter(mapCenter);
-          map.setZoom(zoom);
-        }
-      } catch (error) {
-        console.error("Error al ajustar los límites del mapa:", error);
-        map.setCenter(mapCenter);
-        map.setZoom(zoom);
-      }
-    } else if (map) {
-      console.log("No hay barrios válidos, usando centro por defecto");
-      map.setCenter(mapCenter);
-      map.setZoom(zoom);
+    const map = mapRef.current;
+    if (!map) return;
+    const points = validNeighborhoods.flatMap((neighborhood) => neighborhood.area?.coordinates[0] || []);
+    if (!points.length) {
+      map.flyTo({ center: [defaultCenter.lng, defaultCenter.lat], zoom });
+      return;
     }
-  }, [map, validNeighborhoods, mapCenter, zoom]);
+    const longitudes = points.map(([lng]) => lng);
+    const latitudes = points.map(([, lat]) => lat);
+    map.fitBounds([[Math.min(...longitudes), Math.min(...latitudes)], [Math.max(...longitudes), Math.max(...latitudes)]], { padding: 56, maxZoom: 16 });
+  }, [validNeighborhoods, zoom]);
 
-  // Mostrar mensaje de carga o error
-  if (loadError) {
-    return <div className="h-full w-full rounded-md bg-red-100 flex items-center justify-center text-red-500">Error al cargar el mapa: {loadError.message}</div>;
-  }
+  const polygons = useMemo(() => ({
+    type: "FeatureCollection" as const,
+    features: validNeighborhoods.map((neighborhood) => ({
+      type: "Feature" as const,
+      properties: { id: neighborhood._id, color: colorFor(neighborhood._id) },
+      geometry: { type: "Polygon" as const, coordinates: neighborhood.area!.coordinates },
+    })),
+  }), [validNeighborhoods]);
 
-  if (!isLoaded) {
-    return <div className="h-full w-full rounded-md bg-gray-100 flex items-center justify-center">Cargando mapa...</div>;
-  }
-
-  if (validNeighborhoods.length === 0) {
-    return (
-      <div className="h-full w-full flex flex-col items-center justify-center">
-        <p className="text-gray-500 mb-2">No hay barrios con coordenadas válidas</p>
-        <GoogleMap
-          mapContainerStyle={{ ...containerStyle, height: '90%' }}
-          center={mapCenter}
-          zoom={zoom}
-          options={{
-            fullscreenControl: true,
-            zoomControl: true,
-            streetViewControl: true,
-            mapTypeControl: true
-          }}
-        />
-      </div>
-    );
+  if (!MAPBOX_TOKEN) {
+    return <div className="flex h-full w-full items-center justify-center rounded-md bg-red-100 text-red-600">Configura VITE_MAPBOX_TOKEN para cargar el mapa.</div>;
   }
 
   return (
-    <GoogleMap
-      mapContainerStyle={containerStyle}
-      center={mapCenter}
-      zoom={zoom}
-      onLoad={onLoad}
-      onUnmount={onUnmount}
-      options={{
-        fullscreenControl: true,
-        zoomControl: true,
-        streetViewControl: true,
-        mapTypeControl: true
+    <Map
+      ref={mapRef}
+      mapboxAccessToken={MAPBOX_TOKEN}
+      initialViewState={{ longitude: defaultCenter.lng, latitude: defaultCenter.lat, zoom }}
+      mapStyle="mapbox://styles/mapbox/streets-v12"
+      style={{ width: "100%", height: "100%", borderRadius: "0.5rem" }}
+      interactiveLayerIds={["neighborhood-fill"]}
+      onClick={(event) => {
+        const id = event.features?.[0]?.properties?.id;
+        setSelectedNeighborhood(validNeighborhoods.find((neighborhood) => neighborhood._id === id) || null);
       }}
     >
-      {validNeighborhoods.map(neighborhood => {
-        if (!neighborhood.area?.coordinates || !neighborhood.area.coordinates[0]) return null;
-        
-        // Convertir coordenadas al formato que espera Google Maps (corregido)
-        const paths = neighborhood.area.coordinates[0].map(coord => {
-          // GeoJSON usa [longitud, latitud]
-          const lng = coord[0];
-          const lat = coord[1];
-          return { lat, lng };
-        });
-        
-        console.log(`Polígono de ${neighborhood.name}:`, paths);
-        
-        const color = neighborhoodColors[neighborhood._id] || '#FF0000';
-        
-        return (
-          <Polygon
-            key={neighborhood._id}
-            paths={paths}
-            options={{
-              fillColor: color,
-              fillOpacity: 0.3,
-              strokeColor: color,
-              strokeOpacity: 1,
-              strokeWeight: 2
-            }}
-            onClick={() => setSelectedNeighborhood(neighborhood)}
-          />
-        );
-      })}
-
-      {selectedNeighborhood && selectedNeighborhood.area?.coordinates && (
-        <InfoWindow
-          position={{
-            // GeoJSON usa [longitud, latitud]
-            lat: selectedNeighborhood.area.coordinates[0][0][1],
-            lng: selectedNeighborhood.area.coordinates[0][0][0]
-          }}
-          onCloseClick={() => setSelectedNeighborhood(null)}
+      <NavigationControl position="top-right" />
+      <Source id="neighborhoods" type="geojson" data={polygons}>
+        <Layer id="neighborhood-fill" type="fill" paint={{ "fill-color": ["get", "color"], "fill-opacity": 0.3 }} />
+        <Layer id="neighborhood-outline" type="line" paint={{ "line-color": ["get", "color"], "line-width": 2 }} />
+      </Source>
+      {selectedNeighborhood?.area?.coordinates?.[0]?.[0] && (
+        <Popup
+          longitude={selectedNeighborhood.area.coordinates[0][0][0]}
+          latitude={selectedNeighborhood.area.coordinates[0][0][1]}
+          closeOnClick={false}
+          onClose={() => setSelectedNeighborhood(null)}
         >
-          <div className="p-2 max-w-xs">
-            <h3 className="font-bold text-base mb-1">{selectedNeighborhood.name}</h3>
-            {selectedNeighborhood.description && (
-              <p className="text-sm mb-1">{selectedNeighborhood.description}</p>
-            )}
+          <div className="max-w-xs p-1">
+            <h3 className="mb-1 text-base font-bold">{selectedNeighborhood.name}</h3>
+            {selectedNeighborhood.description && <p className="text-sm">{selectedNeighborhood.description}</p>}
           </div>
-        </InfoWindow>
+        </Popup>
       )}
-    </GoogleMap>
+    </Map>
   );
 };
 

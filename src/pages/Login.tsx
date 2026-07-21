@@ -3,6 +3,11 @@ import { useNavigate } from "react-router-dom";
 import { FiUser, FiKey, FiEyeOff, FiEye } from "react-icons/fi";
 import authService from "../../src/services/auth-service";
 import Logo from "../assets/icon.png";
+import accessService from "../services/access-service";
+
+
+
+
 
 const Login = () => {
   const navigate = useNavigate();
@@ -30,19 +35,38 @@ const Login = () => {
       setIsLoading(false);
       return;
     }
-    // Guardar el rol y el id del usuario en el localStorage
-    localStorage.setItem("role", response.user.role);
+    const roleName = response.user.role.name;
+
+    // Guardar el rol, el id y el token del usuario en el localStorage
+    localStorage.setItem("role", roleName);
     localStorage.setItem("userId", response.user._id);
-    if (response.user.role === "entity" || response.user.role === "son") {
-      localStorage.setItem("entity_sonId", response.entidadId || '');
-    }
-    if (response.user.role === "admin") {
-      navigate("/");
-    } else if (response.user.role === "entity" || response.user.role === "son") {
-      navigate("/monitoring");
+    if (response.entidadId) {
+      localStorage.setItem("entity_sonId", response.entidadId);
     } else {
-      setError("No tienes permisos para acceder a esta página");
+      localStorage.removeItem("entity_sonId");
     }
+
+    if (response.token) {
+      localStorage.setItem("token", response.token);
+    }
+
+    await accessService.refreshCurrentUserAccess();
+
+    if (roleName === "admin") {
+      navigate("/", { replace: true });
+    } else if (roleName !== "user") {
+      navigate("/live", { replace: true });
+    } else {
+      setError("No tienes permisos para acceder a este panel de administración.");
+    }
+
+    // Los módulos se obtienen de /api/access/me; no viajan en la respuesta de login.
+
+
+    
+
+    
+    
 
   } catch (err: any) {
     console.error("Error de inicio de sesión:", err);
