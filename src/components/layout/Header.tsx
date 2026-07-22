@@ -1,5 +1,4 @@
 import { useState, useEffect, useRef } from "react";
-import { Link } from "react-router-dom";
 import { FiMenu, FiUser } from "react-icons/fi";
 import authService from "../../services/auth-service";
 import userService from "../../services/user-service";

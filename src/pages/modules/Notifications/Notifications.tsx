@@ -3,7 +3,6 @@ import { Link } from "react-router-dom";
 import { FiBell, FiChevronDown, FiChevronUp, FiCalendar } from "react-icons/fi";
 import { getAllNotifications } from "../../../services/notifications-service";
 import authService from "../../../services/auth-service";
-import ButtonIndicator from "../../../components/UI/ButtonIndicator";
 import ButtonHome from "../../../components/UI/ButtonHome";
 import Pagination from "../../../components/layout/Pagination";
 

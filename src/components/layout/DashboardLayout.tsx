@@ -1,10 +1,7 @@
 import {
-  FiMenu,
   FiSettings,
   FiLogOut,
   FiUser,
-  FiChevronDown,
-  FiChevronRight,
 } from "react-icons/fi";
 import { useEffect, useState } from "react";
 import { useNavigate, Outlet, NavLink, useLocation, Link } from "react-router-dom";
@@ -23,6 +20,7 @@ export const DashboardLayout = () => {
     management: true,
     system: true,
   });
+  console.log(expandedSections, setExpandedSections)
   const [user, setUser] = useState<{ name: string; role: string, id: string, avatar: string }>({
     name: "",
     avatar: "",
@@ -30,6 +28,7 @@ export const DashboardLayout = () => {
     id: "",
   });
   const [loading, setLoading] = useState(true);
+  console.log(loading)
   const [modules, setModules] = useState<any[]>(() => {
     const stored = localStorage.getItem("modules");
     return stored ? JSON.parse(stored) : [];

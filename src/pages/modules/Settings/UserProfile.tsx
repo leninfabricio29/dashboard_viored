@@ -2,7 +2,6 @@ import { useState, useEffect } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import authService from "../../../services/auth-service";
 import userService from "../../../services/user-service";
-import ButtonIndicator from "../../../components/UI/ButtonIndicator";
 import ButtonHome from "../../../components/UI/ButtonHome";
 import { FiEye, FiEyeOff, FiSettings } from "react-icons/fi";
 import { getAllPackages } from "../../../services/media-service";

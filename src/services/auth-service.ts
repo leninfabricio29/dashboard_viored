@@ -67,6 +67,7 @@ const authService = {
       const { user, token } = response.data;
       if (token) {
         localStorage.setItem('token', token);
+        console.log("user", user)
       }
       return response.data;
     } catch (error) {

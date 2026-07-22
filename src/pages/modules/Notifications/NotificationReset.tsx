@@ -2,7 +2,6 @@ import { useParams } from "react-router-dom";
 import { useEffect, useState } from "react";
 import { getNotificationById } from "../../../services/notifications-service";
 import userService from "../../../services/user-service";
-import ButtonIndicator from "../../../components/UI/ButtonIndicator";
 import ButtonHome from "../../../components/UI/ButtonHome";
 
 const NotificationDetail = () => {

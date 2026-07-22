@@ -1,8 +1,6 @@
 import React, { useEffect, useState } from "react";
 import { getActivityLogs } from "../../../services/activity-log-service";
 
-import ButtonIndicator from "../../../components/UI/ButtonIndicator";
-import ButtonHome from "../../../components/UI/ButtonHome";
 import {
   FiArrowRight,
   FiClock,
