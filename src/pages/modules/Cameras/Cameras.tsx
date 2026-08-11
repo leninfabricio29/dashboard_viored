@@ -103,7 +103,7 @@ export function LiveStreamPlayer({
         setIsBuffering(false);
       });
 
-      hls.on(Hls.Events.ERROR, (_event, data: any) => {
+      hls.on(Hls.Events.ERROR, (_event: any, data: any) => {
         if (data.fatal) {
           switch (data.type) {
             case Hls.ErrorTypes.NETWORK_ERROR:
