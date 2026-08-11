@@ -1,4 +1,4 @@
-import  { useEffect, useMemo, useState } from "react";
+import  { useEffect, useMemo, useState, useRef } from "react";
 import {
   FiX,
   FiPhone,
@@ -15,6 +15,9 @@ import {
   FiDownload,
   FiUser,
   FiFileText,
+  FiVideo,
+  FiRotateCw,
+  FiVideoOff,
 } from "react-icons/fi";
 import html2canvas from "html2canvas";
 import api from "../../../services/api";
@@ -23,6 +26,8 @@ import socketService from "../../../services/socket.service";
 import { useSocketConnection } from "../../../hooks/useSocketListener";
 import MapAlert from "../../../components/UI/MapAlert";
 import ModalTracking from "../../../components/UI/ModalTracking";
+import cameraService, { Camera, OpenCameraResponse } from "../../../services/camera-service";
+import { LiveStreamPlayer } from "../Cameras/Cameras";
 
 /* -------------------------------------------------------------------------- */
 /*                                   Types                                    */
@@ -203,6 +208,38 @@ const buildBitacoraEvents = (alert: any): BitacoraEvento[] => {
   ];
 };
 
+const extractMongoId = (val: any): string => {
+  if (!val) return "";
+  if (typeof val === "string") return val;
+  if (typeof val === "object") {
+    if (val.$oid) return String(val.$oid);
+    if (val._id) return extractMongoId(val._id);
+    if (val.id) return extractMongoId(val.id);
+    if (typeof val.toString === "function" && val.toString() !== "[object Object]") {
+      return val.toString();
+    }
+  }
+  return String(val);
+};
+
+const getAlertUserId = (alert: EmergencyAlert | null): string | null => {
+  if (!alert) return null;
+  if (alert.userId) return extractMongoId(alert.userId);
+  const raw = alert.rawAlert;
+  if (!raw) return null;
+  const rep = raw.reporter;
+  if (rep) {
+    const res = extractMongoId(rep);
+    if (res) return res;
+  }
+  const usr = raw.user;
+  if (usr) {
+    const res = extractMongoId(usr);
+    if (res) return res;
+  }
+  return extractMongoId(raw.userId || raw.emitterId) || null;
+};
+
 const buildEmergencyAlert = (alert: any, index = 0): EmergencyAlert => {
   const [lng, lat] = getAlertCoordinates(alert);
 
@@ -215,6 +252,11 @@ const buildEmergencyAlert = (alert: any, index = 0): EmergencyAlert => {
   const entityName = alert.entities?.[0]?.entityId?.name ?? null;
   const id = alert._id ?? alert.id ?? `alert-${index + 1}`;
   const visibleOnMap = status === "active" || status === "attended";
+
+  const rawReporter = alert.reporter;
+  const extractedUserId = extractMongoId(
+    rawReporter || alert.user || alert.userId || alert.emitterId
+  );
 
   const attendedBy = alert.attendedBy ? {
     _id: alert.attendedBy._id || alert.attendedBy,
@@ -236,6 +278,7 @@ const buildEmergencyAlert = (alert: any, index = 0): EmergencyAlert => {
 
   return {
     id,
+    userId: extractedUserId ? String(extractedUserId) : "",
     nombre: reporter.name ?? reporter.fullName ?? alert.emitterName ?? "Usuario no identificado",
     email: reporter.email,
     descripcion:
@@ -335,6 +378,10 @@ export default function Live() {
   const [selectedCollaboratorId, setSelectedCollaboratorId] = useState<string>("");
   const [isTransferring, setIsTransferring] = useState<boolean>(false);
 
+  const [userCameras, setUserCameras] = useState<Camera[]>([]);
+  const [loadingUserCameras, setLoadingUserCameras] = useState<boolean>(false);
+  const [showUserCamerasGrid, setShowUserCamerasGrid] = useState<boolean>(false);
+
   const entityId = authService.getEntityIdFromToken?.() || authService.getUserIdFromToken?.() || "";
   const currentUserId = authService.getUserIdFromToken?.() || "";
   useSocketConnection(entityId || "");
@@ -346,7 +393,6 @@ export default function Live() {
         const idToFetch = entityId || currentUserId || "mine";
         console.log("📋 Entity ID for collaborators:", idToFetch);
         const response = await api.get(`/api/entity/${idToFetch}/sons`);
-        console
         if (Array.isArray(response.data)) {
           setCollaborators(response.data);
         }
@@ -356,6 +402,48 @@ export default function Live() {
     };
     void fetchCollaborators();
   }, [entityId, currentUserId]);
+
+  // Cargar cámaras asignadas al usuario de la alerta seleccionada
+  useEffect(() => {
+    if (!selectedAlert) {
+      setUserCameras([]);
+      return;
+    }
+
+    const raw = selectedAlert.rawAlert;
+    const userId =
+      raw?.reporter?._id ||
+      raw?.reporter?.id ||
+      raw?.user?._id ||
+      raw?.user?.id ||
+      raw?.user ||
+      raw?.userId;
+
+    if (!userId) {
+      setUserCameras([]);
+      return;
+    }
+
+    let isMounted = true;
+    setLoadingUserCameras(true);
+
+    cameraService
+      .getCamerasByUser(String(userId))
+      .then((cams) => {
+        if (isMounted) setUserCameras(Array.isArray(cams) ? cams : []);
+      })
+      .catch((err) => {
+        console.warn("⚠️ Error cargando cámaras del usuario en Live:", err);
+        if (isMounted) setUserCameras([]);
+      })
+      .finally(() => {
+        if (isMounted) setLoadingUserCameras(false);
+      });
+
+    return () => {
+      isMounted = false;
+    };
+  }, [selectedId]);
 
   const fetchBitacoraEvents = async (alertId: string) => {
     try {
@@ -498,7 +586,7 @@ export default function Live() {
         lng: alert.lng,
         emitterName: alert.nombre,
         emitterPhone: alert.telefono,
-        emitterId: alert.id,
+        emitterId: alert.userId || getAlertUserId(alert) || "",
         createdAt: alert.hora,
         status: alert.estado === "cerrada" ? "closed" : alert.estado === "en_atencion" ? "attended" : "active",
         avatar: alert.avatar || "",
@@ -678,7 +766,21 @@ export default function Live() {
                 alertZoom={14}
                 height="100%"
                 width="100%"
-                onAttend={() => undefined}
+                onAttend={(alertId) => {
+                  if (alertId) {
+                    setSelectedId(alertId);
+                    void handleAtender(alertId);
+                  }
+                }}
+                onViewCameras={(alertId, cams) => {
+                  if (alertId) {
+                    setSelectedId(alertId);
+                    if (Array.isArray(cams) && cams.length > 0) {
+                      setUserCameras(cams);
+                    }
+                    setShowUserCamerasGrid(true);
+                  }
+                }}
               />
             </div>
 
@@ -1143,11 +1245,11 @@ export default function Live() {
                   </p>
                 )}
 
-                <div className="flex gap-3">
+                <div className="flex gap-2">
                   {selectedAlert.estado === "pendiente" ? (
                     <button
                       onClick={() => handleAtender(selectedAlert.id)}
-                      className="w-full rounded-xl bg-red-600 py-2.5 text-sm font-semibold text-white shadow hover:bg-red-700"
+                      className="flex-1 rounded-xl bg-red-600 py-2.5 text-xs font-semibold text-white shadow hover:bg-red-700"
                     >
                       Atender emergencia
                     </button>
@@ -1155,18 +1257,20 @@ export default function Live() {
                     <button
                       onClick={handleCerrarEmergencia}
                       disabled={isTransferredToOther}
-                      className="w-full rounded-xl bg-red-600 py-2.5 text-sm font-semibold text-white shadow hover:bg-red-700 disabled:opacity-40 disabled:cursor-not-allowed"
+                      className="flex-1 rounded-xl bg-red-600 py-2.5 text-xs font-semibold text-white shadow hover:bg-red-700 disabled:opacity-40 disabled:cursor-not-allowed"
                     >
-                      <FiCheckCircle className="inline h-4 w-4 mr-1" /> Cerrar emergencia
+                      <FiCheckCircle className="inline h-3.5 w-3.5 mr-1" /> Cerrar
                     </button>
                   ) : (
                     <button
                       onClick={generarPDF}
-                      className="w-full rounded-xl bg-emerald-600 py-2.5 text-sm font-semibold text-white shadow hover:bg-emerald-700"
+                      className="flex-1 rounded-xl bg-emerald-600 py-2.5 text-xs font-semibold text-white shadow hover:bg-emerald-700"
                     >
-                      <FiFileText className="inline h-4 w-4 mr-1" /> DESCARGAR INFORME PDF
+                      <FiFileText className="inline h-3.5 w-3.5 mr-1" /> INFORME PDF
                     </button>
                   )}
+
+                  
                 </div>
               </div>
             </div>
@@ -1334,6 +1438,167 @@ export default function Live() {
           </div>
         </div>
       )}
+
+      {/* Modal de Grilla de Cámaras en Vivo para la Emergencia */}
+      {showUserCamerasGrid && selectedAlert && (
+        <EmergencyCameraGridModal
+          userCameras={userCameras}
+          userName={selectedAlert.nombre}
+          onClose={() => setShowUserCamerasGrid(false)}
+        />
+      )}
+    </div>
+  );
+}
+
+/* ------------------------------------------------------------------ */
+/*  Modal de Grilla de Cámaras de la Emergencia (Live Stream Proxy)   */
+/* ------------------------------------------------------------------ */
+
+function EmergencyCameraGridModal({
+  userCameras,
+  userName,
+  onClose,
+}: {
+  userCameras: Camera[];
+  userName: string;
+  onClose: () => void;
+}) {
+  return (
+    <div className="fixed inset-0 z-50 flex flex-col bg-slate-950/95 backdrop-blur-md p-4 md:p-6 text-white">
+      <div className="flex items-center justify-between border-b border-slate-800 pb-4 mb-4">
+        <div>
+          <div className="flex items-center gap-2">
+            <FiVideo className="text-blue-400" size={20} />
+            <h2 className="text-base font-bold text-white">
+              Monitoreo de Cámaras — {userName}
+            </h2>
+          </div>
+          <p className="text-xs text-slate-400 mt-0.5">
+            {userCameras.length} {userCameras.length === 1 ? "dispositivo asignado" : "dispositivos asignados"} al usuario
+          </p>
+        </div>
+        <button
+          onClick={onClose}
+          className="flex h-9 w-9 items-center justify-center rounded-lg bg-slate-800 text-slate-400 transition hover:bg-slate-700 hover:text-white"
+        >
+          <FiX size={20} />
+        </button>
+      </div>
+
+      <div className="flex-1 overflow-y-auto">
+        <div
+          className={`grid gap-4 h-full ${
+            userCameras.length === 1
+              ? "grid-cols-1 max-w-4xl mx-auto"
+              : userCameras.length === 2
+              ? "grid-cols-1 md:grid-cols-2"
+              : "grid-cols-1 sm:grid-cols-2 lg:grid-cols-3"
+          }`}
+        >
+          {userCameras.map((cam) => (
+            <LiveCameraGridCell key={cam._id} camera={cam} />
+          ))}
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function LiveCameraGridCell({ camera }: { camera: Camera }) {
+  const targetCameraId = camera.cameraId || camera.name || camera._id;
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+  const [streamData, setStreamData] = useState<OpenCameraResponse | null>(null);
+  const [activeChannelName, setActiveChannelName] = useState<string>(camera.name);
+  const activeSeqRef = useRef<number | null>(null);
+
+  useEffect(() => {
+    let isMounted = true;
+
+    const setupStream = async () => {
+      try {
+        setLoading(true);
+        setError(null);
+
+        const disc = await cameraService.discoverDevice(targetCameraId);
+        if (!isMounted) return;
+
+        let channelToOpen = 0;
+        let channelLabel = camera.name;
+
+        if (disc.success && disc.device) {
+          if (disc.device.type === "recorder" && disc.device.channels?.length) {
+            const userChs: number[] = Array.isArray(camera.channels)
+              ? camera.channels
+              : (Array.isArray((camera as any).assignedUsers?.[0]?.channels) ? (camera as any).assignedUsers[0].channels : []);
+            channelToOpen = userChs.length > 0 ? userChs[0] : disc.device.channels[0].channelSeq;
+            const matchedCh = disc.device.channels.find((c) => c.channelSeq === channelToOpen);
+            if (matchedCh) channelLabel = matchedCh.channelName;
+          } else if (disc.device.channels?.length) {
+            channelLabel = disc.device.channels[0].channelName || camera.name;
+          }
+        }
+
+        setActiveChannelName(channelLabel);
+
+        const openRes = await cameraService.openCamera(targetCameraId, channelToOpen);
+        if (isMounted) {
+          if (openRes.success) {
+            setStreamData(openRes);
+            activeSeqRef.current = channelToOpen;
+          } else {
+            setError("No se pudo iniciar la transmisión.");
+          }
+        }
+      } catch (err: any) {
+        if (isMounted) {
+          console.error("Error al abrir canal en grilla:", err);
+          setError(err.response?.data?.message || "Error al conectar la cámara.");
+        }
+      } finally {
+        if (isMounted) setLoading(false);
+      }
+    };
+
+    void setupStream();
+
+    return () => {
+      isMounted = false;
+      if (activeSeqRef.current !== null) {
+        const seqToClose = activeSeqRef.current;
+        activeSeqRef.current = null;
+        cameraService.closeCamera(targetCameraId, seqToClose).catch(console.error);
+      }
+    };
+  }, [targetCameraId]);
+
+  return (
+    <div className="flex flex-col h-[340px] rounded-xl overflow-hidden border border-slate-800 bg-slate-900 shadow-lg">
+      <div className="flex items-center justify-between px-3 py-2 bg-slate-850 border-b border-slate-800 text-xs">
+        <span className="font-semibold text-slate-200 truncate max-w-[220px]">{camera.name}</span>
+        <span className="text-[10px] font-mono text-slate-400">ID/SN: {targetCameraId}</span>
+      </div>
+
+      <div className="flex-1 relative bg-black flex items-center justify-center">
+        {loading ? (
+          <div className="flex flex-col items-center gap-2 text-slate-400 text-xs">
+            <FiRotateCw size={24} className="animate-spin text-blue-500" />
+            <span>Conectando {activeChannelName}...</span>
+          </div>
+        ) : error ? (
+          <div className="flex flex-col items-center gap-2 text-red-400 text-xs p-4 text-center">
+            <FiVideoOff size={28} />
+            <span>{error}</span>
+          </div>
+        ) : streamData ? (
+          <LiveStreamPlayer
+            hlsUrl={streamData.hls}
+            webrtcUrl={streamData.webrtc}
+            channelName={activeChannelName}
+          />
+        ) : null}
+      </div>
     </div>
   );
 }

@@ -318,7 +318,7 @@ export const DashboardLayout = () => {
   {sidebarOpen ? (
     <div className="space-y-3">
       <div className="flex items-center gap-3">
-        <div className="h-10 w-10 overflow-hidden rounded-full bg-gradient-to-br from-blue-500 to-indigo-600 flex items-center justify-center flex-shrink-0">
+        <div className="h-10 w-10 overflow-hidden rounded-full  flex items-center justify-center flex-shrink-0">
           {user.avatar ? (
             <img
               src={user.avatar}
@@ -326,7 +326,7 @@ export const DashboardLayout = () => {
               className="h-full w-full object-cover"
             />
           ) : (
-            <FiUser className="h-5 w-5 text-white" />
+            <img src="https://upload.wikimedia.org/wikipedia/commons/thumb/1/12/User_icon_2.svg/3840px-User_icon_2.svg.png"/>
           )}
         </div>
 

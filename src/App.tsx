@@ -13,7 +13,6 @@ import NotificationRegister from "./pages/modules/Notifications/NotificationRegi
 import NotificationReset from "./pages/modules/Notifications/NotificationReset";
 import NotificationRequest from "./pages/modules/Notifications/NotificationRequest";
 import Notifications from "./pages/modules/Notifications/Notifications";
-import StatisticsPage from "./pages/modules/Statistics/StatisticsPage";
 import Neighborhood from "./pages/modules/Neighborhood/Neighborhood";
 import HistoryLogs from "./pages/modules/History/HistoryLogs";
 import Devices from "./pages/modules/Devices/Devices";
@@ -29,7 +28,6 @@ import Alerts from "./pages/modules/Alerts/Alerts";
 import Reports from "./pages/modules/Reports/Reports";
 import Permissions from "./pages/modules/RolesPermissions/Permissions";
 import Live from "./pages/modules/Live/Live";
-import { Templates } from "./pages/modules/Templates/Templates";
 import Collaborators from "./pages/modules/Collaborators/Collaborators"
 
 //import LoginEntity from "./pages/LoginEntity";
@@ -142,9 +140,7 @@ function App() {
         <Route path="/permissions" element={<Permissions />} />
 
         <Route path="/live" element={<Live/>} />
-        <Route path="/templates" element={<Templates/>} />
 
-        <Route path="/statistics" element={<StatisticsPage />} />
 
         {/* Rutas para el módulo de barrios */}
         <Route path="/neighborhood" element={<Neighborhood />} />

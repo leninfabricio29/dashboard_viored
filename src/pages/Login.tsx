@@ -94,7 +94,7 @@ const Login = () => {
 
           <div className="flex items-center justify-center mt-4">
             <img
-              src="https://i.pinimg.com/originals/2c/32/1f/2c321f2bf0f6e8e9d21676cc30a9715f.gif?nii=t"
+              src="https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcSkKH-nNe2E2V3opazOAveWxy6NoPv6ijKKlNnAu0DIRA&s=10"
               alt="Loading"
             />
           </div>

@@ -1,6 +1,7 @@
-import { useState } from "react";
-import { FiClock, FiMapPin, FiPhone, FiUser } from "react-icons/fi";
+import { useState, useEffect } from "react";
+import { FiClock, FiMapPin, FiPhone, FiUser, FiVideo, FiCheckCircle } from "react-icons/fi";
 import { Popup } from "react-map-gl";
+import cameraService, { Camera } from "../../services/camera-service";
 
 type EmergencyMarkerProps = {
   alert: {
@@ -15,16 +16,15 @@ type EmergencyMarkerProps = {
     createdAt?: string;
     status?: string;
   };
-  onAttend: (
-    id: string,
-    alertId: string,
-    userId: string,
-    recipientId: string
-  ) => void;
+  onAttend?: (id: string, alertId?: string, userId?: string, recipientId?: string) => void;
+  onViewCameras?: (alertId: string, userCameras: Camera[]) => void;
 };
 
-export const EmergencyMarker = ({ alert, onAttend }: EmergencyMarkerProps) => {
+export const EmergencyMarker = ({ alert, onAttend, onViewCameras }: EmergencyMarkerProps) => {
   const [showPopup, setShowPopup] = useState(false);
+  const [userCameras, setUserCameras] = useState<Camera[]>([]);
+  const [loadingCameras, setLoadingCameras] = useState(false);
+
   const isActive = alert.status === "active" || alert.status === "pendiente";
   const isClosed = alert.status === "closed" || alert.status === "cerrada" || alert.status === "finalized";
   const isAttended = alert.status === "attended" || alert.status === "en_atencion" || alert.status === "in_progress";
@@ -37,6 +37,17 @@ export const EmergencyMarker = ({ alert, onAttend }: EmergencyMarkerProps) => {
         hour12: false,
       })
     : alert.createdAt || "Hora no registrada";
+
+  useEffect(() => {
+    if (showPopup && alert.emitterId) {
+      setLoadingCameras(true);
+      cameraService
+        .getCamerasByUser(alert.emitterId)
+        .then((cams) => setUserCameras(Array.isArray(cams) ? cams : []))
+        .catch(() => setUserCameras([]))
+        .finally(() => setLoadingCameras(false));
+    }
+  }, [showPopup, alert.emitterId]);
 
   return (
     <>
@@ -136,24 +147,30 @@ export const EmergencyMarker = ({ alert, onAttend }: EmergencyMarkerProps) => {
            </div>
 
             {isClosed ? (
-              <button className="w-full rounded bg-emerald-600 py-2 text-sm font-bold text-white shadow-md transition hover:bg-emerald-700">
-                Ver detalle
-                <i className="fa-solid fa-angle-right ml-2" />
+              <button
+                onClick={() => onViewCameras?.(alert.alertId || alert.id, userCameras)}
+                disabled={userCameras.length === 0}
+                className="w-full rounded bg-emerald-600 py-2 text-sm font-bold text-white shadow-md transition hover:bg-emerald-700 disabled:opacity-50"
+              >
+                Ver cámaras ({loadingCameras ? "..." : userCameras.length})
               </button>
             ) : (
-              <>
+              <div className="flex flex-col gap-2">
                 <button
-                  onClick={() => onAttend(alert.id, alert.alertId, alert.emitterId, alert.emitterId)}
-                  className="w-full rounded bg-red-600 py-2 text-sm font-bold text-white shadow-md transition hover:bg-red-700"
+                  onClick={() => onAttend?.(alert.alertId || alert.id, alert.alertId, alert.emitterId, alert.emitterId)}
+                  className="w-full rounded bg-red-600 py-2 text-xs font-bold text-white shadow-md transition hover:bg-red-700 flex items-center justify-center gap-1.5"
                 >
-                  Atender Emergencia
-                  <i className="fa-solid fa-angle-right ml-2" />
+                  <FiCheckCircle size={15} /> Atender Emergencia
                 </button>
-                <button className="w-full rounded bg-gray-200 py-2 text-sm font-bold text-gray-800 shadow-md transition hover:bg-gray-300">
-                  Ver cámaras
-                  <i className="fa-solid fa-camera ml-2" />
+                <button
+                  onClick={() => onViewCameras?.(alert.alertId || alert.id, userCameras)}
+                  disabled={userCameras.length === 0 || loadingCameras}
+                  className="w-full rounded bg-blue-600 py-2 text-xs font-bold text-white shadow-md transition hover:bg-blue-700 disabled:bg-slate-200 disabled:text-slate-400 disabled:cursor-not-allowed flex items-center justify-center gap-1.5"
+                  title={userCameras.length === 0 ? "El usuario no tiene cámaras asignadas" : "Ver cámaras en vivo"}
+                >
+                  <FiVideo size={15} /> Ver cámaras ({loadingCameras ? "..." : userCameras.length})
                 </button>
-              </>
+              </div>
             )}
           </div>
         </Popup>

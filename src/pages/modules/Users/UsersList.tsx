@@ -1,13 +1,12 @@
-import { useState, useEffect, useMemo } from "react";
+import { useState, useEffect, useMemo, useCallback } from "react";
 import userService from "../../../services/user-service";
 import neighborhoodService, { Neighborhood } from "../../../services/neighborhood-service";
-import trackingService from "../../../services/tracking-service";
+import trackingService, { Vehicle } from "../../../services/tracking-service";
 
 import { User } from "../../../types/user.types";
 import Pagination from "../../../components/layout/Pagination";
 import {
   FiSearch,
-  FiEye,
   FiPhone,
   FiMail,
   FiMapPin,
@@ -19,9 +18,10 @@ import {
   FiCreditCard,
   FiClock,
   FiTruck,
-  FiCheck,
+  FiPlus,
 } from "react-icons/fi";
 import { FaUser } from "react-icons/fa";
+import { CreateEntityModal } from "../../../components/Forms/CreateEntityModal";
 
 /* ---------------------------------------------------------
    Tipos de orden
@@ -94,36 +94,53 @@ const UsersList = () => {
   const [selectedUser, setSelectedUser] = useState<User | null>(null);
   const [neighborhoods, setNeighborhoods] = useState<Neighborhood[]>([]);
   const [detailPanel, setDetailPanel] = useState<DetailPanel>(null);
-  const [selectedNeighborhoodId, setSelectedNeighborhoodId] = useState("");
   const [vehicleForm, setVehicleForm] = useState<VehicleForm>(initialVehicleForm);
-  const [savingNeighborhood, setSavingNeighborhood] = useState(false);
   const [savingVehicle, setSavingVehicle] = useState(false);
+  const [userVehicle, setUserVehicle] = useState<Vehicle | null>(null);
   const [actionMessage, setActionMessage] = useState("");
+  const [isCreateEntityOpen, setIsCreateEntityOpen] = useState(false);
+  const [userTypeFilter, setUserTypeFilter] = useState("user");
 
-  useEffect(() => {
-    const fetchUsers = async () => {
-      try {
-        setLoading(true);
-        const data = await userService.getUsers();
-        const filteredUsers = data.filter((user: User) => user.role?.name === "user");
-        setUsers(filteredUsers);
-      } catch (err) {
-        console.error("Error al cargar usuarios:", err);
-        setError("No se pudieron cargar los datos. Intente nuevamente.");
-      } finally {
-        setLoading(false);
-      }
-    };
-    fetchUsers();
+  const fetchUsers = useCallback(async () => {
+    try {
+      setLoading(true);
+      const data = await userService.getUsers();
+      setUsers(data);
+    } catch (err) {
+      console.error("Error al cargar usuarios:", err);
+      setError("No se pudieron cargar los datos. Intente nuevamente.");
+    } finally {
+      setLoading(false);
+    }
   }, []);
 
   useEffect(() => {
-    if (!selectedUser) return;
+    fetchUsers();
+  }, [fetchUsers]);
+
+  useEffect(() => {
+    if (!selectedUser) {
+      setUserVehicle(null);
+      return;
+    }
 
     setDetailPanel(null);
-    setSelectedNeighborhoodId(selectedUser.neighborhood || "");
     setVehicleForm(initialVehicleForm);
     setActionMessage("");
+
+    const fetchUserVehicle = async () => {
+      try {
+        const vehicles = await trackingService.getVehicles();
+        const found = vehicles.find((v) => {
+          const vUserId = typeof v.user === "object" && v.user !== null ? v.user._id : v.user;
+          return vUserId === selectedUser._id;
+        });
+        setUserVehicle(found || null);
+      } catch (err) {
+        console.error("Error al cargar vehículo del usuario:", err);
+      }
+    };
+    fetchUserVehicle();
 
     const fetchNeighborhoods = async () => {
       try {
@@ -137,25 +154,7 @@ const UsersList = () => {
     fetchNeighborhoods();
   }, [selectedUser?._id]);
 
-  const handleAssignNeighborhood = async () => {
-    if (!selectedUser || !selectedNeighborhoodId) return;
-    try {
-      setSavingNeighborhood(true);
-      setActionMessage("");
-      await neighborhoodService.addUserToNeighborhood(selectedNeighborhoodId, selectedUser._id);
-      const neighborhood = neighborhoods.find((item) => item._id === selectedNeighborhoodId);
-      console.log(neighborhood)
-      const updatedUser = { ...selectedUser, neighborhood: selectedNeighborhoodId };
-      setSelectedUser(updatedUser);
-      setUsers((current) => current.map((user) => user._id === updatedUser._id ? updatedUser : user));
-      setActionMessage("Barrio asignado correctamente.");
-    } catch (err) {
-      console.error("Error al asignar barrio:", err);
-      setActionMessage("No se pudo asignar el barrio.");
-    } finally {
-      setSavingNeighborhood(false);
-    }
-  };
+
 
   const handleCreateVehicle = async (event: React.FormEvent<HTMLFormElement>) => {
     event.preventDefault();
@@ -163,7 +162,7 @@ const UsersList = () => {
     try {
       setSavingVehicle(true);
       setActionMessage("");
-      await trackingService.createVehicle({
+      const createdVehicle = await trackingService.createVehicle({
         userId: selectedUser._id,
         plate: vehicleForm.plate,
         alias: vehicleForm.alias || undefined,
@@ -173,7 +172,8 @@ const UsersList = () => {
         color: vehicleForm.color || undefined,
       });
       setVehicleForm(initialVehicleForm);
-      setActionMessage("Vehículo creado correctamente.");
+      setUserVehicle(createdVehicle);
+      setActionMessage("Vehículo creado correctamente con su dispositivo GPS asignado.");
     } catch (err) {
       console.error("Error al crear vehículo:", err);
       setActionMessage("No se pudo crear el vehículo. Verifica los datos e inténtalo otra vez.");
@@ -201,18 +201,45 @@ const UsersList = () => {
         user.phone?.includes(searchTerm) ||
         user.ci?.includes(searchTerm);
 
+      const isEntity = user.role?.name === "entity" || user.kind === "Entity" || Boolean(user.type);
+      const matchesUserType =
+        userTypeFilter === "all" ||
+        (userTypeFilter === "entity" && isEntity) ||
+        (userTypeFilter === "user" && !isEntity);
+
+      const sub = (user.type_suscription || user.suscription || "").toLowerCase();
       const matchesSubscription =
         subscriptionType === "all" ||
-        user.type_suscription?.toLowerCase() === subscriptionType;
+        (subscriptionType === "viored" && sub.includes("viored")) ||
+        (subscriptionType === "other" && !sub.includes("viored"));
 
       const matchesStatus =
         statusFilter === "all" ||
         (statusFilter === "active" && user.isActive) ||
         (statusFilter === "inactive" && !user.isActive);
 
-      return matchesSearch && matchesSubscription && matchesStatus;
+      return matchesSearch && matchesSubscription && matchesStatus && matchesUserType;
     });
-  }, [searchTerm, subscriptionType, statusFilter, users]);
+  }, [searchTerm, subscriptionType, statusFilter, userTypeFilter, users]);
+
+  /* ------------------- Conteo para Tabs ------------------- */
+  const userCounts = useMemo(() => {
+    let userCount = 0;
+    let entityCount = 0;
+    users.forEach((u) => {
+      const isEntity = u.role?.name === "entity" || u.kind === "Entity" || Boolean(u.type);
+      if (isEntity) {
+        entityCount++;
+      } else {
+        userCount++;
+      }
+    });
+    return {
+      all: users.length,
+      user: userCount,
+      entity: entityCount,
+    };
+  }, [users]);
 
   /* ------------------- Orden ------------------- */
   const sortedUsers = useMemo(() => {
@@ -255,7 +282,7 @@ const UsersList = () => {
   // Reset de página cuando cambian filtros/búsqueda
   useEffect(() => {
     setCurrentPage(1);
-  }, [searchTerm, subscriptionType, statusFilter]);
+  }, [searchTerm, subscriptionType, statusFilter, userTypeFilter]);
 
   /* ------------------- Paginación ------------------- */
   const indexOfLastUser = currentPage * usersPerPage;
@@ -290,16 +317,70 @@ const UsersList = () => {
     <div className="container mx-auto px-4 py-8 max-w-7xl">
       
 
-      <div className="flex justify-between items-center mb-8 mt-4">
+      <div className="flex justify-between items-center mb-6 mt-4">
         <div>
-          <h1 className="text-3xl font-bold text-slate-800 mb-1">Usuarios del Sistema</h1>
+          <h1 className="text-3xl font-bold text-slate-800 mb-1">Usuarios y Entidades</h1>
           <div className="flex items-center text-slate-500">
             <FaUser className="mr-2" />
             <span className="text-sm">
-              Aquí puedes ver todos los usuarios registrados en el sistema.
+              Administra los usuarios y entidades registrados en el sistema.
             </span>
           </div>
         </div>
+        <button
+          onClick={() => setIsCreateEntityOpen(true)}
+          className="inline-flex items-center gap-2 px-4 py-2.5 bg-blue-600 hover:bg-blue-700 text-white font-medium text-sm rounded-xl shadow-sm hover:shadow transition-all duration-200 cursor-pointer"
+        >
+          <FiPlus className="w-5 h-5" />
+          Nueva Entidad
+        </button>
+      </div>
+
+      {/* Navegación por Tabs */}
+      <div className="border-b border-slate-200 mb-6">
+        <nav className="-mb-px flex space-x-6">
+          <button
+            onClick={() => setUserTypeFilter("user")}
+            className={`py-3 px-1 inline-flex items-center gap-2 border-b-2 font-medium text-sm transition-colors cursor-pointer ${
+              userTypeFilter === "user"
+                ? "border-blue-600 text-blue-600 font-semibold"
+                : "border-transparent text-slate-500 hover:text-slate-700 hover:border-slate-300"
+            }`}
+          >
+            <FaUser className="w-3.5 h-3.5" />
+            Usuarios
+            <span
+              className={`py-0.5 px-2.5 rounded-full text-xs font-medium ${
+                userTypeFilter === "user"
+                  ? "bg-blue-100 text-blue-800"
+                  : "bg-slate-100 text-slate-600"
+              }`}
+            >
+              {userCounts.user}
+            </span>
+          </button>
+
+          <button
+            onClick={() => setUserTypeFilter("entity")}
+            className={`py-3 px-1 inline-flex items-center gap-2 border-b-2 font-medium text-sm transition-colors cursor-pointer ${
+              userTypeFilter === "entity"
+                ? "border-purple-600 text-purple-600 font-semibold"
+                : "border-transparent text-slate-500 hover:text-slate-700 hover:border-slate-300"
+            }`}
+          >
+            <FiShield className="w-3.5 h-3.5" />
+            Entidades
+            <span
+              className={`py-0.5 px-2.5 rounded-full text-xs font-medium ${
+                userTypeFilter === "entity"
+                  ? "bg-purple-100 text-purple-800"
+                  : "bg-slate-100 text-slate-600"
+              }`}
+            >
+              {userCounts.entity}
+            </span>
+          </button>
+        </nav>
       </div>
 
       {/* Filtros */}
@@ -375,7 +456,10 @@ const UsersList = () => {
               <table className="min-w-full divide-y divide-slate-200">
                 <thead className="bg-slate-50">
                   <tr>
-                    <SortableHeader label="Usuario" column="name" />
+                    <SortableHeader label="Nombre" column="name" />
+                    <th className="px-4 py-3 text-left text-xs font-semibold text-slate-500 uppercase tracking-wider">
+                      Tipo
+                    </th>
                     <SortableHeader label="Correo" column="email" />
                     <th className="px-4 py-3 text-left text-xs font-semibold text-slate-500 uppercase tracking-wider">
                       Teléfono
@@ -388,9 +472,7 @@ const UsersList = () => {
                     <th className="px-4 py-3 text-left text-xs font-semibold text-slate-500 uppercase tracking-wider">
                       Estado
                     </th>
-                    <th className="px-4 py-3 text-right text-xs font-semibold text-slate-500 uppercase tracking-wider">
-                      Acciones
-                    </th>
+                    
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-slate-100">
@@ -424,6 +506,19 @@ const UsersList = () => {
                             </div>
                           </div>
                         </td>
+                        <td className="px-4 py-3 whitespace-nowrap">
+                          {user.role?.name === "entity" || user.kind === "Entity" || user.type ? (
+                            <span className="inline-flex items-center gap-1 px-2.5 py-1 text-xs font-semibold rounded-full bg-purple-100 text-purple-800 border border-purple-200">
+                              <FiShield className="w-3.5 h-3.5 text-purple-600" />
+                              Entidad{user.type ? ` (${user.type})` : ""}
+                            </span>
+                          ) : (
+                            <span className="inline-flex items-center gap-1 px-2.5 py-1 text-xs font-semibold rounded-full bg-slate-100 text-slate-700 border border-slate-200">
+                              <FaUser className="w-2.5 h-2.5 text-slate-500" />
+                              Usuario
+                            </span>
+                          )}
+                        </td>
                         <td className="px-4 py-3 text-sm text-slate-600 truncate max-w-[200px]">
                           {user.email}
                         </td>
@@ -432,7 +527,7 @@ const UsersList = () => {
                         </td>
                         <td className="px-4 py-3">
                           <span className="px-2.5 py-1 text-xs font-medium rounded-full bg-blue-50 text-blue-700 capitalize">
-                            {user.type_suscription || "Sin definir"}
+                            {user.type_suscription || " Free"}
                           </span>
                         </td>
                         <td className="px-4 py-3 text-sm text-slate-500 whitespace-nowrap">
@@ -452,23 +547,12 @@ const UsersList = () => {
                             {user.isActive ? "Activo" : "Inactivo"}
                           </span>
                         </td>
-                        <td className="px-4 py-3 text-right">
-                          <button
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              setSelectedUser(user);
-                            }}
-                            className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-blue-600 text-white text-xs font-medium rounded-lg shadow-sm hover:bg-blue-700 transition-colors"
-                          >
-                            <FiEye className="w-3.5 h-3.5" />
-                            Ver
-                          </button>
-                        </td>
+                        
                       </tr>
                     ))
                   ) : (
                     <tr>
-                      <td colSpan={8} className="py-12 text-center">
+                      <td colSpan={9} className="py-12 text-center">
                         <svg
                           className="mx-auto h-12 w-12 text-slate-400"
                           fill="none"
@@ -594,50 +678,100 @@ const UsersList = () => {
 
               {actionMessage && <p className="mt-4 rounded-lg bg-slate-50 px-3 py-2 text-sm text-slate-600">{actionMessage}</p>}
 
-              <div className="mt-5 grid gap-3 md:grid-cols-2">
-                <section className="rounded-xl border border-slate-200">
-                  <button type="button" onClick={() => setDetailPanel((panel) => panel === "neighborhood" ? null : "neighborhood")} className="flex w-full items-center justify-between px-4 py-3 text-left" aria-expanded={detailPanel === "neighborhood"}>
-                    <span className="flex items-center gap-2 text-sm font-semibold text-slate-700"><FiMapPin className="text-blue-600" /> Asignar barrio</span>
-                    {detailPanel === "neighborhood" ? <FiChevronUp /> : <FiChevronDown />}
-                  </button>
-                  {detailPanel === "neighborhood" && (
-                    <div className="border-t border-slate-100 p-4">
-                      <label className="mb-2 block text-xs font-medium text-slate-500">Barrio</label>
-                      <select value={selectedNeighborhoodId} onChange={(event) => setSelectedNeighborhoodId(event.target.value)} className="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm text-slate-700 focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-100">
-                        <option value="">Selecciona un barrio</option>
-                        {neighborhoods.map((neighborhood) => <option key={neighborhood._id} value={neighborhood._id}>{neighborhood.name}</option>)}
-                      </select>
-                      <button type="button" disabled={!selectedNeighborhoodId || savingNeighborhood} onClick={handleAssignNeighborhood} className="mt-3 inline-flex w-full items-center justify-center gap-2 rounded-lg bg-blue-600 px-3 py-2 text-sm font-medium text-white hover:bg-blue-700 disabled:cursor-not-allowed disabled:opacity-50"><FiCheck /> {savingNeighborhood ? "Asignando..." : "Asignar barrio"}</button>
-                    </div>
-                  )}
-                </section>
+              {!(selectedUser.role?.name === "entity" || selectedUser.kind === "Entity" || Boolean(selectedUser.type)) && (
+                <div className="mt-5 grid gap-3 md:grid-cols-2">
+                 
 
-                <section className="rounded-xl border border-slate-200">
-                  <button type="button" onClick={() => setDetailPanel((panel) => panel === "vehicle" ? null : "vehicle")} className="flex w-full items-center justify-between px-4 py-3 text-left" aria-expanded={detailPanel === "vehicle"}>
-                    <span className="flex items-center gap-2 text-sm font-semibold text-slate-700"><FiTruck className="text-blue-600" /> Crear vehículo</span>
-                    {detailPanel === "vehicle" ? <FiChevronUp /> : <FiChevronDown />}
-                  </button>
-                  {detailPanel === "vehicle" && (
-                    <form onSubmit={handleCreateVehicle} className="grid gap-3 border-t border-slate-100 p-4">
-                      <input required value={vehicleForm.plate} onChange={(event) => setVehicleForm((form) => ({ ...form, plate: event.target.value }))} placeholder="Placa *" className="rounded-lg border border-slate-300 px-3 py-2 text-sm" />
-                      <input value={vehicleForm.alias} onChange={(event) => setVehicleForm((form) => ({ ...form, alias: event.target.value }))} placeholder="Alias" className="rounded-lg border border-slate-300 px-3 py-2 text-sm" />
-                      <div className="grid grid-cols-2 gap-3">
-                        <input value={vehicleForm.brand} onChange={(event) => setVehicleForm((form) => ({ ...form, brand: event.target.value }))} placeholder="Marca" className="min-w-0 rounded-lg border border-slate-300 px-3 py-2 text-sm" />
-                        <input value={vehicleForm.model} onChange={(event) => setVehicleForm((form) => ({ ...form, model: event.target.value }))} placeholder="Modelo" className="min-w-0 rounded-lg border border-slate-300 px-3 py-2 text-sm" />
+                  <section className="rounded-xl border border-slate-200 bg-white overflow-hidden shadow-sm">
+                    {userVehicle ? (
+                      <div className="p-4 space-y-3">
+                        <div className="flex items-center justify-between border-b border-slate-100 pb-2">
+                          <div className="flex items-center gap-2 text-sm font-semibold text-slate-800">
+                            <FiTruck className="text-blue-600 h-5 w-5" />
+                            <span>Vehículo Asignado</span>
+                          </div>
+                          <span className={`px-2.5 py-0.5 text-xs font-semibold rounded-full ${userVehicle.active ? "bg-emerald-100 text-emerald-700" : "bg-slate-100 text-slate-600"}`}>
+                            {userVehicle.active ? "Activo" : "Inactivo"}
+                          </span>
+                        </div>
+
+                        <div className="grid grid-cols-2 gap-3 text-xs">
+                          <div>
+                            <span className="text-slate-400 font-medium">Placa:</span>
+                            <p className="font-bold text-slate-800 text-sm">{userVehicle.plate}</p>
+                          </div>
+                          <div>
+                            <span className="text-slate-400 font-medium">Alias:</span>
+                            <p className="font-medium text-slate-700">{userVehicle.alias || "—"}</p>
+                          </div>
+                          <div>
+                            <span className="text-slate-400 font-medium">Marca / Modelo:</span>
+                            <p className="font-medium text-slate-700">{userVehicle.brand || "—"} {userVehicle.model || ""}</p>
+                          </div>
+                          <div>
+                            <span className="text-slate-400 font-medium">Año / Color:</span>
+                            <p className="font-medium text-slate-700">{userVehicle.year || "—"} {userVehicle.color ? `(${userVehicle.color})` : ""}</p>
+                          </div>
+                        </div>
+
+                        {/* Datos del GPS vinculado */}
+                        <div className="mt-2 pt-2.5 border-t border-slate-100 bg-blue-50/60 rounded-lg p-2.5">
+                          <div className="flex items-center gap-1.5 text-xs font-semibold text-blue-900 mb-1">
+                            <FiShield className="text-blue-600 h-3.5 w-3.5" /> Dispositivo GPS Vinculado
+                          </div>
+                          {userVehicle.gpsDevice ? (
+                            <div className="grid grid-cols-2 gap-2 text-[11px]">
+                              <div>
+                                <span className="text-slate-500">IMEI:</span>
+                                <p className="font-mono font-semibold text-slate-800">{userVehicle.gpsDevice.imei}</p>
+                              </div>
+                              <div>
+                                <span className="text-slate-500">Modelo:</span>
+                                <p className="font-medium text-slate-800">{userVehicle.gpsDevice.model || "Auto-GPS"}</p>
+                              </div>
+                            </div>
+                          ) : (
+                            <p className="text-[11px] text-amber-600 font-medium">Sin dispositivo GPS registrado</p>
+                          )}
+                        </div>
                       </div>
-                      <div className="grid grid-cols-2 gap-3">
-                        <input type="number" min="1900" max="2100" value={vehicleForm.year} onChange={(event) => setVehicleForm((form) => ({ ...form, year: event.target.value }))} placeholder="Año" className="min-w-0 rounded-lg border border-slate-300 px-3 py-2 text-sm" />
-                        <input value={vehicleForm.color} onChange={(event) => setVehicleForm((form) => ({ ...form, color: event.target.value }))} placeholder="Color" className="min-w-0 rounded-lg border border-slate-300 px-3 py-2 text-sm" />
-                      </div>
-                      <button disabled={savingVehicle} className="inline-flex items-center justify-center gap-2 rounded-lg bg-blue-600 px-3 py-2 text-sm font-medium text-white hover:bg-blue-700 disabled:cursor-not-allowed disabled:opacity-50"><FiTruck /> {savingVehicle ? "Creando..." : "Crear vehículo"}</button>
-                    </form>
-                  )}
-                </section>
-              </div>
+                    ) : (
+                      <>
+                        <button type="button" onClick={() => setDetailPanel((panel) => panel === "vehicle" ? null : "vehicle")} className="flex w-full items-center justify-between px-4 py-3 text-left hover:bg-slate-50 transition-colors" aria-expanded={detailPanel === "vehicle"}>
+                          <span className="flex items-center gap-2 text-sm font-semibold text-slate-700"><FiTruck className="text-blue-600" /> Crear vehículo</span>
+                          {detailPanel === "vehicle" ? <FiChevronUp /> : <FiChevronDown />}
+                        </button>
+                        {detailPanel === "vehicle" && (
+                          <form onSubmit={handleCreateVehicle} className="grid gap-3 border-t border-slate-100 p-4">
+                            <input required value={vehicleForm.plate} onChange={(event) => setVehicleForm((form) => ({ ...form, plate: event.target.value }))} placeholder="Placa *" className="rounded-lg border border-slate-300 px-3 py-2 text-sm" />
+                            <input value={vehicleForm.alias} onChange={(event) => setVehicleForm((form) => ({ ...form, alias: event.target.value }))} placeholder="Alias" className="rounded-lg border border-slate-300 px-3 py-2 text-sm" />
+                            <div className="grid grid-cols-2 gap-3">
+                              <input value={vehicleForm.brand} onChange={(event) => setVehicleForm((form) => ({ ...form, brand: event.target.value }))} placeholder="Marca" className="min-w-0 rounded-lg border border-slate-300 px-3 py-2 text-sm" />
+                              <input value={vehicleForm.model} onChange={(event) => setVehicleForm((form) => ({ ...form, model: event.target.value }))} placeholder="Modelo" className="min-w-0 rounded-lg border border-slate-300 px-3 py-2 text-sm" />
+                            </div>
+                            <div className="grid grid-cols-2 gap-3">
+                              <input type="number" min="1900" max="2100" value={vehicleForm.year} onChange={(event) => setVehicleForm((form) => ({ ...form, year: event.target.value }))} placeholder="Año" className="min-w-0 rounded-lg border border-slate-300 px-3 py-2 text-sm" />
+                              <input value={vehicleForm.color} onChange={(event) => setVehicleForm((form) => ({ ...form, color: event.target.value }))} placeholder="Color" className="min-w-0 rounded-lg border border-slate-300 px-3 py-2 text-sm" />
+                            </div>
+                            <button disabled={savingVehicle} className="inline-flex items-center justify-center gap-2 rounded-lg bg-blue-600 px-3 py-2 text-sm font-medium text-white hover:bg-blue-700 disabled:cursor-not-allowed disabled:opacity-50"><FiTruck /> {savingVehicle ? "Creando vehículo" : "Crear vehículo"}</button>
+                          </form>
+                        )}
+                      </>
+                    )}
+                  </section>
+                </div>
+              )}
             </div>
           </div>
         </div>
       )}
+
+      {/* Modal de creación de entidades */}
+      <CreateEntityModal
+        isOpen={isCreateEntityOpen}
+        onClose={() => setIsCreateEntityOpen(false)}
+        onCreated={fetchUsers}
+      />
     </div>
   );
 };

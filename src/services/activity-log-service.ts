@@ -7,11 +7,17 @@ export interface User {
 }
 
 export const getActivityLogs = async () => {
-  try{
-    const response = await api.get('/api/auditories/logs');
+  try {
+    const token = localStorage.getItem('token');
+
+    const response = await api.get('/api/auditories/logs', {
+      headers: {
+        Authorization: `Bearer ${token}`,
+      },
+    });
+
     return response.data;
-  }
-  catch(error){
+  } catch (error) {
     console.error('Error al obtener los logs de actividad:', error);
     throw error;
   }

@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useState, useRef } from "react";
 import {
   FiVideoOff,
   FiMaximize2,
@@ -6,37 +6,297 @@ import {
   FiChevronLeft,
   FiChevronRight,
   FiMapPin,
-  FiDownload,
   FiRotateCw,
-  FiWifi,
   FiWifiOff,
   FiGrid,
   FiMap,
   FiPlus,
   FiUsers,
+  FiTv,
+  FiCopy,
+  FiCheck,
+  FiTrash2,
+  FiLayers,
+  FiVolume2,
+  FiVolumeX,
+  FiMaximize,
+  FiAlertCircle,
 } from "react-icons/fi";
 import Map, { Marker, NavigationControl, Popup, type MapLayerMouseEvent } from "react-map-gl";
 import "mapbox-gl/dist/mapbox-gl.css";
-import cameraService from "../../../services/camera-service";
+import Hls from "hls.js";
+import cameraService, { DiscoverDevice, OpenCameraResponse } from "../../../services/camera-service";
+import userService from "../../../services/user-service";
+import { User } from "../../../types/user.types";
 
 /* ------------------------------------------------------------------ */
-/*  Tipos                                                              */
+/*  Componente de Reproductor HLS Optimizado con Hls.js               */
 /* ------------------------------------------------------------------ */
+
+export function LiveStreamPlayer({
+  hlsUrl,
+  channelName,
+  isChangingChannel,
+}: {
+  hlsUrl?: string;
+  webrtcUrl?: string;
+  channelName: string;
+  isChangingChannel?: boolean;
+}) {
+  const videoRef = useRef<HTMLVideoElement | null>(null);
+  const [isPlaying, setIsPlaying] = useState(false);
+  const [isBuffering, setIsBuffering] = useState(true);
+  const [isMuted, setIsMuted] = useState(true);
+  const [streamError, setStreamError] = useState<string | null>(null);
+  const hlsInstanceRef = useRef<Hls | null>(null);
+
+  useEffect(() => {
+    const video = videoRef.current;
+    if (!video || !hlsUrl) return;
+
+    setIsBuffering(true);
+    setStreamError(null);
+    setIsPlaying(false);
+
+    // Destruir instancia previa de Hls.js inmediatamente
+    if (hlsInstanceRef.current) {
+      hlsInstanceRef.current.destroy();
+      hlsInstanceRef.current = null;
+    }
+
+    let hls: Hls | null = null;
+
+    if (Hls.isSupported()) {
+      hls = new Hls({
+        enableWorker: true,
+        lowLatencyMode: true,
+        backBufferLength: 10,
+        maxBufferLength: 15,
+        maxMaxBufferLength: 30,
+        maxBufferHole: 0.5,
+        highBufferWatchdogPeriod: 2,
+        manifestLoadingTimeOut: 10000,
+        manifestLoadingMaxRetry: 4,
+        levelLoadingTimeOut: 10000,
+        fragLoadingTimeOut: 15000,
+      });
+
+      hlsInstanceRef.current = hls;
+
+      hls.loadSource(hlsUrl);
+      hls.attachMedia(video);
+
+      hls.on(Hls.Events.MANIFEST_PARSED, () => {
+        setIsBuffering(false);
+        video.muted = true;
+        setIsMuted(true);
+        video
+          .play()
+          .then(() => setIsPlaying(true))
+          .catch((err) => {
+            console.warn("Autoplay bloqueado:", err);
+            setIsPlaying(false);
+          });
+      });
+
+      hls.on(Hls.Events.FRAG_BUFFERED, () => {
+        setIsBuffering(false);
+      });
+
+      hls.on(Hls.Events.ERROR, (_event, data) => {
+        if (data.fatal) {
+          switch (data.type) {
+            case Hls.ErrorTypes.NETWORK_ERROR:
+              console.warn("HLS fatal network error, reintentando carga...");
+              hls?.startLoad();
+              break;
+            case Hls.ErrorTypes.MEDIA_ERROR:
+              console.warn("HLS fatal media error, recuperando...");
+              hls?.recoverMediaError();
+              break;
+            default:
+              console.error("HLS fatal error:", data);
+              setStreamError("Error al procesar la señal de video.");
+              hls?.destroy();
+              break;
+          }
+        }
+      });
+    } else if (video.canPlayType("application/vnd.apple.mpegurl")) {
+      // Safari / iOS nativo HLS
+      video.src = hlsUrl;
+      video.muted = true;
+      setIsMuted(true);
+
+      const handleLoadedMetadata = () => {
+        setIsBuffering(false);
+        video
+          .play()
+          .then(() => setIsPlaying(true))
+          .catch(() => setIsPlaying(false));
+      };
+
+      const handleError = () => {
+        setStreamError("No se pudo cargar la señal HLS nativa.");
+        setIsBuffering(false);
+      };
+
+      video.addEventListener("loadedmetadata", handleLoadedMetadata);
+      video.addEventListener("error", handleError);
+
+      return () => {
+        video.removeEventListener("loadedmetadata", handleLoadedMetadata);
+        video.removeEventListener("error", handleError);
+      };
+    } else {
+      setStreamError("Tu navegador no soporta reproducción HLS.");
+      setIsBuffering(false);
+    }
+
+    return () => {
+      if (hlsInstanceRef.current) {
+        hlsInstanceRef.current.destroy();
+        hlsInstanceRef.current = null;
+      }
+    };
+  }, [hlsUrl]);
+
+  function toggleMute() {
+    if (videoRef.current) {
+      const nextMuted = !videoRef.current.muted;
+      videoRef.current.muted = nextMuted;
+      setIsMuted(nextMuted);
+    }
+  }
+
+  function toggleFullscreen() {
+    if (videoRef.current) {
+      if (document.fullscreenElement) {
+        document.exitFullscreen().catch(console.error);
+      } else {
+        videoRef.current.requestFullscreen().catch(console.error);
+      }
+    }
+  }
+
+  function handleManualPlay() {
+    if (videoRef.current) {
+      videoRef.current
+        .play()
+        .then(() => setIsPlaying(true))
+        .catch(console.error);
+    }
+  }
+
+  return (
+    <div className="relative flex-1 w-full flex items-center justify-center bg-slate-950 rounded-2xl overflow-hidden border border-slate-800 shadow-2xl group">
+      <video
+        ref={videoRef}
+        playsInline
+        className="h-full w-full object-contain"
+        onWaiting={() => setIsBuffering(true)}
+        onPlaying={() => {
+          setIsBuffering(false);
+          setIsPlaying(true);
+        }}
+      />
+
+      {/* Overlay de Carga / Buffering / Cambio de Canal */}
+      {(isBuffering || isChangingChannel) && !streamError && (
+        <div className="absolute inset-0 bg-slate-950/75 backdrop-blur-sm flex flex-col items-center justify-center gap-3 text-white transition-opacity duration-300 z-10">
+          <div className="relative flex items-center justify-center">
+            <div className="h-12 w-12 rounded-full border-4 border-blue-500/20 border-t-blue-500 animate-spin" />
+            <FiTv className="absolute text-blue-400" size={18} />
+          </div>
+          <div className="text-center">
+            <p className="text-xs font-semibold uppercase tracking-wider text-slate-300">
+              {isChangingChannel ? "Cambiando de canal..." : "Conectando señal en vivo..."}
+            </p>
+            <p className="text-[11px] text-slate-400 mt-0.5">{channelName}</p>
+          </div>
+        </div>
+      )}
+
+      {/* Overlay de Error */}
+      {streamError && (
+        <div className="absolute inset-0 bg-slate-950/90 flex flex-col items-center justify-center gap-3 text-red-400 p-6 text-center z-10">
+          <FiAlertCircle size={36} className="text-red-500" />
+          <div>
+            <p className="text-sm font-semibold">{streamError}</p>
+            <p className="text-xs text-slate-400 mt-1">
+              La transmisión puede estar cargando o inactiva temporalmente.
+            </p>
+          </div>
+          <button
+            onClick={() => {
+              setStreamError(null);
+              setIsBuffering(true);
+              if (hlsInstanceRef.current && hlsUrl) {
+                hlsInstanceRef.current.loadSource(hlsUrl);
+              }
+            }}
+            className="mt-2 flex items-center gap-2 rounded-lg bg-blue-600 px-4 py-2 text-xs font-medium text-white hover:bg-blue-700 transition-colors"
+          >
+            <FiRotateCw /> Reintentar señal
+          </button>
+        </div>
+      )}
+
+      {/* Etiqueta de Canal */}
+      <div className="absolute top-4 left-4 bg-slate-900/85 backdrop-blur-md border border-white/10 px-3 py-1.5 rounded-lg text-xs font-medium text-white flex items-center gap-2 z-10 shadow-lg">
+        <span className="h-2 w-2 rounded-full bg-emerald-500 animate-pulse" />
+        <FiTv className="text-emerald-400" size={14} />
+        <span className="truncate max-w-[240px]">{channelName}</span>
+      </div>
+
+      {/* Play Button si está pausado */}
+      {!isPlaying && !isBuffering && !streamError && (
+        <div className="absolute inset-0 bg-black/40 flex items-center justify-center z-10">
+          <button
+            onClick={handleManualPlay}
+            className="flex items-center gap-2 rounded-xl bg-blue-600 px-5 py-2.5 text-xs font-semibold text-white shadow-xl hover:bg-blue-500 transition-colors"
+          >
+            Reproducir Señal
+          </button>
+        </div>
+      )}
+
+      {/* Botones de Control Flotante */}
+      <div className="absolute bottom-4 right-4 flex items-center gap-2 opacity-0 group-hover:opacity-100 transition-opacity duration-200 z-10">
+        <button
+          onClick={toggleMute}
+          className="flex h-9 w-9 items-center justify-center rounded-lg bg-slate-900/85 text-white backdrop-blur border border-white/10 hover:bg-slate-800 transition-colors"
+          title={isMuted ? "Activar sonido" : "Silenciar"}
+        >
+          {isMuted ? <FiVolumeX size={16} className="text-amber-400" /> : <FiVolume2 size={16} />}
+        </button>
+        <button
+          onClick={toggleFullscreen}
+          className="flex h-9 w-9 items-center justify-center rounded-lg bg-slate-900/85 text-white backdrop-blur border border-white/10 hover:bg-slate-800 transition-colors"
+          title="Pantalla completa"
+        >
+          <FiMaximize size={16} />
+        </button>
+      </div>
+    </div>
+  );
+}
 
 type CameraTab = "records" | "map";
 
 interface CameraRecord {
   _id: string;
   name: string;
+  cameraId?: string;
   description: string;
   location: {
     type: "Point";
     coordinates: [number, number];
     address?: string;
   };
-  streamUrl: string;
+  streamUrl?: string;
   status: string;
-  assignedUsers?: AssignedUser[];
+  assignedUsers?: any[];
   createdAt?: string;
   updatedAt?: string;
 }
@@ -51,10 +311,6 @@ const PAGE_SIZE = 8;
 const DEFAULT_CENTER = { lat: -3.6800673994997517, lng: -79.68074791747131 };
 const MAPBOX_TOKEN = import.meta.env.VITE_MAPBOX_TOKEN as string | undefined;
 
-/* ------------------------------------------------------------------ */
-/*  Componente principal                                               */
-/* ------------------------------------------------------------------ */
-
 export default function Cameras() {
   const [cameras, setCameras] = useState<CameraRecord[]>([]);
   const [loading, setLoading] = useState(true);
@@ -67,33 +323,22 @@ export default function Cameras() {
 
   const [usersCamera, setUsersCamera] = useState<CameraRecord | null>(null);
 
+  const loadCameras = async () => {
+    try {
+      setLoading(true);
+      setError(null);
+      const data = await cameraService.getCameras();
+      setCameras(Array.isArray(data) ? data : []);
+    } catch (err) {
+      setError("No se pudieron cargar las cámaras desde la API.");
+      console.error(err);
+    } finally {
+      setLoading(false);
+    }
+  };
+
   useEffect(() => {
-    let mounted = true;
-
-    const loadCameras = async () => {
-      try {
-        setLoading(true);
-        setError(null);
-        const data = await cameraService.getCameras();
-        if (mounted) {
-          setCameras(Array.isArray(data) ? data : [] as any);
-        }
-      } catch (err) {
-        if (mounted) {
-          setError("No se pudieron cargar las cámaras desde la API.");
-          console.error(err);
-        }
-      } finally {
-        if (mounted) {
-          setLoading(false);
-        }
-      }
-    };
-
     void loadCameras();
-    return () => {
-      mounted = false;
-    };
   }, []);
 
   useEffect(() => {
@@ -116,7 +361,8 @@ export default function Cameras() {
 
   async function handleCreateCamera(payload: {
     description: string;
-    streamUrl: string;
+    cameraId?: string;
+    streamUrl?: string;
     location: {
       type: "Point";
       coordinates: [number, number];
@@ -125,11 +371,18 @@ export default function Cameras() {
   }) {
     try {
       const created = await cameraService.createCamera(payload);
-      setCameras((prev) => [created, ...prev] as any);
+      setCameras((prev) => [created, ...prev]);
       setIsCreateModalOpen(false);
     } catch (err) {
       console.error(err);
       throw err;
+    }
+  }
+
+  function handleCameraUpdated(updatedCamera: CameraRecord) {
+    setCameras((prev) => prev.map((c) => (c._id === updatedCamera._id ? updatedCamera : c)));
+    if (usersCamera?._id === updatedCamera._id) {
+      setUsersCamera(updatedCamera);
     }
   }
 
@@ -206,10 +459,10 @@ export default function Cameras() {
               <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
                 {pageCameras.map((cam) => (
                   <CameraTile
-                    key={cam._id} camera={cam}
+                    key={cam._id}
+                    camera={cam}
                     onExpand={() => setExpandedId(cam._id)}
                     onShowUsers={() => setUsersCamera(cam)}
-
                   />
                 ))}
               </div>
@@ -258,7 +511,13 @@ export default function Cameras() {
       )}
 
       {expandedCamera && <ExpandedView camera={expandedCamera} onClose={() => setExpandedId(null)} />}
-      {usersCamera && <CameraUsersModal camera={usersCamera} onClose={() => setUsersCamera(null)} />}
+      {usersCamera && (
+        <CameraUsersModal
+          camera={usersCamera}
+          onClose={() => setUsersCamera(null)}
+          onCameraUpdated={handleCameraUpdated}
+        />
+      )}
 
       {isCreateModalOpen && (
         <CreateCameraModal
@@ -274,20 +533,31 @@ export default function Cameras() {
 /*  Tile individual                                                     */
 /* ------------------------------------------------------------------ */
 
-function CameraTile({ camera, onExpand, onShowUsers }: { camera: CameraRecord; onExpand: () => void; onShowUsers: () => void }) {
+function CameraTile({
+  camera,
+  onExpand,
+  onShowUsers,
+}: {
+  camera: CameraRecord;
+  onExpand: () => void;
+  onShowUsers: () => void;
+}) {
   const isLive = camera.status === "online" || camera.status === "live";
-  const address = camera.location.address || "Sin dirección registrada";
+  const address = camera.location?.address || "Sin dirección registrada";
+  const assignedCount = (camera.assignedUsers || []).length;
 
   return (
     <button
       onClick={onExpand}
-      className="group relative overflow-hidden rounded-xl border border-slate-200 bg-slate-50 text-left focus:outline-none focus:ring-2 focus:ring-blue-500/50"
+      className="group relative overflow-hidden rounded-xl border border-slate-200 bg-slate-50 text-left transition-all hover:shadow-md focus:outline-none focus:ring-2 focus:ring-blue-500/50"
     >
       <div className="aspect-video w-full overflow-hidden bg-slate-100">
         {isLive ? (
           <div className="flex h-full w-full items-center justify-center bg-gradient-to-br from-slate-900 via-blue-950 to-slate-800 p-4 text-center text-white">
             <div className="rounded-xl border border-white/10 bg-white/10 px-4 py-3 backdrop-blur">
-              <p className="text-[10px] uppercase tracking-[0.3em] text-slate-300">Stream</p>
+              <p className="text-[10px] uppercase tracking-[0.3em] text-slate-300">
+                {camera.cameraId ? `SN: ${camera.cameraId}` : "Stream"}
+              </p>
               <p className="mt-1 text-sm font-semibold">{camera.name}</p>
             </div>
           </div>
@@ -325,41 +595,282 @@ function CameraTile({ camera, onExpand, onShowUsers }: { camera: CameraRecord; o
           <FiMapPin size={10} />
           {address}
         </p>
-        <button onClick={(e) => {
-          e.stopPropagation();
-          onShowUsers()
-        }} className="mt-3 flex w-full items-center justify-center gap-1.5 rounded-lg border border-blue-100 bg-blue-50 px-2 py-1.5 text-xs font-medium text-blue-700 transition-colors hover:bg-blue-100 focus:outline-none focus:ring-2 focus:ring-blue-500/50">
-          <FiUsers size={13} /> {(camera.assignedUsers || []).length} clientes
+        <button
+          onClick={(e) => {
+            e.stopPropagation();
+            onShowUsers();
+          }}
+          className="mt-3 flex w-full items-center justify-center gap-1.5 rounded-lg border border-blue-100 bg-blue-50 px-2 py-1.5 text-xs font-medium text-blue-700 transition-colors hover:bg-blue-100 focus:outline-none focus:ring-2 focus:ring-blue-500/50"
+        >
+          <FiUsers size={13} /> {assignedCount} {assignedCount === 1 ? "cliente" : "clientes"}
         </button>
       </div>
     </button>
   );
 }
 
-function CameraUsersModal({ camera, onClose }: { camera: CameraRecord; onClose: () => void }) {
-  const users = camera.assignedUsers || [];
+/* ------------------------------------------------------------------ */
+/*  Vista expandida con Streaming Proxy & Selector de Canales        */
+/* ------------------------------------------------------------------ */
+
+function ExpandedView({ camera, onClose }: { camera: CameraRecord; onClose: () => void }) {
+  const targetCameraId = camera.cameraId || camera.name || camera._id;
+  const address = camera.location?.address || "Sin dirección registrada";
+
+  const [loadingDevice, setLoadingDevice] = useState(true);
+  const [deviceError, setDeviceError] = useState<string | null>(null);
+  const [device, setDevice] = useState<DiscoverDevice | null>(null);
+
+  const [selectedChannelSeq, setSelectedChannelSeq] = useState<number>(0);
+  const [loadingStream, setLoadingStream] = useState(false);
+  const [streamError, setStreamError] = useState<string | null>(null);
+  const [streamData, setStreamData] = useState<OpenCameraResponse | null>(null);
+
+  const [copiedType, setCopiedType] = useState<"webrtc" | "hls" | null>(null);
+  const activeChannelSeqRef = useRef<number | null>(null);
+
+  // Descubrir dispositivo al abrir
+  useEffect(() => {
+    let isMounted = true;
+
+    const discover = async () => {
+      try {
+        setLoadingDevice(true);
+        setDeviceError(null);
+        const res = await cameraService.discoverDevice(targetCameraId);
+        if (isMounted) {
+          if (res.success && res.device) {
+            setDevice(res.device);
+            if (res.device.channels && res.device.channels.length > 0) {
+              setSelectedChannelSeq(res.device.channels[0].channelSeq);
+            } else {
+              setSelectedChannelSeq(0);
+            }
+          } else {
+            setDeviceError("No se pudo obtener información del dispositivo.");
+          }
+        }
+      } catch (err: any) {
+        if (isMounted) {
+          console.error("Error al descubrir dispositivo:", err);
+          setDeviceError(err.response?.data?.message || "No se pudo conectar con el servicio externo.");
+        }
+      } finally {
+        if (isMounted) setLoadingDevice(false);
+      }
+    };
+
+    void discover();
+
+    return () => {
+      isMounted = false;
+    };
+  }, [targetCameraId]);
+
+  // Abrir stream del canal seleccionado y asegurar cierre al cambiar o desmontar
+  useEffect(() => {
+    if (loadingDevice) return;
+
+    let isMounted = true;
+    const currentSeq = selectedChannelSeq;
+
+    const openStream = async () => {
+      try {
+        setLoadingStream(true);
+        setStreamError(null);
+        const res = await cameraService.openCamera(targetCameraId, currentSeq);
+        if (isMounted) {
+          if (res.success) {
+            setStreamData(res);
+            activeChannelSeqRef.current = currentSeq;
+          } else {
+            setStreamError("No se pudo iniciar la transmisión.");
+          }
+        }
+      } catch (err: any) {
+        if (isMounted) {
+          console.error("Error al abrir stream:", err);
+          setStreamError(err.response?.data?.message || "Error al abrir el canal de transmisión.");
+        }
+      } finally {
+        if (isMounted) setLoadingStream(false);
+      }
+    };
+
+    void openStream();
+
+    return () => {
+      isMounted = false;
+      // Cerrar canal al cambiar o salir
+      if (activeChannelSeqRef.current !== null) {
+        const seqToClose = activeChannelSeqRef.current;
+        activeChannelSeqRef.current = null;
+        cameraService.closeCamera(targetCameraId, seqToClose).catch((e) =>
+          console.error(`Error cerrando canal ${seqToClose}:`, e)
+        );
+      }
+    };
+  }, [targetCameraId, selectedChannelSeq, loadingDevice]);
+
+  function copyToClipboard(text: string, type: "webrtc" | "hls") {
+    navigator.clipboard.writeText(text);
+    setCopiedType(type);
+    setTimeout(() => setCopiedType(null), 2000);
+  }
+
+  const isRecorder = device?.type === "recorder";
+  const activeChannelName =
+    device?.channels?.find((ch) => ch.channelSeq === selectedChannelSeq)?.channelName ||
+    `Canal ${selectedChannelSeq}`;
 
   return (
-    <div className="fixed inset-0 z-[70] flex items-center justify-center bg-slate-950/60 px-4 py-6">
-      <div className="w-full max-w-md overflow-hidden rounded-2xl bg-white shadow-2xl">
-        <div className="flex items-start justify-between border-b border-slate-200 px-5 py-4">
-          <div>
-            <h3 className="text-base font-semibold text-slate-900">Clientes asociados</h3>
-            <p className="mt-1 text-sm text-slate-500">{camera.name} · {users.length} clientes</p>
+    <div className="fixed inset-0 z-50 flex flex-col bg-slate-950 text-white">
+      {/* Header */}
+      <div className="flex items-center justify-between border-b border-slate-800 px-6 py-4 bg-slate-900">
+        <div>
+          <div className="flex items-center gap-3">
+            <h2 className="text-base font-semibold text-white">{camera.name}</h2>
+            {device && (
+              <span
+                className={`rounded-full px-2.5 py-0.5 text-xs font-semibold uppercase tracking-wider ${
+                  isRecorder ? "bg-purple-950 text-purple-300 border border-purple-800" : "bg-blue-950 text-blue-300 border border-blue-800"
+                }`}
+              >
+                {isRecorder ? "Grabador (NVR/DVR)" : "Cámara Sencilla"}
+              </span>
+            )}
+            <span className="flex items-center gap-1 rounded-full bg-emerald-950 px-2 py-0.5 text-[11px] font-medium text-emerald-400 border border-emerald-800">
+              <span className="h-1.5 w-1.5 rounded-full bg-emerald-500 animate-pulse" />
+              CONECTADO
+            </span>
           </div>
-          <button onClick={onClose} className="flex h-8 w-8 items-center justify-center rounded-full text-slate-500 hover:bg-slate-100" aria-label="Cerrar"><FiX size={18} /></button>
+          <p className="mt-1 flex items-center gap-3 text-xs text-slate-400">
+            <span className="flex items-center gap-1">
+              <FiMapPin size={11} /> {address}
+            </span>
+            {targetCameraId && <span className="font-mono text-slate-400">ID/SN: {targetCameraId}</span>}
+            {device?.model && <span className="text-slate-400">Modelo: {device.model}</span>}
+          </p>
         </div>
-        <div className="max-h-80 overflow-y-auto p-5">
-          {users.length ? (
-            <ul className="space-y-2">
-              {users.map((user) => (
-                <li key={user._id} className="flex items-center gap-3 rounded-lg bg-slate-50 px-3 py-2.5 text-sm text-slate-700">
-                  <span className="flex h-8 w-8 items-center justify-center rounded-full bg-blue-100 text-blue-700"><FiUsers size={14} /></span>
-                  {user.name}
-                </li>
-              ))}
-            </ul>
-          ) : <p className="py-6 text-center text-sm text-slate-500">No hay clientes asociados a esta cámara.</p>}
+
+        {/* Controles de Header & Dropdown de Canales */}
+        <div className="flex items-center gap-4">
+          {isRecorder && device?.channels && device.channels.length > 0 && (
+            <div className="flex items-center gap-2 bg-slate-800/80 px-3 py-1.5 rounded-lg border border-slate-700">
+              <FiLayers className="text-purple-400" size={16} />
+              <label htmlFor="channel-select" className="text-xs font-medium text-slate-300">
+                Canal:
+              </label>
+              <select
+                id="channel-select"
+                value={selectedChannelSeq}
+                onChange={(e) => setSelectedChannelSeq(Number(e.target.value))}
+                className="bg-slate-900 text-white text-xs font-medium rounded-md px-2 py-1 border border-slate-700 outline-none focus:border-purple-500 cursor-pointer max-w-[240px] truncate"
+              >
+                {device.channels.map((ch) => (
+                  <option key={`${ch.channelSeq}-${ch.channelName}`} value={ch.channelSeq}>
+                    Canal {ch.channelSeq}: {ch.channelName}
+                  </option>
+                ))}
+              </select>
+            </div>
+          )}
+
+          <button
+            onClick={onClose}
+            className="flex h-9 w-9 items-center justify-center rounded-lg bg-slate-800 text-slate-400 transition-colors hover:bg-slate-700 hover:text-white"
+            title="Cerrar reproductor"
+          >
+            <FiX size={20} />
+          </button>
+        </div>
+      </div>
+
+      {/* Main Stream Area */}
+      <div className="flex flex-1 flex-col items-center justify-center p-6 bg-black relative">
+        {loadingDevice || loadingStream ? (
+          <div className="flex flex-col items-center gap-3 text-slate-400">
+            <FiRotateCw size={32} className="animate-spin text-blue-500" />
+            <p className="text-sm font-medium">
+              {loadingDevice ? "Descubriendo dispositivo..." : `Conectando stream (${activeChannelName})...`}
+            </p>
+          </div>
+        ) : deviceError || streamError ? (
+          <div className="flex flex-col items-center gap-3 text-center text-red-400 max-w-md">
+            <FiVideoOff size={40} className="text-red-500" />
+            <p className="text-sm font-medium">{deviceError || streamError}</p>
+            <button
+              onClick={() => setSelectedChannelSeq((prev) => prev)}
+              className="mt-2 rounded-lg bg-slate-800 px-4 py-2 text-xs font-medium text-white hover:bg-slate-700"
+            >
+              Reintentar conexión
+            </button>
+          </div>
+        ) : streamData ? (
+          <div className="flex flex-col items-center w-full max-w-5xl h-full justify-between">
+            {/* Reproductor de Video Optimizado HLS */}
+            <LiveStreamPlayer
+              hlsUrl={streamData.hls}
+              webrtcUrl={streamData.webrtc}
+              channelName={activeChannelName}
+              isChangingChannel={loadingStream}
+            />
+
+            {/* Panel de Enlaces Proxy */}
+            <div className="mt-4 w-full grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div className="flex items-center justify-between rounded-xl border border-slate-800 bg-slate-900 px-4 py-3 text-xs">
+                <div className="truncate pr-2">
+                  <span className="text-[10px] uppercase tracking-wider text-slate-400 block font-semibold">
+                    WebRTC (WHEP)
+                  </span>
+                  <span className="font-mono text-slate-300 truncate block mt-0.5">{streamData.webrtc}</span>
+                </div>
+                <button
+                  onClick={() => copyToClipboard(streamData.webrtc, "webrtc")}
+                  className="flex items-center gap-1 rounded-md bg-slate-800 px-2.5 py-1.5 font-medium text-slate-200 hover:bg-slate-700 transition-colors shrink-0"
+                >
+                  {copiedType === "webrtc" ? <FiCheck className="text-emerald-400" /> : <FiCopy />}
+                  {copiedType === "webrtc" ? "Copiado" : "Copiar"}
+                </button>
+              </div>
+
+              <div className="flex items-center justify-between rounded-xl border border-slate-800 bg-slate-900 px-4 py-3 text-xs">
+                <div className="truncate pr-2">
+                  <span className="text-[10px] uppercase tracking-wider text-slate-400 block font-semibold">
+                    HLS (m3u8)
+                  </span>
+                  <span className="font-mono text-slate-300 truncate block mt-0.5">{streamData.hls}</span>
+                </div>
+                <button
+                  onClick={() => copyToClipboard(streamData.hls, "hls")}
+                  className="flex items-center gap-1 rounded-md bg-slate-800 px-2.5 py-1.5 font-medium text-slate-200 hover:bg-slate-700 transition-colors shrink-0"
+                >
+                  {copiedType === "hls" ? <FiCheck className="text-emerald-400" /> : <FiCopy />}
+                  {copiedType === "hls" ? "Copiado" : "Copiar"}
+                </button>
+              </div>
+            </div>
+          </div>
+        ) : null}
+      </div>
+
+      {/* Footer Info */}
+      <div className="border-t border-slate-800 bg-slate-900 px-6 py-3">
+        <div className="grid gap-3 md:grid-cols-3 text-xs">
+          <div>
+            <span className="text-[10px] uppercase tracking-wider text-slate-500">Descripción</span>
+            <p className="text-slate-300 mt-0.5">{camera.description || "Sin descripción"}</p>
+          </div>
+          <div>
+            <span className="text-[10px] uppercase tracking-wider text-slate-500 font-medium">Ubicación</span>
+            <p className="text-slate-300 mt-0.5">{address}</p>
+          </div>
+          <div>
+            <span className="text-[10px] uppercase tracking-wider text-slate-500 font-medium">Coordenadas</span>
+            <p className="text-slate-300 mt-0.5">
+              {camera.location.coordinates[1].toFixed(4)}, {camera.location.coordinates[0].toFixed(4)}
+            </p>
+          </div>
         </div>
       </div>
     </div>
@@ -367,95 +878,282 @@ function CameraUsersModal({ camera, onClose }: { camera: CameraRecord; onClose: 
 }
 
 /* ------------------------------------------------------------------ */
-/*  Vista expandida (pantalla completa)                                 */
+/*  Modal de asignación de usuarios y selección de canales           */
 /* ------------------------------------------------------------------ */
 
-function ExpandedView({ camera, onClose }: { camera: CameraRecord; onClose: () => void }) {
-  const isLive = camera.status === "online" || camera.status === "live";
-  const address = camera.location.address || "Sin dirección registrada";
+function CameraUsersModal({
+  camera,
+  onClose,
+  onCameraUpdated,
+}: {
+  camera: CameraRecord;
+  onClose: () => void;
+  onCameraUpdated: (camera: CameraRecord) => void;
+}) {
+  const targetCameraId = camera.cameraId || camera.name || camera._id;
+  const [device, setDevice] = useState<DiscoverDevice | null>(null);
+  const [loadingDevice, setLoadingDevice] = useState(true);
+
+  const [users, setUsers] = useState<User[]>([]);
+  const [loadingUsers, setLoadingUsers] = useState(true);
+  const [selectedUserId, setSelectedUserId] = useState<string>("");
+
+  const [selectedChannels, setSelectedChannels] = useState<number[]>([]);
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+
+  const currentAssignedUser = (camera as any).assignedUser
+    ? (typeof (camera as any).assignedUser === "object" ? (camera as any).assignedUser : { _id: (camera as any).assignedUser, name: "Cliente Asignado" })
+    : (camera.assignedUsers && camera.assignedUsers.length > 0
+        ? (typeof camera.assignedUsers[0].user === "object" ? camera.assignedUsers[0].user : { _id: camera.assignedUsers[0].user || camera.assignedUsers[0], name: "Cliente Asignado" })
+        : null);
+
+  const currentChannels: number[] = (camera as any).channels || camera.assignedUsers?.[0]?.channels || [];
+
+  const [assignedUser, setAssignedUser] = useState<any>(currentAssignedUser);
+  const [assignedChannels, setAssignedChannels] = useState<number[]>(currentChannels);
+
+  useEffect(() => {
+    let mounted = true;
+
+    const fetchData = async () => {
+      try {
+        setLoadingDevice(true);
+        setLoadingUsers(true);
+
+        const [deviceRes, usersRes] = await Promise.allSettled([
+          cameraService.discoverDevice(targetCameraId),
+          userService.getUsers(),
+        ]);
+
+        if (mounted) {
+          if (deviceRes.status === "fulfilled" && deviceRes.value.success) {
+            setDevice(deviceRes.value.device);
+          }
+          if (usersRes.status === "fulfilled") {
+            setUsers(Array.isArray(usersRes.value) ? usersRes.value : []);
+          }
+        }
+      } catch (err) {
+        console.error("Error cargando datos para asignación:", err);
+      } finally {
+        if (mounted) {
+          setLoadingDevice(false);
+          setLoadingUsers(false);
+        }
+      }
+    };
+
+    void fetchData();
+
+    return () => {
+      mounted = false;
+    };
+  }, [targetCameraId]);
+
+  const isRecorder = device?.type === "recorder";
+
+  function toggleChannel(seq: number) {
+    setSelectedChannels((prev) =>
+      prev.includes(seq) ? prev.filter((s) => s !== seq) : [...prev, seq]
+    );
+  }
+
+  async function handleAssignUser() {
+    if (!selectedUserId) {
+      setError("Por favor selecciona un cliente/usuario.");
+      return;
+    }
+
+    if (isRecorder && selectedChannels.length === 0) {
+      setError("Por favor selecciona al menos un canal para el grabador.");
+      return;
+    }
+
+    try {
+      setIsSubmitting(true);
+      setError(null);
+      const res = await cameraService.assignCameraToUser(
+        camera._id,
+        selectedUserId,
+        isRecorder ? selectedChannels : undefined
+      );
+
+      setAssignedUser((res.camera as any).assignedUser || null);
+      setAssignedChannels((res.camera as any).channels || []);
+      onCameraUpdated(res.camera as any);
+      setSelectedUserId("");
+      setSelectedChannels([]);
+    } catch (err: any) {
+      console.error(err);
+      setError(err.response?.data?.message || "Error al asignar usuario.");
+    } finally {
+      setIsSubmitting(false);
+    }
+  }
+
+  async function handleUnassignUser() {
+    try {
+      setIsSubmitting(true);
+      setError(null);
+      const res = await cameraService.unassignCameraFromUser(camera._id);
+      setAssignedUser(null);
+      setAssignedChannels([]);
+      onCameraUpdated(res.camera as any);
+    } catch (err: any) {
+      console.error(err);
+      setError(err.response?.data?.message || "Error al desvincular usuario.");
+    } finally {
+      setIsSubmitting(false);
+    }
+  }
 
   return (
-    <div className="fixed inset-0 z-50 flex flex-col bg-white">
-      <div className="flex items-center justify-between border-b border-slate-200 px-6 py-4">
-        <div>
-          <div className="flex items-center gap-2">
-            <h2 className="text-base font-semibold text-slate-900">{camera.name}</h2>
-            {isLive ? (
-              <span className="flex items-center gap-1 rounded-full bg-red-50 px-2 py-0.5 text-[11px] font-medium text-red-600">
-                <span className="h-1.5 w-1.5 rounded-full bg-red-500 animate-pulse" />
-                EN VIVO
-              </span>
-            ) : (
-              <span className="flex items-center gap-1 rounded-full bg-slate-100 px-2 py-0.5 text-[11px] font-medium text-slate-500">
-                <FiWifiOff size={10} />
-                OFFLINE
-              </span>
-            )}
+    <div className="fixed inset-0 z-[70] flex items-center justify-center bg-slate-950/60 px-4 py-6">
+      <div className="w-full max-w-lg overflow-hidden rounded-2xl bg-white shadow-2xl border border-slate-200">
+        {/* Header */}
+        <div className="flex items-start justify-between border-b border-slate-200 px-6 py-4">
+          <div>
+            <h3 className="text-base font-semibold text-slate-900">Asignación de Clientes</h3>
+            <p className="mt-0.5 text-xs text-slate-500">
+              {camera.name} · {isRecorder ? "Grabador Multicanal" : "Cámara Individual"}
+            </p>
           </div>
-          <p className="mt-0.5 flex items-center gap-3 text-xs text-slate-400">
-            <span className="flex items-center gap-1">
-              <FiMapPin size={11} /> {address}
-            </span>
-            <span className="font-mono">{camera.streamUrl}</span>
-          </p>
-        </div>
-
-        <div className="flex items-center gap-2">
-          <button
-            className="flex h-9 w-9 items-center justify-center rounded-md text-slate-500 transition-colors hover:bg-slate-100"
-            title="Actualizar"
-          >
-            <FiRotateCw size={16} />
-          </button>
-          <button
-            className="flex h-9 w-9 items-center justify-center rounded-md text-slate-500 transition-colors hover:bg-slate-100"
-            title="Descargar snapshot"
-          >
-            <FiDownload size={16} />
-          </button>
           <button
             onClick={onClose}
-            className="flex h-9 w-9 items-center justify-center rounded-md text-slate-500 transition-colors hover:bg-slate-100"
-            title="Cerrar"
+            className="flex h-8 w-8 items-center justify-center rounded-full text-slate-400 hover:bg-slate-100 hover:text-slate-600"
           >
             <FiX size={18} />
           </button>
         </div>
-      </div>
 
-      <div className="flex flex-1 items-center justify-center bg-slate-900 p-4">
-        {isLive ? (
-          <div className="w-full max-w-3xl rounded-xl border border-slate-700 bg-slate-950 p-6 text-center text-white shadow-lg">
-            <div className="flex justify-center">
-              <FiWifi className="text-emerald-400" size={28} />
+        <div className="p-6 space-y-6 max-h-[80vh] overflow-y-auto">
+          {/* Form de Asignación */}
+          <div className="rounded-xl bg-slate-50 border border-slate-200 p-4 space-y-4">
+            <h4 className="text-xs font-semibold uppercase tracking-wider text-slate-700">
+              Vincular nuevo cliente
+            </h4>
+
+            {/* Selector de Usuario */}
+            <div>
+              <label className="block text-xs font-medium text-slate-600 mb-1">Cliente / Usuario</label>
+              {loadingUsers ? (
+                <p className="text-xs text-slate-400">Cargando usuarios...</p>
+              ) : (
+                <select
+                  value={selectedUserId}
+                  onChange={(e) => setSelectedUserId(e.target.value)}
+                  className="w-full rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm text-slate-700 outline-none focus:border-blue-500"
+                >
+                  <option value="">-- Selecciona un usuario --</option>
+                  {users.map((u) => (
+                    <option key={u._id} value={u._id}>
+                      {u.name} ({u.email || u.phone || u._id})
+                    </option>
+                  ))}
+                </select>
+              )}
             </div>
-            <p className="mt-3 text-sm uppercase tracking-[0.3em] text-slate-400">Stream</p>
-            <p className="mt-2 break-all text-sm text-slate-200">{camera.streamUrl}</p>
-            <p className="mt-4 text-xs text-slate-500">{camera.description}</p>
-          </div>
-        ) : (
-          <div className="flex flex-col items-center gap-2 text-slate-500">
-            <FiVideoOff size={32} />
-            <p className="text-sm">Sin señal de la cámara</p>
-          </div>
-        )}
-      </div>
 
-      <div className="border-t border-slate-200 px-6 py-4">
-        <div className="grid gap-3 md:grid-cols-3">
-          <div className="rounded-lg border border-slate-200 bg-slate-50 p-3">
-            <p className="text-[11px] uppercase tracking-[0.24em] text-slate-400">Descripción</p>
-            <p className="mt-1 text-sm text-slate-700">{camera.description}</p>
+            {/* Seleccionador Multicanal si es Grabador */}
+            {isRecorder && (
+              <div>
+                <label className="block text-xs font-medium text-slate-600 mb-1.5">
+                  Canales asignados del Grabador
+                </label>
+
+                {loadingDevice ? (
+                  <p className="text-xs text-slate-400">Cargando canales del dispositivo...</p>
+                ) : device?.channels && device.channels.length > 0 ? (
+                  <div className="max-h-48 overflow-y-auto rounded-lg border border-slate-200 bg-white p-2 space-y-1">
+                    {device.channels.map((ch) => {
+                      const isChecked = selectedChannels.includes(ch.channelSeq);
+                      return (
+                        <label
+                          key={`${ch.channelSeq}-${ch.channelName}`}
+                          className="flex items-center justify-between gap-2 rounded px-2 py-1.5 text-xs hover:bg-slate-50 cursor-pointer text-slate-700"
+                        >
+                          <div className="flex items-center gap-2 truncate">
+                            <input
+                              type="checkbox"
+                              checked={isChecked}
+                              onChange={() => toggleChannel(ch.channelSeq)}
+                              className="h-4 w-4 rounded border-slate-300 text-blue-600 focus:ring-blue-500"
+                            />
+                            <span className="font-semibold text-slate-900">Canal {ch.channelSeq}:</span>
+                            <span className="truncate">{ch.channelName}</span>
+                          </div>
+                        </label>
+                      );
+                    })}
+                  </div>
+                ) : (
+                  <p className="text-xs text-slate-400">No se encontraron canales para este grabador.</p>
+                )}
+              </div>
+            )}
+
+            {assignedUser && (
+              <div className="p-3 bg-amber-50 border border-amber-200 rounded-lg text-xs text-amber-800">
+                ⚠️ Esta cámara ya tiene un cliente asignado (<strong>{assignedUser.name || "Cliente"}</strong>). Desvincula el cliente actual si deseas asignarla a otro.
+              </div>
+            )}
+
+            {error && <p className="text-xs text-red-600 font-medium">{error}</p>}
+
+            <button
+              onClick={handleAssignUser}
+              disabled={isSubmitting || !selectedUserId || Boolean(assignedUser)}
+              className="w-full rounded-lg bg-blue-600 px-4 py-2 text-xs font-medium text-white hover:bg-blue-700 disabled:opacity-50 transition-colors"
+            >
+              {isSubmitting ? "Guardando..." : "Asignar a cliente"}
+            </button>
           </div>
-          <div className="rounded-lg border border-slate-200 bg-slate-50 p-3">
-            <p className="text-[11px] uppercase tracking-[0.24em] text-slate-400">Ubicación</p>
-            <p className="mt-1 text-sm text-slate-700">{address}</p>
-          </div>
-          <div className="rounded-lg border border-slate-200 bg-slate-50 p-3">
-            <p className="text-[11px] uppercase tracking-[0.24em] text-slate-400">Coordenadas</p>
-            <p className="mt-1 text-sm text-slate-700">
-              {camera.location.coordinates[1].toFixed(4)}, {camera.location.coordinates[0].toFixed(4)}
-            </p>
+
+          {/* Lista de Usuarios Asignados */}
+          <div>
+            <h4 className="text-xs font-semibold uppercase tracking-wider text-slate-500 mb-3">
+              Cliente vinculado ({assignedUser ? 1 : 0})
+            </h4>
+
+            {!assignedUser ? (
+              <p className="py-4 text-center text-xs text-slate-400">
+                No hay ningún cliente vinculado actualmente a esta cámara.
+              </p>
+            ) : (
+              <div className="space-y-2">
+                <div className="flex items-center justify-between rounded-xl border border-slate-100 bg-slate-50 px-4 py-3">
+                  <div>
+                    <p className="text-xs font-semibold text-slate-800">
+                      {assignedUser.name || assignedUser.email || "Cliente asignado"}
+                    </p>
+                    {isRecorder ? (
+                      <p className="text-[11px] text-slate-500 mt-0.5">
+                        Canales:{" "}
+                        {assignedChannels.length > 0 ? (
+                          <span className="font-medium text-blue-600">
+                            [{assignedChannels.join(", ")}]
+                          </span>
+                        ) : (
+                          <span className="text-slate-400">Sin canales especificados</span>
+                        )}
+                      </p>
+                    ) : (
+                      <p className="text-[11px] text-emerald-600 mt-0.5">Cámara completa</p>
+                    )}
+                  </div>
+
+                  <button
+                    onClick={handleUnassignUser}
+                    disabled={isSubmitting}
+                    className="flex h-7 w-7 items-center justify-center rounded-lg text-slate-400 hover:bg-red-50 hover:text-red-600 transition-colors"
+                    title="Desvincular cliente"
+                  >
+                    <FiTrash2 size={14} />
+                  </button>
+                </div>
+              </div>
+            )}
           </div>
         </div>
       </div>
@@ -474,7 +1172,8 @@ function CreateCameraModal({
   onClose: () => void;
   onSubmit: (payload: {
     description: string;
-    streamUrl: string;
+    cameraId?: string;
+    streamUrl?: string;
     location: {
       type: "Point";
       coordinates: [number, number];
@@ -483,29 +1182,38 @@ function CreateCameraModal({
   }) => Promise<void>;
 }) {
   const [description, setDescription] = useState("");
+  const [cameraId, setCameraId] = useState("");
   const [streamUrl, setStreamUrl] = useState("");
   const [selectedLocation, setSelectedLocation] = useState<DraftLocation | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [formError, setFormError] = useState<string | null>(null);
   const [isResolving, setIsResolving] = useState(false);
 
+  // Cola que serializa las llamadas a Nominatim en el módulo de cámaras
   async function handleMapClick(event: MapLayerMouseEvent) {
     const { lat, lng } = event.lngLat;
     setSelectedLocation({ lat, lng, address: "Buscando dirección..." });
     setIsResolving(true);
 
     try {
-      if (!MAPBOX_TOKEN) throw new Error("Falta VITE_MAPBOX_TOKEN");
-      const params = new URLSearchParams({ longitude: String(lng), latitude: String(lat), language: "es", permanent: "true", access_token: MAPBOX_TOKEN });
-      const response = await fetch(`https://api.mapbox.com/search/geocode/v6/reverse?${params}`);
-      if (!response.ok) throw new Error("No se pudo obtener la dirección de Mapbox");
-      const data = await response.json();
-      const feature = data.features?.[0];
-      const address = feature?.properties?.full_address || feature?.properties?.name_preferred || feature?.place_name || "Dirección no disponible";
+      const params = new URLSearchParams({
+        format: "jsonv2",
+        lat: String(lat),
+        lon: String(lng),
+        zoom: "18",
+        addressdetails: "0",
+        email: "soporte@viryx.net",
+      });
+      const response = await fetch(`https://nominatim.openstreetmap.org/reverse?${params}`, {
+        headers: { "Accept-Language": "es" },
+      });
+      if (!response.ok) throw new Error("No se pudo obtener la dirección de Nominatim");
+      const data = (await response.json()) as { display_name?: string; error?: string };
+      const address = data.display_name || `${lat.toFixed(5)}, ${lng.toFixed(5)}`;
       setSelectedLocation({ lat, lng, address });
     } catch (error) {
       console.error(error);
-      setSelectedLocation({ lat, lng, address: "No se pudo resolver la dirección" });
+      setSelectedLocation({ lat, lng, address: `${lat.toFixed(5)}, ${lng.toFixed(5)}` });
     } finally {
       setIsResolving(false);
     }
@@ -514,11 +1222,6 @@ function CreateCameraModal({
   async function handleSubmit() {
     if (!description.trim()) {
       setFormError("La descripción es obligatoria.");
-      return;
-    }
-
-    if (!streamUrl.trim()) {
-      setFormError("La URL del stream es obligatoria.");
       return;
     }
 
@@ -533,7 +1236,8 @@ function CreateCameraModal({
     try {
       await onSubmit({
         description: description.trim(),
-        streamUrl: streamUrl.trim(),
+        cameraId: cameraId.trim() || undefined,
+        streamUrl: streamUrl.trim() || undefined,
         location: {
           type: "Point",
           coordinates: [selectedLocation.lng, selectedLocation.lat],
@@ -556,13 +1260,26 @@ function CreateCameraModal({
             <h3 className="text-base font-semibold text-slate-900">Nueva cámara</h3>
             <p className="text-sm text-slate-500">Haz clic sobre el mapa para seleccionar la ubicación.</p>
           </div>
-          <button onClick={onClose} className="flex h-9 w-9 items-center justify-center rounded-full text-slate-500 transition-colors hover:bg-slate-100">
+          <button
+            onClick={onClose}
+            className="flex h-9 w-9 items-center justify-center rounded-full text-slate-500 transition-colors hover:bg-slate-100"
+          >
             <FiX size={18} />
           </button>
         </div>
 
         <div className="grid gap-5 p-5 md:grid-cols-[0.9fr,1.1fr]">
           <div className="space-y-4">
+            <div>
+              <label className="mb-1 block text-sm font-medium text-slate-700">ID / Nro. Serie de Cámara</label>
+              <input
+                value={cameraId}
+                onChange={(e) => setCameraId(e.target.value)}
+                className="w-full rounded-lg border border-slate-200 px-3 py-2 text-sm text-slate-700 outline-none ring-0 focus:border-blue-500 font-mono"
+                placeholder="Ej. 9G0D5F2PAZ6F82F"
+              />
+            </div>
+
             <div>
               <label className="mb-1 block text-sm font-medium text-slate-700">Descripción</label>
               <input
@@ -574,7 +1291,7 @@ function CreateCameraModal({
             </div>
 
             <div>
-              <label className="mb-1 block text-sm font-medium text-slate-700">Stream URL</label>
+              <label className="mb-1 block text-sm font-medium text-slate-700">Stream URL (Opcional)</label>
               <input
                 value={streamUrl}
                 onChange={(event) => setStreamUrl(event.target.value)}
@@ -614,16 +1331,30 @@ function CreateCameraModal({
                 onClick={handleMapClick}
               >
                 <NavigationControl position="top-right" />
-                {selectedLocation && <Marker longitude={selectedLocation.lng} latitude={selectedLocation.lat} anchor="bottom" color="#2563eb" />}
+                {selectedLocation && (
+                  <Marker
+                    longitude={selectedLocation.lng}
+                    latitude={selectedLocation.lat}
+                    anchor="bottom"
+                    color="#2563eb"
+                  />
+                )}
               </Map>
             )}
           </div>
         </div>
 
         <div className="flex items-center justify-between border-t border-slate-200 px-5 py-4">
-          <p className="text-sm text-slate-500">{isResolving ? "Resolviendo dirección..." : "La dirección se completa automáticamente al seleccionar una ubicación."}</p>
+          <p className="text-sm text-slate-500">
+            {isResolving
+              ? "Resolviendo dirección..."
+              : "La dirección se completa automáticamente al seleccionar una ubicación."}
+          </p>
           <div className="flex items-center gap-2">
-            <button onClick={onClose} className="rounded-lg border border-slate-200 px-4 py-2 text-sm font-medium text-slate-600 transition-colors hover:bg-slate-100">
+            <button
+              onClick={onClose}
+              className="rounded-lg border border-slate-200 px-4 py-2 text-sm font-medium text-slate-600 transition-colors hover:bg-slate-100"
+            >
               Cancelar
             </button>
             <button
@@ -665,7 +1396,11 @@ function CamerasMapView({
   const selectedCamera = cameras.find((camera) => camera._id === selectedCameraId) || null;
 
   if (!MAPBOX_TOKEN) {
-    return <div className="flex h-[calc(100vh-13rem)] items-center justify-center rounded-xl border border-red-200 bg-red-50 text-sm text-red-600">Configura VITE_MAPBOX_TOKEN para cargar el mapa.</div>;
+    return (
+      <div className="flex h-[calc(100vh-13rem)] items-center justify-center rounded-xl border border-red-200 bg-red-50 text-sm text-red-600">
+        Configura VITE_MAPBOX_TOKEN para cargar el mapa.
+      </div>
+    );
   }
 
   return (
@@ -700,7 +1435,7 @@ function CamerasMapView({
           >
             <div className="max-w-[220px] p-1">
               <p className="text-sm font-semibold text-slate-900">{selectedCamera.name}</p>
-              <p className="mt-1 text-xs text-slate-600">{selectedCamera.location.address || "Sin dirección"}</p>
+              <p className="mt-1 text-xs text-slate-600">{selectedCamera.location?.address || "Sin dirección"}</p>
               <p className="mt-1 text-[11px] text-slate-500">{selectedCamera.description}</p>
             </div>
           </Popup>
@@ -708,9 +1443,4 @@ function CamerasMapView({
       </Map>
     </div>
   );
-}
-
-interface AssignedUser {
-  _id: string;
-  name: string;
 }

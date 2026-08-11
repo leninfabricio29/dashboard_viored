@@ -12,12 +12,13 @@ type MapAlertProps = {
   height?: string;
   width?: string;
   mapRef?: React.MutableRefObject<any>;
-  onAttend: (
+  onAttend?: (
     id: string,
-    alertId: string,
-    userId: string,
-    recipientId: string
+    alertId?: string,
+    userId?: string,
+    recipientId?: string
   ) => void;
+  onViewCameras?: (alertId: string, cameras: any[]) => void;
 };
 
 export const mapboxStyles: { key: string; value: string; name: string }[] = [
@@ -104,7 +105,8 @@ const MapAlert: React.FC<MapAlertProps> = ({
   height = '100vh', 
   width = '100%', 
   mapRef,
-  onAttend 
+  onAttend,
+  onViewCameras,
 }) => {
   const [styleIndex, setStyleIndex] = useState(0);
   const [isMapLoaded, setIsMapLoaded] = useState(false);
@@ -204,6 +206,7 @@ const MapAlert: React.FC<MapAlertProps> = ({
             status: alert.status,
           }}
           onAttend={onAttend}
+          onViewCameras={onViewCameras}
         />
           </Marker>
         ))}

@@ -23,20 +23,41 @@ const distance = (meters: number) => `${(meters / 1000).toFixed(meters >= 10000 
 const coord = (point?: { latitude: number; longitude: number }) => point ? `${point.latitude.toFixed(5)}, ${point.longitude.toFixed(5)}` : "Sin ubicación";
 const addressCache = new globalThis.Map<string, string>();
 
+// Cola que serializa las llamadas a Nominatim, respetando su límite de 1 req/seg
+let nominatimQueue: Promise<unknown> = Promise.resolve();
+function throttledNominatimFetch(url: string): Promise<Response> {
+  const run = nominatimQueue.then(async () => {
+    const response = await fetch(url, {
+      headers: { "Accept-Language": "es" },
+    });
+    await new Promise((resolve) => setTimeout(resolve, 1100)); // pausa antes de liberar el siguiente
+    return response;
+  });
+  nominatimQueue = run.catch(() => {}); // evita que un error rompa la cola
+  return run;
+}
+
 async function streetFromPosition(position?: Position) {
   if (!position) return "Sin ubicación";
   const key = `${position.longitude.toFixed(5)},${position.latitude.toFixed(5)}`;
   if (addressCache.has(key)) return addressCache.get(key)!;
-  if (!MAPBOX_TOKEN) return coord(position);
   try {
-    const query = new URLSearchParams({ longitude: String(position.longitude), latitude: String(position.latitude), access_token: MAPBOX_TOKEN });
-    const response = await fetch(`https://api.mapbox.com/search/geocode/v6/reverse?${query}`);
-    const data = await response.json() as { features?: Array<{ properties?: { full_address?: string; name_preferred?: string }; place_formatted?: string; text?: string }> };
-    const feature = data.features?.[0];
-    const address = feature?.properties?.full_address ?? feature?.place_formatted ?? feature?.properties?.name_preferred ?? feature?.text ?? coord(position);
+    const query = new URLSearchParams({
+      format: "jsonv2",
+      lat: String(position.latitude),
+      lon: String(position.longitude),
+      zoom: "18",
+      addressdetails: "0",
+      email: "soporte@viryx.net",
+    });
+    const response = await throttledNominatimFetch(`https://nominatim.openstreetmap.org/reverse?${query}`);
+    const data = (await response.json()) as { display_name?: string; error?: string };
+    const address = data.display_name ?? coord(position);
     addressCache.set(key, address);
     return address;
-  } catch { return coord(position); }
+  } catch {
+    return coord(position);
+  }
 }
 
 function TrackingMap({ position, positions = [], stops = [], mapRef, onLoad }: { position?: Position | null; positions?: Position[]; stops?: Stop[]; mapRef?: MutableRefObject<MapRef | null>; onLoad?: () => void }) {
@@ -228,19 +249,227 @@ export default function SatellitScreen() {
     return () => cancelAnimationFrame(frame);
   }, [playing, tripPositions.length, playProgress, speed]);
   const togglePlayback = () => { if (playing) { setPlaying(false); return; } if (playProgress >= 1) setPlayProgress(0); setPlaying(true); };
-  const exportReportPdf = () => {
+  const [exportingPdf, setExportingPdf] = useState(false);
+
+  const exportReportPdf = async () => {
     if (!report || !selected) return;
-    const doc = new jsPDF({ unit: "pt", format: "a4" });
-    doc.setFontSize(18); doc.text("Reporte de rastreo satelital", 40, 42);
-    doc.setFontSize(10); doc.text(`${selected.alias || selected.plate} · Período: ${from} al ${to}`, 40, 62);
-    doc.setFontSize(11); doc.text(`Viajes: ${report.summary.trips}   Distancia: ${distance(report.summary.distanceMeters)}   Conducción: ${duration(report.summary.drivingSeconds)}   Paradas: ${report.summary.stops}   Velocidad media: ${report.summary.averageSpeed} km/h`, 40, 86, { maxWidth: 510 });
-    const image = reportMapReady ? reportMapRef.current?.getCanvas().toDataURL("image/png") : undefined;
-    if (image) doc.addImage(image, "PNG", 40, 108, 515, 260); else doc.text("Mapa no disponible al momento de generar el documento.", 40, 125);
-    doc.addPage(); doc.setFontSize(14); doc.text("Viajes", 40, 38);
-    autoTable(doc, { startY: 50, head: [["Inicio", "Fin", "Distancia", "Duración", "Paradas"]], body: report.trips.map((trip) => [formatDate(trip.startTime), formatDate(trip.endTime), distance(trip.distance), duration(trip.duration), String(report.stops.filter((stop) => stop.trip === trip._id).length)]), styles: { fontSize: 8 }, headStyles: { fillColor: [37, 99, 235] } });
-    doc.addPage(); doc.setFontSize(14); doc.text("Detalle de paradas", 40, 38);
-    autoTable(doc, { startY: 50, head: [["Llegada", "Salida", "Duración", "Coordenadas"]], body: report.stops.map((stop) => [formatDate(stop.arrivalTime), formatDate(stop.departureTime), duration(stop.duration), coord(stop)]), styles: { fontSize: 8 }, headStyles: { fillColor: [37, 99, 235] } });
-    doc.save(`reporte-rastreo-${selected.plate}-${from}-${to}.pdf`);
+    setExportingPdf(true);
+    try {
+      // 1. Resolver direcciones (calles) de origen y destino para cada viaje
+      const tripLocations = await Promise.all(
+        report.trips.map(async (trip) => {
+          const startAddr = trip.startLocation
+            ? await streetFromPosition({ latitude: trip.startLocation.latitude, longitude: trip.startLocation.longitude } as Position)
+            : "Sin ubicación inicial";
+          const endAddr = trip.endLocation
+            ? await streetFromPosition({ latitude: trip.endLocation.latitude, longitude: trip.endLocation.longitude } as Position)
+            : "Sin ubicación final";
+          return { startAddr, endAddr };
+        })
+      );
+
+      // 2. Resolver direcciones para las paradas
+      const stopLocations = await Promise.all(
+        report.stops.map(async (stop) => {
+          return await streetFromPosition({ latitude: stop.latitude, longitude: stop.longitude } as Position);
+        })
+      );
+
+      const doc = new jsPDF({ unit: "pt", format: "a4" });
+      const pageWidth = doc.internal.pageSize.getWidth();
+      const pageHeight = doc.internal.pageSize.getHeight();
+      const margin = 36; // 36pt
+
+      // ----- PÁGINA 1: ENCABEZADO Y RESUMEN TÉCNICO EN MAPA -----
+      // Header Banner estilo corporativo
+      doc.setFillColor(15, 23, 42); // Slate 900 #0F172A
+      doc.rect(0, 0, pageWidth, 60, "F");
+
+      doc.setTextColor(255, 255, 255);
+      doc.setFontSize(15);
+      doc.setFont("helvetica", "bold");
+      doc.text("INFORME TÉCNICO DE TELEMETRÍA Y RASTREO SATELITAL", margin, 36);
+
+      doc.setFontSize(8);
+      doc.setFont("helvetica", "normal");
+      doc.text(`OFICIAL · GENERADO: ${new Date().toLocaleDateString("es-EC")} ${new Date().toLocaleTimeString("es-EC")}`, pageWidth - margin - 220, 36);
+
+      let yPos = 80;
+
+      // Ficha Técnica del Vehículo & Dispositivo
+      doc.setFillColor(248, 250, 252); // Slate 50
+      doc.setDrawColor(226, 232, 240); // Slate 200
+      doc.roundedRect(margin, yPos, pageWidth - margin * 2, 70, 6, 6, "FD");
+
+      doc.setFontSize(11);
+      doc.setFont("helvetica", "bold");
+      doc.setTextColor(30, 41, 59); // Slate 800
+      doc.text("FICHA TÉCNICA DEL VEHÍCULO Y DISPOSITIVO GPS", margin + 12, yPos + 20);
+
+      doc.setFontSize(9);
+      doc.setFont("helvetica", "normal");
+      doc.setTextColor(71, 85, 105);
+
+      const vLine1 = `Vehículo: ${selected.alias || selected.plate} | Placa: ${selected.plate} | Marca/Modelo: ${selected.brand || "N/A"} ${selected.model || ""}`;
+      const vLine2 = `Dispositivo GPS: ${selected.gpsDevice?.imei || "Auto-GPS"} (${selected.gpsDevice?.model || "Standard"}) | Estado: ${selected.active ? "Activo" : "Inactivo"}`;
+      const vLine3 = `Rango del Reporte: Desde ${from} 00:00:00 Hasta ${to} 23:59:59`;
+
+      doc.text(vLine1, margin + 12, yPos + 36);
+      doc.text(vLine2, margin + 12, yPos + 48);
+      doc.text(vLine3, margin + 12, yPos + 60);
+
+      yPos += 85;
+
+      // Resumen Ejecutivo de Métricas (KPIs)
+      doc.setFontSize(11);
+      doc.setFont("helvetica", "bold");
+      doc.setTextColor(15, 23, 42);
+      doc.text("RESUMEN OPERATIVO DE CONDUCCIÓN Y TELEMETRÍA", margin, yPos);
+
+      yPos += 10;
+
+      const maxSpeedCalc = report.trips.reduce((max, t) => Math.max(max, t.maxSpeed || 0), 0);
+
+      autoTable(doc, {
+        startY: yPos,
+        margin: { left: margin, right: margin },
+        head: [["Viajes Total", "Distancia Total", "Tiempo Conducción", "Tiempo Detenido", "Velocidad Promed.", "Velocidad Máx."]],
+        body: [[
+          String(report.summary.trips),
+          distance(report.summary.distanceMeters),
+          duration(report.summary.drivingSeconds),
+          duration(report.summary.stopSeconds),
+          `${report.summary.averageSpeed} km/h`,
+          `${maxSpeedCalc} km/h`
+        ]],
+        styles: { fontSize: 9, halign: "center", cellPadding: 8, font: "helvetica" },
+        headStyles: { fillColor: [37, 99, 235], textColor: [255, 255, 255], fontStyle: "bold" },
+        bodyStyles: { fillColor: [255, 255, 255], textColor: [15, 23, 42] },
+        theme: "grid"
+      });
+
+      yPos = (doc as any).lastAutoTable.finalY + 15;
+
+      // Mapa de la ruta
+      doc.setFontSize(11);
+      doc.setFont("helvetica", "bold");
+      doc.setTextColor(15, 23, 42);
+      doc.text("MAPA DE RECORRIDO Y TRAYECTORIA", margin, yPos);
+
+      yPos += 10;
+      const mapCanvas = reportMapReady ? reportMapRef.current?.getCanvas().toDataURL("image/png") : undefined;
+
+      if (mapCanvas) {
+        doc.addImage(mapCanvas, "PNG", margin, yPos, pageWidth - margin * 2, 260);
+      } else {
+        doc.setFillColor(241, 245, 249);
+        doc.rect(margin, yPos, pageWidth - margin * 2, 100, "F");
+        doc.setFontSize(10);
+        doc.setTextColor(100, 116, 139);
+        doc.text("Captura de mapa no disponible al momento del reporte.", margin + 15, yPos + 55);
+      }
+
+      // ----- PÁGINA 2: HISTORIAL DE VIAJES (CON ORIGEN Y DESTINO DETALLADO) -----
+      doc.addPage();
+
+      // Header de página secundaria
+      doc.setFillColor(15, 23, 42);
+      doc.rect(0, 0, pageWidth, 40, "F");
+      doc.setTextColor(255, 255, 255);
+      doc.setFontSize(12);
+      doc.setFont("helvetica", "bold");
+      doc.text("DETALLE TÉCNICO DE VIAJES · PUNTO DE PARTIDA Y DESTINO", margin, 26);
+
+      doc.setFontSize(10);
+      doc.setTextColor(15, 23, 42);
+      doc.text(`Historial detallado de trayectos registrados (${report.trips.length} viajes)`, margin, 56);
+
+      autoTable(doc, {
+        startY: 66,
+        margin: { left: margin, right: margin },
+        head: [["#", "Punto de Partida (Origen)", "Punto de Destino (Llegada)", "Hora Inicio", "Hora Fin", "Distancia", "Duración", "Vel. Prom / Máx"]],
+        body: report.trips.map((trip, idx) => [
+          String(idx + 1),
+          `${tripLocations[idx]?.startAddr || "N/A"}\n(${coord(trip.startLocation)})`,
+          `${tripLocations[idx]?.endAddr || "N/A"}\n(${coord(trip.endLocation)})`,
+          formatDate(trip.startTime),
+          formatDate(trip.endTime),
+          distance(trip.distance),
+          duration(trip.duration),
+          `${trip.averageSpeed || 0} / ${trip.maxSpeed || 0} km/h`
+        ]),
+        styles: { fontSize: 8, cellPadding: 6, font: "helvetica", overflow: "linebreak" },
+        columnStyles: {
+          0: { cellWidth: 20, halign: "center" },
+          1: { cellWidth: 125 },
+          2: { cellWidth: 125 },
+          3: { cellWidth: 70 },
+          4: { cellWidth: 70 },
+          5: { cellWidth: 50, halign: "right" },
+          6: { cellWidth: 45, halign: "right" },
+          7: { cellWidth: 55, halign: "center" }
+        },
+        headStyles: { fillColor: [15, 23, 42], textColor: [255, 255, 255], fontStyle: "bold" },
+        alternateRowStyles: { fillColor: [248, 250, 252] },
+        theme: "striped"
+      });
+
+      // ----- PÁGINA 3: DETALLE TÉCNICO DE PARADAS -----
+      doc.addPage();
+
+      doc.setFillColor(15, 23, 42);
+      doc.rect(0, 0, pageWidth, 40, "F");
+      doc.setTextColor(255, 255, 255);
+      doc.setFontSize(12);
+      doc.setFont("helvetica", "bold");
+      doc.text("DETALLE TÉCNICO DE PARADAS Y DETENCIONES", margin, 26);
+
+      doc.setFontSize(10);
+      doc.setTextColor(15, 23, 42);
+      doc.text(`Registro completo de detenciones del vehículo (${report.stops.length} paradas)`, margin, 56);
+
+      autoTable(doc, {
+        startY: 66,
+        margin: { left: margin, right: margin },
+        head: [["#", "Ubicación (Calle & Coordenadas GPS)", "Llegada (Inicio Parada)", "Salida (Reinicio Marcha)", "Duración Detenido"]],
+        body: report.stops.map((stop, idx) => [
+          String(idx + 1),
+          `${stopLocations[idx] || "N/A"}\n(${coord(stop)})`,
+          formatDate(stop.arrivalTime),
+          formatDate(stop.departureTime),
+          duration(stop.duration)
+        ]),
+        styles: { fontSize: 8, cellPadding: 6, font: "helvetica", overflow: "linebreak" },
+        columnStyles: {
+          0: { cellWidth: 25, halign: "center" },
+          1: { cellWidth: 210 },
+          2: { cellWidth: 100 },
+          3: { cellWidth: 100 },
+          4: { cellWidth: 85, halign: "right" }
+        },
+        headStyles: { fillColor: [15, 23, 42], textColor: [255, 255, 255], fontStyle: "bold" },
+        alternateRowStyles: { fillColor: [248, 250, 252] },
+        theme: "striped"
+      });
+
+      // Numeral de páginas en el pie de página
+      const totalPages = (doc.internal as any).getNumberOfPages();
+      for (let i = 1; i <= totalPages; i++) {
+        doc.setPage(i);
+        doc.setFontSize(8);
+        doc.setFont("helvetica", "normal");
+        doc.setTextColor(148, 163, 184); // Slate 400
+        doc.text(`Página ${i} de ${totalPages}`, pageWidth - margin - 50, pageHeight - 15);
+        doc.text(`Vehículo: ${selected.plate} · Informe de Telemetría Oficial`, margin, pageHeight - 15);
+      }
+
+      doc.save(`reporte-tecnico-rastreo-${selected.plate}-${from}-${to}.pdf`);
+    } catch (err) {
+      console.error("Error al generar PDF técnico:", err);
+      setError("No se pudo generar el reporte PDF.");
+    } finally {
+      setExportingPdf(false);
+    }
   };
   const currentTrip = liveReport?.trips.find((item) => item.status === "running");
   const tabs: Array<{ id: Tab; label: string; icon: typeof Navigation }> = [{ id: "live", label: "Rastreo en vivo", icon: Navigation }, { id: "history", label: "Historial de rutas", icon: Route }, { id: "reports", label: "Reportes", icon: FileText }];
@@ -250,15 +479,51 @@ export default function SatellitScreen() {
     <main className="min-w-0 flex-1">{!selected ? <div className="flex h-full items-center justify-center rounded-2xl border border-dashed border-slate-300 text-slate-500">Selecciona un vehículo para comenzar el rastreo.</div> : <>
       <div className="mb-4 rounded-2xl border border-slate-200 bg-white p-3 shadow-sm"><div className="flex flex-wrap items-center justify-between gap-3"><div><h2 className="font-semibold text-slate-900">{selected.alias || selected.plate}</h2><p className="text-sm text-slate-500">{selected.plate} · {selected.brand} {selected.model}</p></div><div className="flex rounded-lg bg-slate-100 p-1">{tabs.map(({ id, label, icon: Icon }) => <button key={id} onClick={() => setTab(id)} className={`flex items-center gap-2 rounded-md px-3 py-2 text-sm ${tab === id ? "bg-white font-medium text-blue-700 shadow-sm" : "text-slate-600"}`}><Icon size={16} />{label}</button>)}</div></div></div>
       {error && <div className="mb-3 rounded-lg bg-red-50 px-3 py-2 text-sm text-red-700">{error}</div>}
-      {tab === "live" && <div className="grid min-h-[620px] grid-cols-1 gap-4 xl:grid-cols-[minmax(0,1fr)_320px]"><section className="overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm"><div className="h-[620px]"><TrackingMap position={latest} positions={livePositions} /></div></section><section className="space-y-3"><div className="rounded-2xl bg-slate-900 p-4 text-white"><p className="text-sm text-slate-300">Estado actual</p><p className="mt-1 text-xl font-semibold">{latest ? (latest.ignition || latest.speed > 3 ? "En movimiento" : "Detenido") : "Sin señal GPS"}</p><p className="mt-3 text-xs text-slate-300">Actualización: {formatDate(latest?.gpsTime)}</p></div><div className="grid grid-cols-2 gap-3"><Stat label="Velocidad" value={latest ? `${Math.round(latest.speed)} km/h` : "—"} icon={Gauge} /><Stat label="Batería GPS" value="No disponible" icon={Battery} /><Stat label="GPS" value={latest ? `${latest.latitude.toFixed(5)}, ${latest.longitude.toFixed(5)}` : "—"} icon={MapPin} /><Stat label="Rumbo" value={latest?.heading !== undefined ? `${Math.round(latest.heading)}°` : "—"} icon={Navigation} /></div><div className="rounded-2xl border border-slate-200 bg-white p-4"><h3 className="font-medium text-slate-800">Resumen del viaje</h3>{currentTrip ? <div className="mt-3 space-y-2 text-sm text-slate-600"><p><b>Inicio:</b> {formatDate(currentTrip.startTime)}</p><p><b>Distancia:</b> {distance(currentTrip.distance)}</p><p><b>Duración:</b> {duration(currentTrip.duration)}</p><p><b>Velocidad media:</b> {currentTrip.averageSpeed} km/h</p></div> : <p className="mt-2 text-sm text-slate-500">No hay un viaje en curso.</p>}</div></section></div>}
+      {tab === "live" && <div className="grid min-h-[620px] grid-cols-1 gap-4 xl:grid-cols-[minmax(0,1fr)_320px]"><section className="overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm"><div className="h-[620px]"><TrackingMap position={latest} positions={livePositions} /></div></section><section className="space-y-3"><div className="rounded-2xl bg-slate-900 p-4 text-white"><p className="text-sm text-slate-300">Estado actual</p><p className="mt-1 text-xl font-semibold">{latest ? (currentTrip && (latest.ignition || latest.speed > 3) ? "En movimiento" : "Detenido") : "Sin señal GPS"}</p><p className="mt-3 text-xs text-slate-300">Actualización: {formatDate(latest?.gpsTime)}</p></div><div className="grid grid-cols-2 gap-3"><Stat label="Velocidad" value={latest ? `${currentTrip ? Math.round(latest.speed) : 0} km/h` : "—"} icon={Gauge} /><Stat label="Batería GPS" value="No disponible" icon={Battery} /><Stat label="GPS" value={latest ? `${latest.latitude.toFixed(5)}, ${latest.longitude.toFixed(5)}` : "—"} icon={MapPin} /><Stat label="Rumbo" value={latest?.heading !== undefined ? `${Math.round(latest.heading)}°` : "—"} icon={Navigation} /></div><div className="rounded-2xl border border-slate-200 bg-white p-4"><h3 className="font-medium text-slate-800">Resumen del viaje</h3>{currentTrip ? <div className="mt-3 space-y-2 text-sm text-slate-600"><p><b>Inicio:</b> {formatDate(currentTrip.startTime)}</p><p><b>Distancia:</b> {distance(currentTrip.distance)}</p><p><b>Duración:</b> {duration(currentTrip.duration)}</p><p><b>Velocidad media:</b> {currentTrip.averageSpeed} km/h</p></div> : <p className="mt-2 text-sm text-slate-500">No hay un viaje en curso.</p>}</div></section></div>}
       {tab === "history" && <section className="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm"><Filters from={from} to={to} setFrom={setFrom} setTo={setTo} onSearch={searchHistory} loading={searching} label="Buscar rutas" /><div className="mt-4 overflow-auto rounded-xl border border-slate-200"><table className="w-full text-left text-sm"><thead className="bg-slate-50 text-xs uppercase text-slate-500"><tr><th className="p-3">Ver</th><th className="p-3">Fecha / ruta</th><th className="p-3">Distancia</th><th className="p-3">Duración</th><th className="p-3">Paradas</th></tr></thead><tbody>{history?.trips.map((trip) => <tr key={trip._id} className="border-t border-slate-100"><td className="p-3"><button onClick={() => void viewTrip(trip)} className="rounded-md p-1.5 text-blue-600 hover:bg-blue-50" title="Ver ruta"><Eye size={17} /></button></td><td className="p-3"><p>{formatDate(trip.startTime)}</p><p className="mt-1 max-w-80 truncate text-xs text-slate-500">{coord(trip.startLocation)} → {coord(trip.endLocation)}</p></td><td className="p-3">{distance(trip.distance)}</td><td className="p-3">{duration(trip.duration)}</td><td className="p-3">{history.stops.filter((stop) => stop.trip === trip._id).length}</td></tr>)}{history && !history.trips.length && <tr><td className="p-5 text-slate-500" colSpan={5}>No hay viajes en el rango seleccionado.</td></tr>}{!history && <tr><td className="p-5 text-slate-500" colSpan={5}>Selecciona un rango de fechas y consulta las rutas.</td></tr>}</tbody></table></div></section>}
       <RouteModal trip={selectedTrip} positions={tripPositions} stops={history?.stops.filter((stop) => stop.trip === selectedTrip?._id) ?? []} street={tripStreet} playing={playing} progress={playProgress} speed={speed} setSpeed={setSpeed} onPlay={togglePlayback} onClose={() => { setPlaying(false); setSelectedTrip(null); }} />
       {tab === "reports" && <section className="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm">
         <Filters from={from} to={to} setFrom={setFrom} setTo={setTo} onSearch={loadReport} loading={searching} label="Generar reporte completo" />
         <p className="mt-2 text-xs text-slate-500">Incluye resumen, viajes, paradas y la ruta pintada del período.</p>
         {report && <div className="mt-5">
-          <div className="flex flex-wrap items-center justify-between gap-3"><div className="grid flex-1 grid-cols-2 gap-3 md:grid-cols-5"><Stat label="Viajes" value={String(report.summary.trips)} icon={Route} /><Stat label="Distancia" value={distance(report.summary.distanceMeters)} icon={Navigation} /><Stat label="Conducción" value={duration(report.summary.drivingSeconds)} icon={Clock3} /><Stat label="Paradas" value={String(report.summary.stops)} icon={MapPin} /><Stat label="Vel. promedio" value={`${report.summary.averageSpeed} km/h`} icon={Gauge} /></div><button onClick={exportReportPdf} disabled={!reportMapReady} className="flex items-center gap-2 rounded-lg bg-slate-900 px-4 py-2.5 text-sm font-medium text-white disabled:cursor-not-allowed disabled:opacity-50"><Download size={16} />{reportMapReady ? "Descargar PDF" : "Preparando mapa…"}</button></div>
+          <div className="flex flex-wrap items-center justify-between gap-3"><div className="grid flex-1 grid-cols-2 gap-3 md:grid-cols-5"><Stat label="Viajes" value={String(report.summary.trips)} icon={Route} /><Stat label="Distancia" value={distance(report.summary.distanceMeters)} icon={Navigation} /><Stat label="Conducción" value={duration(report.summary.drivingSeconds)} icon={Clock3} /><Stat label="Paradas" value={String(report.summary.stops)} icon={MapPin} /><Stat label="Vel. promedio" value={`${report.summary.averageSpeed} km/h`} icon={Gauge} /></div><button onClick={() => void exportReportPdf()} disabled={!reportMapReady || exportingPdf} className="flex items-center gap-2 rounded-lg bg-slate-900 px-4 py-2.5 text-sm font-medium text-white disabled:cursor-not-allowed disabled:opacity-50">{exportingPdf ? <><LoaderCircle size={16} className="animate-spin" />Generando PDF…</> : <><Download size={16} />{reportMapReady ? "Descargar PDF" : "Preparando mapa…"}</>}</button></div>
           <div className="mt-5 overflow-hidden rounded-xl border border-slate-200"><div className="h-80"><TrackingMap position={reportPositions[reportPositions.length - 1] ?? null} positions={reportPositions} stops={report.stops} mapRef={reportMapRef} onLoad={() => setReportMapReady(true)} /></div></div>
+          
+          <h3 className="mt-6 font-semibold text-slate-800">Detalle de viajes (Origen y Destino)</h3>
+          <div className="mt-2 overflow-auto rounded-xl border border-slate-200">
+            <table className="w-full text-sm">
+              <thead className="bg-slate-50 text-left text-xs uppercase text-slate-500">
+                <tr>
+                  <th className="p-3">#</th>
+                  <th className="p-3">Punto Partida (Origen)</th>
+                  <th className="p-3">Punto Destino (Llegada)</th>
+                  <th className="p-3">Inicio / Fin</th>
+                  <th className="p-3">Distancia</th>
+                  <th className="p-3">Duración</th>
+                  <th className="p-3">Vel. Prom / Máx</th>
+                </tr>
+              </thead>
+              <tbody>
+                {report.trips.map((trip, idx) => (
+                  <tr key={trip._id} className="border-t border-slate-100">
+                    <td className="p-3 font-medium text-slate-500">#{idx + 1}</td>
+                    <td className="p-3 text-xs text-slate-700">{coord(trip.startLocation)}</td>
+                    <td className="p-3 text-xs text-slate-700">{coord(trip.endLocation)}</td>
+                    <td className="p-3 text-xs">{formatDate(trip.startTime)}<br/><span className="text-slate-400">{formatDate(trip.endTime)}</span></td>
+                    <td className="p-3">{distance(trip.distance)}</td>
+                    <td className="p-3">{duration(trip.duration)}</td>
+                    <td className="p-3 text-xs">{trip.averageSpeed || 0} / {trip.maxSpeed || 0} km/h</td>
+                  </tr>
+                ))}
+                {!report.trips.length && (
+                  <tr>
+                    <td className="p-4 text-slate-500" colSpan={7}>No se registraron viajes en el período.</td>
+                  </tr>
+                )}
+              </tbody>
+            </table>
+          </div>
+
           <h3 className="mt-6 font-semibold text-slate-800">Detalle de paradas</h3><div className="mt-2 overflow-auto rounded-xl border border-slate-200"><table className="w-full text-sm"><thead className="bg-slate-50 text-left text-xs uppercase text-slate-500"><tr><th className="p-3">Llegada</th><th className="p-3">Salida</th><th className="p-3">Duración</th><th className="p-3">Ubicación GPS</th></tr></thead><tbody>{report.stops.map((stop) => <tr key={stop._id} className="border-t border-slate-100"><td className="p-3">{formatDate(stop.arrivalTime)}</td><td className="p-3">{formatDate(stop.departureTime)}</td><td className="p-3">{duration(stop.duration)}</td><td className="p-3">{coord(stop)}</td></tr>)}{!report.stops.length && <tr><td className="p-4 text-slate-500" colSpan={4}>No se registraron paradas.</td></tr>}</tbody></table></div>
         </div>}
       </section>}

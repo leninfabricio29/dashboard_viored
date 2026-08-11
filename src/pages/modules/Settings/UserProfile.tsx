@@ -596,42 +596,7 @@ const UserProfile = () => {
                 />
               </div>
 
-              <div className="mb-6">
-                <label
-                  className="block text-slate-700 text-sm font-bold mb-2"
-                  htmlFor="avatar"
-                >
-                  Avatar
-                </label>
-
-                <div className="flex items-center gap-4">
-                  {userData.avatar && (
-                    <img
-                      src={userData.avatar}
-                      alt="Avatar actual"
-                      className="h-20 w-20 border-2 border-indigo-400 rounded-full object-cover"
-                    />
-                  )}
-
-                  <div>
-                    <button
-                      type="button"
-                      onClick={() =>
-                        setAvatarSelection((prev) => ({
-                          ...prev,
-                          showModal: true,
-                        }))
-                      }
-                      className="bg-indigo-600 text-white px-4 py-2 rounded-lg hover:bg-indigo-700"
-                    >
-                      Seleccionar Avatar
-                    </button>
-                    <p className="mt-1 text-xs text-gray-500">
-                      Elige un avatar de tu paquete actual
-                    </p>
-                  </div>
-                </div>
-              </div>
+              
 
               <AvatarSelectionModal />
 

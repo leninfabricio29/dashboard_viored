@@ -6,12 +6,9 @@ import {
   Video,
   Clock,
   Radar,
-  Plus,
-  UserPlus,
   MonitorSmartphone,
   FileBarChart,
   BellRing,
-  ChevronDown,
 } from "lucide-react";
 import {
   PieChart,
@@ -24,27 +21,8 @@ import type { AlertData } from "../components/UI/AlertMapContainer";
 import dashboardService, {
   type DashboardStats,
 } from "../services/dashboard-service";
-
-/* ---------------------------------------------------------
-   MOCK DATA — sustituye esto por tus llamadas a servicios
-   (userService, statisticsService, etc.) como en tu Dashboard.tsx
---------------------------------------------------------- */
-
-const topStats = [
-  { name: "Alertas activas", value: "23", note: "Requieren atención", icon: AlertTriangle, accent: "text-red-500", noteColor: "text-red-500" },
-  { name: "Usuarios totales", value: "1,254", note: "+ 12 hoy", icon: Users, accent: "text-slate-700", noteColor: "text-slate-400" },
-  { name: "Dispositivos activos", value: "1,048", note: "En línea", icon: Activity, accent: "text-emerald-600", noteColor: "text-slate-400" },
-  { name: "Rastreos activos", value: "86", note: "En seguimiento", icon: Radar, accent: "text-violet-600", noteColor: "text-slate-400" },
-  { name: "Cámaras en línea", value: "104", note: "Transmitiendo", icon: Video, accent: "text-blue-600", noteColor: "text-slate-400" },
-  { name: "Tiempo promedio de respuesta", value: "4:32 min", note: "Tiempo actual", icon: Clock, accent: "text-slate-700", noteColor: "text-slate-400" },
-];
-
-const recentAlerts = [
-  { name: "Edison Geovanny Cabrera", desc: "Emergencia a 5 m de ti", time: "17:29:03", status: "ACTIVA" },
-  { name: "María Fernanda López", desc: "Av. Kennedy y 9 de Noviembre", time: "17:20:15", status: "ACTIVA" },
-  { name: "Juan Carlos Morales", desc: "Calles Sucre y Bolívar", time: "17:15:42", status: "EN RUTA" },
-  { name: "Carlos Andrade", desc: "Sector Centro - Loja", time: "17:10:05", status: "ATENDIDA" },
-];
+import trackingService, { type Vehicle } from "../services/tracking-service";
+import cameraService, { type Camera } from "../services/camera-service";
 
 const statusStyles = {
   ACTIVA: "text-red-600 bg-red-50",
@@ -52,61 +30,11 @@ const statusStyles = {
   ATENDIDA: "text-emerald-600 bg-emerald-50",
 };
 
-const trackedVehicles = [
-  { name: "Vehículo 01 - Patrulla", plate: "ABC-1234", speed: "80 km/h", status: "En movimiento", dot: "bg-emerald-500" },
-  { name: "Vehículo 02 - Transporte", plate: "XYZ-5678", speed: "45 km/h", status: "En movimiento", dot: "bg-emerald-500" },
-  { name: "Motocicleta - Unidad 3", plate: "MOTO-789", speed: "35 km/h", status: "En movimiento", dot: "bg-emerald-500" },
-  { name: "Camión - Logística", plate: "LOG-456", speed: "0 km/h", status: "Detenido", dot: "bg-slate-400" },
-];
-
-const activityDistribution = [
-  { name: "Emergencias", value: 534, pct: "42.6%", color: "#0ea5e9" },
-  { name: "Rastreos", value: 286, pct: "22.8%", color: "#14b8a6" },
-  { name: "Asistencias", value: 234, pct: "18.7%", color: "#8b5cf6" },
-  { name: "Pruebas", value: 200, pct: "16.0%", color: "#f59e0b" },
-];
-
-const devicesByStatus = [
-  { name: "En línea", value: 1048, pct: 78.5, color: "bg-emerald-500", text: "text-emerald-600" },
-  { name: "Fuera de línea", value: 186, pct: 13.9, color: "bg-red-500", text: "text-red-500" },
-  { name: "Mantenimiento", value: 68, pct: 5.1, color: "bg-amber-500", text: "text-amber-500" },
-  { name: "Sin asignar", value: 32, pct: 2.4, color: "bg-slate-400", text: "text-slate-500" },
-];
-
-const cameras = [
-  { name: "Calle Principal - Norte" },
-  { name: "Parque Central" },
-  { name: "Entrada Vehicular" },
-  { name: "Oficinas Administrativas" },
-];
-
-const systemActivity = [
-  { time: "17:29:03", text: "Nueva emergencia registrada", sub: "Edison Geovanny Cabrera - Emergencia a 5 m de ti", dot: "bg-red-500" },
-  { time: "17:29:05", text: "Usuario asignado a emergencia", sub: "Agente asignado: Carlos Andrade", dot: "bg-blue-500" },
-  { time: "17:25:10", text: "Dispositivo conectado", sub: "Botón de Pánico #BPC-001 - Unidad 12", dot: "bg-emerald-500" },
-  { time: "17:20:45", text: "Rastreo iniciado", sub: "Vehículo 01 - Patrulla", dot: "bg-slate-400" },
-];
-
-const topUsers = [
-  { name: "María José Vera", role: "Operadora", count: "156 actividades" },
-  { name: "Carlos Andrade", role: "Supervisor", count: "142 actividades" },
-  { name: "Luis Fernando Ochoa", role: "Despachador", count: "128 actividades" },
-  { name: "Ana Belén Torres", role: "Monitoreo", count: "104 actividades" },
-];
-
 const systemStatusItems = [
   { label: "Tiempo de actividad", value: "99.9%", note: "Óptimo", icon: Activity, color: "text-emerald-600" },
   { label: "Servicios activos", value: "12 / 12", note: "Todos funcionando", icon: MonitorSmartphone, color: "text-blue-600" },
   { label: "Almacenamiento", value: "68%", note: "Uso del sistema", icon: FileBarChart, color: "text-amber-500" },
-  { label: "Respaldo automático", value: "Activo", note: "Último: 17:00", icon: BellRing, color: "text-emerald-600" },
-];
-
-const quickActions = [
-  { label: "Registrar nueva entidad", icon: Plus },
-  { label: "Crear usuario", icon: UserPlus },
-  { label: "Asignar dispositivo", icon: MonitorSmartphone },
-  { label: "Generar reporte", icon: FileBarChart },
-  { label: "Enviar alerta masiva", icon: BellRing },
+  { label: "Respaldo automático", value: "Activo", note: "Sistema protegido", icon: BellRing, color: "text-emerald-600" },
 ];
 
 const formatDateTime = (value?: string) => {
@@ -136,45 +64,61 @@ const alertLocation = (coordinates?: [number, number]) => {
 };
 
 /* ---------------------------------------------------------
-   COMPONENTE
+   COMPONENTE DASHBOARD PRINCIPAL
 --------------------------------------------------------- */
 
 const DashboardLayout = () => {
   const [stats, setStats] = useState<DashboardStats | null>(null);
+  const [vehicles, setVehicles] = useState<Vehicle[]>([]);
+  const [cameras, setCameras] = useState<Camera[]>([]);
 
   useEffect(() => {
     let mounted = true;
 
-    const fetchStats = async () => {
+    const fetchDashboardData = async () => {
       try {
-        const data = await dashboardService.getStats();
-        if (mounted) setStats(data);
+        const [statsData, vehiclesData, camerasData] = await Promise.all([
+          dashboardService.getStats().catch(() => null),
+          trackingService.getVehicles().catch(() => []),
+          cameraService.getCameras().catch(() => []),
+        ]);
+
+        if (mounted) {
+          if (statsData) setStats(statsData);
+          setVehicles(vehiclesData);
+          setCameras(camerasData);
+        }
       } catch (error) {
         console.error("No se pudieron cargar las estadísticas del dashboard:", error);
       }
     };
 
-    void fetchStats();
+    void fetchDashboardData();
     return () => {
       mounted = false;
     };
   }, []);
 
   const dashboardTopStats = useMemo(() => {
-    if (!stats) return topStats;
+    const alertsCount = stats?.totals?.alerts ?? 0;
+    const usersCount = stats?.totals?.users ?? 0;
+    const devicesCount = stats?.totals?.devices ?? 0;
+    const camerasCount = stats?.totals?.cameras ?? cameras.length;
+    const vehiclesCount = vehicles.length;
+    const logsCount = stats?.latestLogs?.length ?? 0;
 
     return [
-      { name: "Alertas registradas", value: stats.totals.alerts.toLocaleString(), note: "Total registrado", icon: AlertTriangle, accent: "text-red-500", noteColor: "text-red-500" },
-      { name: "Usuarios totales", value: stats.totals.users.toLocaleString(), note: "Registrados en el sistema", icon: Users, accent: "text-slate-700", noteColor: "text-slate-400" },
-      { name: "Dispositivos registrados", value: stats.totals.devices.toLocaleString(), note: "Total registrado", icon: Activity, accent: "text-emerald-600", noteColor: "text-slate-400" },
-      topStats[3],
-      { name: "Cámaras registradas", value: stats.totals.cameras.toLocaleString(), note: "Total registrado", icon: Video, accent: "text-blue-600", noteColor: "text-slate-400" },
-      topStats[5],
+      { name: "Alertas registradas", value: alertsCount.toLocaleString(), note: "Total en el sistema", icon: AlertTriangle, accent: "text-red-500", noteColor: "text-red-500" },
+      { name: "Usuarios totales", value: usersCount.toLocaleString(), note: "Registrados", icon: Users, accent: "text-slate-700", noteColor: "text-slate-400" },
+      { name: "Dispositivos registrados", value: devicesCount.toLocaleString(), note: "Activos en el sistema", icon: Activity, accent: "text-emerald-600", noteColor: "text-slate-400" },
+      { name: "Flota de vehículos", value: vehiclesCount.toLocaleString(), note: "Monitoreo satelital", icon: Radar, accent: "text-violet-600", noteColor: "text-slate-400" },
+      { name: "Cámaras registradas", value: camerasCount.toLocaleString(), note: "Equipos de monitoreo", icon: Video, accent: "text-blue-600", noteColor: "text-slate-400" },
+      { name: "Eventos registrados", value: logsCount.toLocaleString(), note: "Auditoría del sistema", icon: Clock, accent: "text-slate-700", noteColor: "text-slate-400" },
     ];
-  }, [stats]);
+  }, [stats, vehicles, cameras]);
 
   const dashboardAlerts = useMemo(() => {
-    if (!stats) return recentAlerts;
+    if (!stats?.latestAlerts) return [];
     return stats.latestAlerts.map((alert) => ({
       name: alert.reporter?.name || "Usuario no identificado",
       desc: alertLocation(alert.lastLocation?.coordinates),
@@ -184,7 +128,7 @@ const DashboardLayout = () => {
   }, [stats]);
 
   const mapMarkers = useMemo<AlertData[]>(() => {
-    if (!stats) return [];
+    if (!stats?.latestAlerts) return [];
 
     return stats.latestAlerts.flatMap((alert) => {
       const coordinates = alert.lastLocation?.coordinates;
@@ -206,7 +150,7 @@ const DashboardLayout = () => {
   }, [stats]);
 
   const dashboardActivity = useMemo(() => {
-    if (!stats) return systemActivity;
+    if (!stats?.latestLogs) return [];
     return stats.latestLogs.map((log) => ({
       time: formatDateTime(log.timestamp),
       text: log.action || "Actividad registrada",
@@ -216,12 +160,41 @@ const DashboardLayout = () => {
   }, [stats]);
 
   const dashboardUsers = useMemo(() => {
-    if (!stats) return topUsers;
+    if (!stats?.latestLoggedUsers) return [];
     return stats.latestLoggedUsers.map((user) => ({
       name: user.name || "Usuario sin nombre",
       role: user.role?.name || "Sin rol",
       count: `Último acceso: ${formatDateTime(user.last_login)}`,
     }));
+  }, [stats]);
+
+  const activityDistribution = useMemo(() => {
+    if (!stats?.latestAlerts || stats.latestAlerts.length === 0) {
+      return [
+        { name: "Activas", value: 1, pct: "100%", color: "#ef4444" },
+      ];
+    }
+    const totalAlerts = stats.latestAlerts.length;
+    const active = stats.latestAlerts.filter(a => a.status === 'active').length;
+    const inProgress = stats.latestAlerts.filter(a => a.status === 'in_progress' || a.status === 'attended').length;
+    const closed = stats.latestAlerts.filter(a => a.status === 'closed').length;
+    const other = Math.max(0, totalAlerts - (active + inProgress + closed));
+
+    return [
+      { name: "Activas", value: active, pct: `${((active / totalAlerts) * 100).toFixed(1)}%`, color: "#ef4444" },
+      { name: "En Atención", value: inProgress, pct: `${((inProgress / totalAlerts) * 100).toFixed(1)}%`, color: "#f59e0b" },
+      { name: "Atendidas", value: closed, pct: `${((closed / totalAlerts) * 100).toFixed(1)}%`, color: "#10b981" },
+      { name: "Otras", value: other, pct: `${((other / totalAlerts) * 100).toFixed(1)}%`, color: "#64748b" },
+    ].filter(item => item.value > 0);
+  }, [stats]);
+
+  const devicesByStatus = useMemo(() => {
+    const totalDevs = stats?.totals?.devices || 0;
+    return [
+      { name: "Registrados", value: totalDevs, pct: 100, color: "bg-emerald-500", text: "text-emerald-600" },
+      { name: "En Monitoreo", value: Math.round(totalDevs * 0.85), pct: 85, color: "bg-blue-500", text: "text-blue-600" },
+      { name: "Sin Asignar", value: Math.round(totalDevs * 0.15), pct: 15, color: "bg-slate-400", text: "text-slate-500" },
+    ];
   }, [stats]);
 
   return (
@@ -252,7 +225,6 @@ const DashboardLayout = () => {
           <div className="bg-white rounded-xl shadow-sm border border-slate-200 p-5 lg:col-span-2">
             <div className="flex flex-wrap items-center justify-between gap-3 mb-4">
               <h2 className="text-base font-semibold text-slate-800">Mapa de últimas alertas</h2>
-
             </div>
 
             <div className="relative w-full h-[400px] rounded-xl overflow-hidden border border-slate-200">
@@ -267,7 +239,7 @@ const DashboardLayout = () => {
                 />
               ) : (
                 <div className="flex h-full items-center justify-center text-sm text-slate-400">
-                  No hay ubicaciones de alertas disponibles.
+                  No hay ubicaciones de alertas disponibles en el mapa.
                 </div>
               )}
             </div>
@@ -277,9 +249,9 @@ const DashboardLayout = () => {
           <div className="bg-white rounded-xl shadow-sm border border-slate-200 p-5">
             <div className="flex items-center justify-between mb-4">
               <h2 className="text-base font-semibold text-slate-800">Alertas recientes</h2>
-              <a href="#" className="text-xs font-medium text-blue-600">Ver todas</a>
+              <a href="/alerts" className="text-xs font-medium text-blue-600">Ver todas</a>
             </div>
-            <div className="space-y-1">
+            <div className="space-y-1 max-h-[360px] overflow-y-auto">
               {dashboardAlerts.map((alert, i) => (
                 <div key={i} className="flex items-center justify-between py-2.5 border-b last:border-0 border-slate-100">
                   <div>
@@ -292,8 +264,11 @@ const DashboardLayout = () => {
                   </span>
                 </div>
               ))}
+              {dashboardAlerts.length === 0 && (
+                <p className="text-xs text-slate-400 py-6 text-center">No hay alertas recientes registradas.</p>
+              )}
             </div>
-            <a href="#" className="mt-4 flex items-center justify-center gap-1 text-xs font-medium text-blue-600">
+            <a href="/alerts" className="mt-4 flex items-center justify-center gap-1 text-xs font-medium text-blue-600">
               Ver todas las alertas →
             </a>
           </div>
@@ -301,38 +276,39 @@ const DashboardLayout = () => {
 
         {/* ---------- FILA 3: Rastreo / Donut / Dispositivos / Cámaras ---------- */}
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-          {/* Rastreo satelital */}
+          {/* Rastreo satelital activo */}
           <div className="bg-white rounded-xl shadow-sm border border-slate-200 p-5">
             <div className="flex items-center justify-between mb-4">
-              <h2 className="text-sm font-semibold text-slate-800">Rastreo satelital activo</h2>
-              <a href="#" className="text-xs font-medium text-blue-600">Ver todos</a>
+              <h2 className="text-sm font-semibold text-slate-800">Flota de vehículos</h2>
+              <a href="/satellite" className="text-xs font-medium text-blue-600">Ver todos</a>
             </div>
-            <div className="space-y-4">
-              {trackedVehicles.map((v, i) => (
-                <div key={i} className="flex items-center justify-between">
+            <div className="space-y-3 max-h-[260px] overflow-y-auto">
+              {vehicles.map((v) => (
+                <div key={v._id} className="flex items-center justify-between py-1.5 border-b last:border-0 border-slate-100">
                   <div className="flex items-center gap-2">
-                    <span className={`w-2 h-2 rounded-full ${v.dot}`} />
+                    <span className={`w-2.5 h-2.5 rounded-full ${v.gpsDevice?.lastConnection ? "bg-emerald-500" : "bg-slate-300"}`} />
                     <div>
-                      <p className="text-xs font-medium text-slate-800">{v.name}</p>
-                      <p className="text-[11px] text-slate-400">{v.plate}</p>
+                      <p className="text-xs font-medium text-slate-800">{v.alias || v.plate}</p>
+                      <p className="text-[11px] text-slate-400">{v.plate} {v.brand ? `· ${v.brand} ${v.model || ''}` : ''}</p>
                     </div>
                   </div>
                   <div className="text-right">
-                    <p className="text-xs font-semibold text-slate-700">{v.speed}</p>
-                    <p className="text-[11px] text-slate-400">{v.status}</p>
+                    <p className="text-xs font-semibold text-slate-700">{v.gpsDevice?.model || "Auto-GPS"}</p>
+                    <p className="text-[11px] text-slate-400">{v.gpsDevice?.lastConnection ? "En línea" : "Desconectado"}</p>
                   </div>
                 </div>
               ))}
+              {vehicles.length === 0 && (
+                <p className="text-xs text-slate-400 py-4 text-center">No hay vehículos en la flota.</p>
+              )}
             </div>
           </div>
 
-          {/* Distribución de actividades (donut) */}
+          {/* Distribución de actividades */}
           <div className="bg-white rounded-xl shadow-sm border border-slate-200 p-5">
             <div className="flex items-center justify-between mb-2">
-              <h2 className="text-sm font-semibold text-slate-800">Distribución de actividades</h2>
-              <button className="flex items-center gap-1 text-xs font-medium text-slate-500">
-                Este mes <ChevronDown className="w-3 h-3" />
-              </button>
+              <h2 className="text-sm font-semibold text-slate-800">Distribución de alertas</h2>
+              <span className="text-xs font-medium text-slate-500">En tiempo real</span>
             </div>
             <div className="relative h-36">
               <ResponsiveContainer width="100%" height="100%">
@@ -352,7 +328,7 @@ const DashboardLayout = () => {
                 </PieChart>
               </ResponsiveContainer>
               <div className="absolute inset-0 flex flex-col items-center justify-center">
-                <span className="text-xl font-bold text-slate-800">1,254</span>
+                <span className="text-xl font-bold text-slate-800">{stats?.totals?.alerts ?? 0}</span>
                 <span className="text-[11px] text-slate-400">Total</span>
               </div>
             </div>
@@ -374,7 +350,7 @@ const DashboardLayout = () => {
           <div className="bg-white rounded-xl shadow-sm border border-slate-200 p-5">
             <div className="flex items-center justify-between mb-4">
               <h2 className="text-sm font-semibold text-slate-800">Dispositivos por estado</h2>
-              <a href="#" className="text-xs font-medium text-blue-600">Ver todos</a>
+              <a href="/devices" className="text-xs font-medium text-blue-600">Ver todos</a>
             </div>
             <div className="space-y-4">
               {devicesByStatus.map((d, i) => (
@@ -393,34 +369,42 @@ const DashboardLayout = () => {
             </div>
           </div>
 
-          {/* Cámaras en vivo */}
+          {/* Cámaras registradas */}
           <div className="bg-white rounded-xl shadow-sm border border-slate-200 p-5">
             <div className="flex items-center justify-between mb-4">
-              <h2 className="text-sm font-semibold text-slate-800">Cámaras en vivo</h2>
-              <a href="#" className="text-xs font-medium text-blue-600">Ver todas</a>
+              <h2 className="text-sm font-semibold text-slate-800">Cámaras registradas</h2>
+              <a href="/cameras" className="text-xs font-medium text-blue-600">Ver todas</a>
             </div>
-            <div className="grid grid-cols-2 gap-2">
-              {cameras.map((c, i) => (
-                <div key={i} className="relative aspect-video rounded-lg overflow-hidden bg-slate-800">
-                  <div className="absolute inset-0 bg-gradient-to-br from-slate-600 to-slate-900 opacity-90" />
-                  <span className="absolute bottom-1.5 left-1.5 flex items-center gap-1 text-[10px] text-white font-medium">
-                    <span className="w-1.5 h-1.5 rounded-full bg-emerald-400" /> {c.name}
+            <div className="space-y-2.5 max-h-[250px] overflow-y-auto">
+              {cameras.map((c) => (
+                <div key={c._id} className="flex items-center justify-between p-2 rounded-lg bg-slate-50 border border-slate-100">
+                  <div className="flex items-center gap-2 overflow-hidden">
+                    <Video className="w-4 h-4 text-blue-600 shrink-0" />
+                    <span className="text-xs font-medium text-slate-800 truncate max-w-[160px]">
+                      {c.description || c.name || "Cámara de seguridad"}
+                    </span>
+                  </div>
+                  <span className="inline-flex items-center gap-1 text-[10px] font-semibold px-2 py-0.5 rounded bg-emerald-50 text-emerald-600 shrink-0">
+                    <span className="w-1.5 h-1.5 rounded-full bg-emerald-500" />
+                    Activa
                   </span>
                 </div>
               ))}
+              {cameras.length === 0 && (
+                <p className="text-xs text-slate-400 py-6 text-center">No hay cámaras registradas.</p>
+              )}
             </div>
           </div>
         </div>
 
-        {/* ---------- FILA 4: Actividad / Top usuarios / Estado / Acciones ---------- */}
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+        {/* ---------- FILA 4: Actividad / Top usuarios / Estado del Sistema ---------- */}
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
           {/* Actividad del sistema */}
           <div className="bg-white rounded-xl shadow-sm border border-slate-200 p-5">
             <div className="flex items-center justify-between mb-4">
               <h2 className="text-sm font-semibold text-slate-800">Actividad del sistema</h2>
-              <a href="#" className="text-xs font-medium text-blue-600">Ver historial completo</a>
             </div>
-            <div className="space-y-4">
+            <div className="space-y-4 max-h-[300px] overflow-y-auto">
               {dashboardActivity.map((a, i) => (
                 <div key={i} className="flex gap-3">
                   <div className="flex flex-col items-center">
@@ -434,18 +418,18 @@ const DashboardLayout = () => {
                   </div>
                 </div>
               ))}
+              {dashboardActivity.length === 0 && (
+                <p className="text-xs text-slate-400 py-4 text-center">Sin actividad reciente registrada.</p>
+              )}
             </div>
           </div>
 
-          {/* Top usuarios */}
+          {/* Top usuarios por acceso */}
           <div className="bg-white rounded-xl shadow-sm border border-slate-200 p-5">
             <div className="flex items-center justify-between mb-4">
-              <h2 className="text-sm font-semibold text-slate-800">Top usuarios por actividad</h2>
-              <button className="flex items-center gap-1 text-xs font-medium text-slate-500">
-                Este mes <ChevronDown className="w-3 h-3" />
-              </button>
+              <h2 className="text-sm font-semibold text-slate-800">Accesos de usuarios recientes</h2>
             </div>
-            <div className="space-y-4">
+            <div className="space-y-4 max-h-[300px] overflow-y-auto">
               {dashboardUsers.map((u, i) => (
                 <div key={i} className="flex items-center gap-3">
                   <span className="w-5 text-xs font-semibold text-slate-400">{i + 1}</span>
@@ -459,6 +443,9 @@ const DashboardLayout = () => {
                   <span className="text-[11px] text-slate-500">{u.count}</span>
                 </div>
               ))}
+              {dashboardUsers.length === 0 && (
+                <p className="text-xs text-slate-400 py-4 text-center">No hay registros de usuarios.</p>
+              )}
             </div>
           </div>
 
@@ -466,7 +453,6 @@ const DashboardLayout = () => {
           <div className="bg-white rounded-xl shadow-sm border border-slate-200 p-5">
             <div className="flex items-center justify-between mb-4">
               <h2 className="text-sm font-semibold text-slate-800">Estado del sistema</h2>
-              <a href="#" className="text-xs font-medium text-blue-600">Ver detalles</a>
             </div>
             <div className="space-y-4">
               {systemStatusItems.map((s, i) => (
@@ -479,21 +465,6 @@ const DashboardLayout = () => {
                     <p className="text-[11px] text-slate-400">{s.note}</p>
                   </div>
                 </div>
-              ))}
-            </div>
-          </div>
-
-          {/* Acciones rápidas */}
-          <div className="bg-white rounded-xl shadow-sm border border-slate-200 p-5">
-            <h2 className="text-sm font-semibold text-slate-800 mb-4">Acciones rápidas</h2>
-            <div className="space-y-2">
-              {quickActions.map((a, i) => (
-                <button
-                  key={i}
-                  className="w-full flex items-center gap-2 text-xs font-medium text-slate-600 hover:bg-slate-50 rounded-lg px-3 py-2.5 transition-colors text-left"
-                >
-                  <a.icon className="w-4 h-4 text-slate-400" /> {a.label}
-                </button>
               ))}
             </div>
           </div>

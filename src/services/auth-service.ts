@@ -122,7 +122,19 @@ const authService = {
 
     try {
       const payload = JSON.parse(atob(token.split('.')[1]));
-      return payload.id || null;
+      const rawId = payload.i || payload.id;
+      if (!rawId) return null;
+      if (rawId.length === 24) return rawId;
+      if (rawId.length === 16) {
+        const base64 = rawId.replace(/-/g, '+').replace(/_/g, '/');
+        const binary = atob(base64);
+        let hex = '';
+        for (let i = 0; i < binary.length; i++) {
+          hex += binary.charCodeAt(i).toString(16).padStart(2, '0');
+        }
+        return hex.length === 24 ? hex : rawId;
+      }
+      return rawId;
     } catch (error) {
       console.error('Error al decodificar el token:', error);
       return null;
@@ -138,7 +150,19 @@ const authService = {
 
     try {
       const payload = JSON.parse(atob(token.split('.')[1]));
-      return payload.entityId || null;
+      const rawId = payload.entityId || payload.i || payload.id;
+      if (!rawId) return null;
+      if (rawId.length === 24) return rawId;
+      if (rawId.length === 16) {
+        const base64 = rawId.replace(/-/g, '+').replace(/_/g, '/');
+        const binary = atob(base64);
+        let hex = '';
+        for (let i = 0; i < binary.length; i++) {
+          hex += binary.charCodeAt(i).toString(16).padStart(2, '0');
+        }
+        return hex.length === 24 ? hex : rawId;
+      }
+      return rawId;
     } catch (error) {
       console.error('Error al obtener ID de entidad:', error);
       return null;

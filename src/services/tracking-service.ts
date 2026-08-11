@@ -3,7 +3,7 @@ import api from "./api";
 const BASE_PATH = "/api/tracking";
 
 export interface GpsDevice { _id: string; imei: string; model?: string; lastConnection?: string; active?: boolean }
-export interface Vehicle { _id: string; plate: string; alias?: string; brand?: string; model?: string; year?: number; color?: string; active: boolean; gpsDevice?: GpsDevice | null }
+export interface Vehicle { _id: string; user?: string | { _id: string; name?: string; email?: string } | null; plate: string; alias?: string; brand?: string; model?: string; year?: number; color?: string; active: boolean; gpsDevice?: GpsDevice | null }
 export interface CreateVehicleInput {
   userId: string;
   plate: string;
@@ -38,6 +38,10 @@ const trackingService = {
   },
   async getReport(vehicleId: string, from: string, to: string) {
     const response = await api.get<TrackingReport>(`${BASE_PATH}/vehicles/${vehicleId}/report`, { params: { from, to } });
+    return response.data;
+  },
+  async sendCoordinates(data: { latitude: number; longitude: number; speed?: number; heading?: number; altitude?: number; ignition?: boolean; gpsTime?: string }) {
+    const response = await api.post(`${BASE_PATH}/send-coordinates`, data);
     return response.data;
   },
 };

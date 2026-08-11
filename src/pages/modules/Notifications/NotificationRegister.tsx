@@ -1,6 +1,6 @@
 import { useParams } from "react-router-dom";
 import { useEffect, useState } from "react";
-import { getNotificationById } from "../../../services/notifications-service";
+import { getNotificationById, markNotificationAsRead } from "../../../services/notifications-service";
 import userService from "../../../services/user-service";
 import Swal from "sweetalert2";
 import {
@@ -27,6 +27,14 @@ const NotificationDetail = () => {
       try {
         const notif = await getNotificationById(id as string);
         setNotification(notif);
+
+        if (id && notif?.notification && !notif.notification.isRead) {
+          try {
+            await markNotificationAsRead(id);
+          } catch (e) {
+            console.error("Error al marcar notificación como leída:", e);
+          }
+        }
 
         const user = await userService.getUserById(notif.notification.emitter);
         setEmitter(user as User);

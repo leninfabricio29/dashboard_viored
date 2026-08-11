@@ -11,7 +11,10 @@ const moduleIcons: Record<string, ReactNode> = {
 };
 const emptyModule: CreateModuleInput = { name: '', category: '', icon: '', route: '', is_visible: true };
 const emptyPermission: CreatePermissionInput = { name: '', action: 'read', module: '', description: '' };
-const getModuleName = (permission: AccessPermission) => typeof permission.module === 'string' ? 'Sin módulo' : permission.module.name;
+const getModuleName = (permission: AccessPermission) =>
+  typeof permission.module === 'string' || !permission.module
+    ? 'Sin módulo'
+    : permission.module.name;
 const getErrorMessage = (error: unknown) => (error as { response?: { data?: { error?: string } } }).response?.data?.error || 'No fue posible completar la operación.';
 
 export default function Permissions() {

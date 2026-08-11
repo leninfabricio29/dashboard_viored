@@ -25,7 +25,28 @@ export const CreateEntityModal: React.FC<Props> = ({ isOpen, onClose, onCreated 
     setForm({ ...form, [e.target.name]: e.target.value });
   };
 
+  const resetForm = () => {
+    setForm({
+      name: '',
+      email: '',
+      password: '',
+      type: '',
+      suscription: 'free'
+    });
+    setError(null);
+  };
+
+  const handleClose = () => {
+    resetForm();
+    onClose();
+  };
+
   const handleSubmit = async () => {
+    if (!form.name.trim() || !form.email.trim() || !form.password.trim()) {
+      setError('Por favor completa los campos obligatorios: Nombre, Email y Contraseña.');
+      return;
+    }
+
     setLoading(true);
     setError(null);
     try {
@@ -37,9 +58,9 @@ export const CreateEntityModal: React.FC<Props> = ({ isOpen, onClose, onCreated 
         text: 'La entidad ha sido creada exitosamente.',
       });
 
+      resetForm();
       if (onCreated) onCreated();
-
-      
+      onClose();
     } catch (err: any) {
       if (err.response?.data?.error) {
         Swal.fire({
@@ -47,7 +68,6 @@ export const CreateEntityModal: React.FC<Props> = ({ isOpen, onClose, onCreated 
           title: 'Error al crear entidad',
           text: err.response.data.error,
         });
-
       } else {
         setError('Error al crear la entidad');
       }
@@ -136,9 +156,9 @@ export const CreateEntityModal: React.FC<Props> = ({ isOpen, onClose, onCreated 
     {/* Botones */}
     <div className="flex justify-end gap-3 pt-2">
       <button
-        onClick={onClose}
+        onClick={handleClose}
         disabled={loading}
-        className="px-4 py-2 bg-red-500 hover:bg-red-400 cursor-pointer text-white rounded-lg transition-all"
+        className="px-4 py-2 bg-slate-200 hover:bg-slate-300 text-slate-700 cursor-pointer rounded-lg transition-all"
       >
         Cancelar
       </button>
