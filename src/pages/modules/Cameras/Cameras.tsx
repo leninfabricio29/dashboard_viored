@@ -296,6 +296,8 @@ interface CameraRecord {
   };
   streamUrl?: string;
   status: string;
+  assignedUser?: any;
+  channels?: number[];
   assignedUsers?: any[];
   createdAt?: string;
   updatedAt?: string;
@@ -544,7 +546,12 @@ function CameraTile({
 }) {
   const isLive = camera.status === "online" || camera.status === "live";
   const address = camera.location?.address || "Sin dirección registrada";
-  const assignedCount = (camera.assignedUsers || []).length;
+  const assignedCount =
+    camera.assignedUsers && camera.assignedUsers.length > 0
+      ? camera.assignedUsers.length
+      : camera.assignedUser
+      ? 1
+      : 0;
 
   return (
     <button

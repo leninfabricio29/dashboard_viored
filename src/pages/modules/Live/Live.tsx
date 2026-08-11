@@ -1,4 +1,4 @@
-import  { useEffect, useMemo, useState, useRef } from "react";
+import { useEffect, useMemo, useState, useRef } from "react";
 import {
   FiX,
   FiPhone,
@@ -18,6 +18,7 @@ import {
   FiVideo,
   FiRotateCw,
   FiVideoOff,
+  FiMove,
 } from "react-icons/fi";
 import html2canvas from "html2canvas";
 import api from "../../../services/api";
@@ -28,6 +29,7 @@ import MapAlert from "../../../components/UI/MapAlert";
 import ModalTracking from "../../../components/UI/ModalTracking";
 import cameraService, { Camera, OpenCameraResponse } from "../../../services/camera-service";
 import { LiveStreamPlayer } from "../Cameras/Cameras";
+import Swal from "sweetalert2";
 
 /* -------------------------------------------------------------------------- */
 /*                                   Types                                    */
@@ -181,8 +183,8 @@ const buildBitacoraEvents = (alert: any): BitacoraEvento[] => {
         event?.type === "operator"
           ? "operador"
           : event?.type === "unit"
-          ? "unidad"
-          : "sistema";
+            ? "unidad"
+            : "sistema";
 
       return {
         id: `${alert?._id ?? alert?.id ?? "event"}-${index}`,
@@ -274,8 +276,8 @@ const buildEmergencyAlert = (alert: any, index = 0): EmergencyAlert => {
   const asignadoNombre = transferredTo
     ? `${transferredTo.name} (Delegado)`
     : attendedBy
-    ? attendedBy.name
-    : entityName ?? "Operador asignado";
+      ? attendedBy.name
+      : entityName ?? "Operador asignado";
 
   return {
     id,
@@ -382,6 +384,7 @@ export default function Live() {
   const [userCameras, setUserCameras] = useState<Camera[]>([]);
   const [_loadingUserCameras, setLoadingUserCameras] = useState<boolean>(false);
   const [showUserCamerasGrid, setShowUserCamerasGrid] = useState<boolean>(false);
+  const [zoomedCamera, setZoomedCamera] = useState<Camera | null>(null);
 
   const entityId = authService.getEntityIdFromToken?.() || authService.getUserIdFromToken?.() || "";
   const currentUserId = authService.getUserIdFromToken?.() || "";
@@ -547,11 +550,11 @@ export default function Live() {
         prev.map((alert) =>
           alert.id === String(alertId)
             ? {
-                ...alert,
-                lat: safeLat,
-                lng: safeLng,
-                coords: `${safeLat.toFixed(4)}, ${safeLng.toFixed(4)}`,
-              }
+              ...alert,
+              lat: safeLat,
+              lng: safeLng,
+              coords: `${safeLat.toFixed(4)}, ${safeLng.toFixed(4)}`,
+            }
             : alert
         )
       );
@@ -667,7 +670,12 @@ export default function Live() {
     }
     try {
       await api.put(`/api/alerts/${selectedId}/close`);
-      alert("Emergencia cerrada exitosamente");
+      
+            Swal.fire({
+              icon: 'success',
+              title: 'Proceso exitoso',
+              text: 'Emergencia cerrada con éxito.',
+            });
       void fetchAlerts();
       void fetchBitacoraEvents(selectedId);
     } catch (err: any) {
@@ -747,7 +755,7 @@ export default function Live() {
             Monitoreo y gestión de emergencias en tiempo real
           </p>
         </div>
-      
+
       </header>
 
       {/* ---------------------------- Body ---------------------------- */}
@@ -756,9 +764,9 @@ export default function Live() {
         <div className="flex flex-1 flex-col gap-4 overflow-hidden">
           {/* Map area */}
           <div className="relative flex-1 overflow-hidden rounded-2xl border border-slate-200 bg-[#eef1f4]">
-           
 
-            
+
+
             <div className="absolute inset-0 z-0">
               <MapAlert
                 markers={mapMarkers}
@@ -835,7 +843,7 @@ export default function Live() {
             )}
 
             {/* Map controls */}
-            
+
           </div>
 
           {/* ------------------------ Alerts table ------------------------ */}
@@ -844,7 +852,7 @@ export default function Live() {
               <h3 className="text-sm font-semibold text-slate-900">
                 Alertas ({alertas.length})
               </h3>
-              
+
             </div>
 
             <table className="w-full text-left text-sm">
@@ -861,65 +869,63 @@ export default function Live() {
               </thead>
               <tbody>
                 {alertas.map((a) => (
-                    <tr
-                      key={a.id}
-                      onClick={() => handleSelectAlert(a.id)}
-                      className={`cursor-pointer border-b border-slate-50 hover:bg-slate-50 ${
-                        a.id === selectedId ? "bg-slate-50" : ""
+                  <tr
+                    key={a.id}
+                    onClick={() => handleSelectAlert(a.id)}
+                    className={`cursor-pointer border-b border-slate-50 hover:bg-slate-50 ${a.id === selectedId ? "bg-slate-50" : ""
                       }`}
-                    >
-                      <td className="px-5 py-3">
-                        <EstadoBadge estado={a.estado} />
-                      </td>
-                      <td className="px-5 py-3">
-                        <p className="font-medium text-slate-900">{a.nombre}</p>
-                        <p className="text-xs text-slate-500">{a.descripcion}</p>
-                      </td>
-                      <td className="px-5 py-3 text-slate-600">
-                        <p>{a.coords}</p>
-                        <p className="text-xs text-slate-400">{a.direccion}</p>
-                      </td>
-                      <td className="px-5 py-3 text-slate-600">
-                        <p>{a.hora}</p>
-                        <p className="text-xs text-slate-400">
-                          Hace {a.haceMin} min
-                        </p>
-                      </td>
-                      <td className="px-5 py-3">
-                        <span
-                          className={`rounded-md px-2 py-1 text-xs font-medium ${
-                            prioridadStyles[a.prioridad]
+                  >
+                    <td className="px-5 py-3">
+                      <EstadoBadge estado={a.estado} />
+                    </td>
+                    <td className="px-5 py-3">
+                      <p className="font-medium text-slate-900">{a.nombre}</p>
+                      <p className="text-xs text-slate-500">{a.descripcion}</p>
+                    </td>
+                    <td className="px-5 py-3 text-slate-600">
+                      <p>{a.coords}</p>
+                      <p className="text-xs text-slate-400">{a.direccion}</p>
+                    </td>
+                    <td className="px-5 py-3 text-slate-600">
+                      <p>{a.hora}</p>
+                      <p className="text-xs text-slate-400">
+                        Hace {a.haceMin} min
+                      </p>
+                    </td>
+                    <td className="px-5 py-3">
+                      <span
+                        className={`rounded-md px-2 py-1 text-xs font-medium ${prioridadStyles[a.prioridad]
                           }`}
+                      >
+                        {a.prioridad}
+                      </span>
+                    </td>
+                    <td className="px-5 py-3 text-slate-600">
+                      {a.asignadoA ?? "Sin asignar"}
+                    </td>
+                    <td className="px-5 py-3">
+                      {a.estado === "pendiente" ? (
+                        <button
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            handleAtender(a.id);
+                          }}
+                          className="rounded-lg bg-red-500 px-3 py-1.5 text-xs font-semibold text-white hover:bg-red-600"
                         >
-                          {a.prioridad}
+                          Atender
+                        </button>
+                      ) : a.estado === "en_atencion" ? (
+                        <span className="rounded-lg bg-amber-50 px-3 py-1.5 text-xs font-semibold text-amber-600">
+                          En atención
                         </span>
-                      </td>
-                      <td className="px-5 py-3 text-slate-600">
-                        {a.asignadoA ?? "Sin asignar"}
-                      </td>
-                      <td className="px-5 py-3">
-                        {a.estado === "pendiente" ? (
-                          <button
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              handleAtender(a.id);
-                            }}
-                            className="rounded-lg bg-red-500 px-3 py-1.5 text-xs font-semibold text-white hover:bg-red-600"
-                          >
-                            Atender
-                          </button>
-                        ) : a.estado === "en_atencion" ? (
-                          <span className="rounded-lg bg-amber-50 px-3 py-1.5 text-xs font-semibold text-amber-600">
-                            En atención
-                          </span>
-                        ) : (
-                          <span className="rounded-lg bg-emerald-50 px-3 py-1.5 text-xs font-semibold text-emerald-600">
-                            Cerrada
-                          </span>
-                        )}
-                      </td>
-                    </tr>
-                  ))}
+                      ) : (
+                        <span className="rounded-lg bg-emerald-50 px-3 py-1.5 text-xs font-semibold text-emerald-600">
+                          Cerrada
+                        </span>
+                      )}
+                    </td>
+                  </tr>
+                ))}
               </tbody>
             </table>
 
@@ -976,9 +982,8 @@ export default function Live() {
                     Información de la emergencia
                   </p>
                   <span
-                    className={`rounded-md px-2 py-0.5 text-[10px] font-semibold ${
-                      prioridadStyles[selectedAlert.prioridad]
-                    }`}
+                    className={`rounded-md px-2 py-0.5 text-[10px] font-semibold ${prioridadStyles[selectedAlert.prioridad]
+                      }`}
                   >
                     {selectedAlert.prioridad}
                   </span>
@@ -1035,11 +1040,10 @@ export default function Live() {
                   <button
                     key={key}
                     onClick={() => setActiveTab(key)}
-                    className={`-mb-px border-b-2 px-3 py-3 text-sm font-medium transition-colors ${
-                      activeTab === key
+                    className={`-mb-px border-b-2 px-3 py-3 text-sm font-medium transition-colors ${activeTab === key
                         ? "border-emerald-600 text-emerald-600"
                         : "border-transparent text-slate-400 hover:text-slate-600"
-                    }`}
+                      }`}
                   >
                     {label}
                   </button>
@@ -1178,13 +1182,12 @@ export default function Live() {
                       {[...eventosBitacora].reverse().map((ev) => (
                         <div key={ev.id} className="flex gap-3 text-sm">
                           <span
-                            className={`mt-1 h-2 w-2 flex-shrink-0 rounded-full ${
-                              ev.tipo === "sistema"
+                            className={`mt-1 h-2 w-2 flex-shrink-0 rounded-full ${ev.tipo === "sistema"
                                 ? "bg-slate-300"
                                 : ev.tipo === "unidad"
-                                ? "bg-red-500"
-                                : "bg-emerald-500"
-                            }`}
+                                  ? "bg-red-500"
+                                  : "bg-emerald-500"
+                              }`}
                           />
                           <div>
                             <p className="text-xs text-slate-400">
@@ -1271,7 +1274,7 @@ export default function Live() {
                     </button>
                   )}
 
-                  
+
                 </div>
               </div>
             </div>
@@ -1440,12 +1443,21 @@ export default function Live() {
         </div>
       )}
 
-      {/* Modal de Grilla de Cámaras en Vivo para la Emergencia */}
+      {/* Panel Flotante de Cámaras Asignadas sobre el Mapa */}
       {showUserCamerasGrid && selectedAlert && (
-        <EmergencyCameraGridModal
+        <FloatingAssignedCamerasPanel
           userCameras={userCameras}
           userName={selectedAlert.nombre}
           onClose={() => setShowUserCamerasGrid(false)}
+          onZoomCamera={(cam) => setZoomedCamera(cam)}
+        />
+      )}
+
+      {/* Modal de Zoom para Cámara Individual */}
+      {zoomedCamera && (
+        <ZoomCameraModal
+          camera={zoomedCamera}
+          onClose={() => setZoomedCamera(null)}
         />
       )}
     </div>
@@ -1453,52 +1465,130 @@ export default function Live() {
 }
 
 /* ------------------------------------------------------------------ */
-/*  Modal de Grilla de Cámaras de la Emergencia (Live Stream Proxy)   */
+/*  Panel Flotante de Cámaras Asignadas (Arrastrable y Grilla 4)      */
 /* ------------------------------------------------------------------ */
 
-function EmergencyCameraGridModal({
+function FloatingAssignedCamerasPanel({
   userCameras,
   userName,
   onClose,
+  onZoomCamera,
 }: {
   userCameras: Camera[];
   userName: string;
   onClose: () => void;
+  onZoomCamera: (cam: Camera) => void;
 }) {
+  const [position, setPosition] = useState<{ x: number; y: number } | null>(null);
+  const [isDragging, setIsDragging] = useState(false);
+  const dragRef = useRef<{ startX: number; startY: number; posX: number; posY: number } | null>(null);
+
+  // Posicionar flotante por defecto a la derecha del mapa
+  useEffect(() => {
+    if (position === null) {
+      const initialX = Math.max(20, window.innerWidth - 600);
+      const initialY = 100;
+      setPosition({ x: initialX, y: initialY });
+    }
+  }, [position]);
+
+  const handleMouseDown = (e: React.MouseEvent) => {
+    if (!position) return;
+    setIsDragging(true);
+    dragRef.current = {
+      startX: e.clientX,
+      startY: e.clientY,
+      posX: position.x,
+      posY: position.y,
+    };
+  };
+
+  useEffect(() => {
+    const handleMouseMove = (e: MouseEvent) => {
+      if (!isDragging || !dragRef.current) return;
+      const dx = e.clientX - dragRef.current.startX;
+      const dy = e.clientY - dragRef.current.startY;
+      const newX = Math.max(10, Math.min(window.innerWidth - 300, dragRef.current.posX + dx));
+      const newY = Math.max(10, Math.min(window.innerHeight - 200, dragRef.current.posY + dy));
+      setPosition({ x: newX, y: newY });
+    };
+
+    const handleMouseUp = () => {
+      setIsDragging(false);
+      dragRef.current = null;
+    };
+
+    if (isDragging) {
+      window.addEventListener("mousemove", handleMouseMove);
+      window.addEventListener("mouseup", handleMouseUp);
+    }
+    return () => {
+      window.removeEventListener("mousemove", handleMouseMove);
+      window.removeEventListener("mouseup", handleMouseUp);
+    };
+  }, [isDragging]);
+
+  if (!position) return null;
+
+  const count = userCameras.length;
+
   return (
-    <div className="fixed inset-0 z-50 flex flex-col bg-slate-950/95 backdrop-blur-md p-4 md:p-6 text-white">
-      <div className="flex items-center justify-between border-b border-slate-800 pb-4 mb-4">
-        <div>
-          <div className="flex items-center gap-2">
-            <FiVideo className="text-blue-400" size={20} />
-            <h2 className="text-base font-bold text-white">
-              Monitoreo de Cámaras — {userName}
-            </h2>
+    <div
+      style={{ left: `${position.x}px`, top: `${position.y}px` }}
+      className={`fixed z-40 flex flex-col rounded-2xl border border-slate-200/90 bg-white/95 backdrop-blur-md shadow-2xl transition-shadow ${count === 1
+          ? "w-[360px] sm:w-[400px]"
+          : "w-[440px] sm:w-[520px] md:w-[580px]"
+        }`}
+    >
+      {/* Encabezado Arrastrable */}
+      <div
+        onMouseDown={handleMouseDown}
+        className={`flex items-center justify-between border-b border-slate-200 px-4 py-3 bg-slate-50/90 rounded-t-2xl select-none ${isDragging ? "cursor-grabbing" : "cursor-grab"
+          }`}
+      >
+        <div className="flex items-center gap-2.5">
+          <FiMove className="text-slate-400" size={14} />
+          <div>
+            <div className="flex items-center gap-2">
+              <h3 className="text-sm font-semibold text-slate-900">
+                Cámaras asignadas ({count})
+              </h3>
+              <span className="flex items-center gap-1 rounded-full bg-emerald-50 px-2 py-0.5 text-[10px] font-medium text-emerald-600 border border-emerald-200">
+                <span className="h-1.5 w-1.5 rounded-full bg-emerald-500 animate-pulse" />
+                En vivo
+              </span>
+            </div>
+            <p className="text-[11px] text-slate-500">
+              Usuario: <span className="font-medium text-slate-700">{userName}</span>
+            </p>
           </div>
-          <p className="text-xs text-slate-400 mt-0.5">
-            {userCameras.length} {userCameras.length === 1 ? "dispositivo asignado" : "dispositivos asignados"} al usuario
-          </p>
         </div>
+
         <button
           onClick={onClose}
-          className="flex h-9 w-9 items-center justify-center rounded-lg bg-slate-800 text-slate-400 transition hover:bg-slate-700 hover:text-white"
+          className="flex h-7 w-7 items-center justify-center rounded-lg text-slate-400 hover:bg-slate-200/70 hover:text-slate-700 transition"
+          title="Cerrar cámaras asignadas"
         >
-          <FiX size={20} />
+          <FiX size={16} />
         </button>
       </div>
 
-      <div className="flex-1 overflow-y-auto">
+      {/* Grilla de Cámaras (4 espacios) */}
+      <div className="p-3 max-h-[460px] overflow-y-auto">
         <div
-          className={`grid gap-4 h-full ${
-            userCameras.length === 1
-              ? "grid-cols-1 max-w-4xl mx-auto"
-              : userCameras.length === 2
-              ? "grid-cols-1 md:grid-cols-2"
-              : "grid-cols-1 sm:grid-cols-2 lg:grid-cols-3"
-          }`}
+          className={`grid gap-3 ${count === 1
+              ? "grid-cols-1"
+              : count === 2
+                ? "grid-cols-1 sm:grid-cols-2"
+                : "grid-cols-2"
+            }`}
         >
           {userCameras.map((cam) => (
-            <LiveCameraGridCell key={cam._id} camera={cam} />
+            <LiveCameraGridCell
+              key={cam._id}
+              camera={cam}
+              onZoom={() => onZoomCamera(cam)}
+            />
           ))}
         </div>
       </div>
@@ -1506,7 +1596,13 @@ function EmergencyCameraGridModal({
   );
 }
 
-function LiveCameraGridCell({ camera }: { camera: Camera }) {
+function LiveCameraGridCell({
+  camera,
+  onZoom,
+}: {
+  camera: Camera;
+  onZoom?: () => void;
+}) {
   const targetCameraId = camera.cameraId || camera.name || camera._id;
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -1575,22 +1671,27 @@ function LiveCameraGridCell({ camera }: { camera: Camera }) {
   }, [targetCameraId]);
 
   return (
-    <div className="flex flex-col h-[340px] rounded-xl overflow-hidden border border-slate-800 bg-slate-900 shadow-lg">
-      <div className="flex items-center justify-between px-3 py-2 bg-slate-850 border-b border-slate-800 text-xs">
-        <span className="font-semibold text-slate-200 truncate max-w-[220px]">{camera.name}</span>
-        <span className="text-[10px] font-mono text-slate-400">ID/SN: {targetCameraId}</span>
+    <div className="group relative flex flex-col h-[200px] sm:h-[220px] rounded-xl overflow-hidden border border-slate-800 bg-slate-900 shadow-md">
+      <div className="flex items-center justify-between px-2.5 py-1.5 bg-slate-950/90 border-b border-slate-800 text-[11px] z-10">
+        <span className="font-medium text-slate-200 truncate max-w-[170px]" title={camera.name}>
+          {camera.name}
+        </span>
+        <span className="flex items-center gap-1 text-[10px] text-emerald-400">
+          <span className="h-1.5 w-1.5 rounded-full bg-emerald-500 animate-pulse" />
+          En vivo
+        </span>
       </div>
 
-      <div className="flex-1 relative bg-black flex items-center justify-center">
+      <div className="flex-1 relative bg-black flex items-center justify-center overflow-hidden">
         {loading ? (
-          <div className="flex flex-col items-center gap-2 text-slate-400 text-xs">
-            <FiRotateCw size={24} className="animate-spin text-blue-500" />
-            <span>Conectando {activeChannelName}...</span>
+          <div className="flex flex-col items-center gap-2 text-slate-400 text-xs p-2">
+            <FiRotateCw size={20} className="animate-spin text-blue-500" />
+            <span className="text-[11px]">Conectando {activeChannelName}...</span>
           </div>
         ) : error ? (
-          <div className="flex flex-col items-center gap-2 text-red-400 text-xs p-4 text-center">
-            <FiVideoOff size={28} />
-            <span>{error}</span>
+          <div className="flex flex-col items-center gap-1.5 text-red-400 text-xs p-3 text-center">
+            <FiVideoOff size={24} />
+            <span className="text-[11px]">{error}</span>
           </div>
         ) : streamData ? (
           <LiveStreamPlayer
@@ -1599,6 +1700,56 @@ function LiveCameraGridCell({ camera }: { camera: Camera }) {
             channelName={activeChannelName}
           />
         ) : null}
+
+        {/* Botón de Zoom si se provee handler */}
+        {onZoom && (
+          <button
+            onClick={onZoom}
+            className="absolute bottom-2 right-2 z-20 flex h-7 w-7 items-center justify-center rounded-lg bg-black/60 text-white backdrop-blur hover:bg-black/90 hover:scale-105 transition-all shadow-md"
+            title="Ampliar cámara"
+          >
+            <FiMaximize2 size={13} />
+          </button>
+        )}
+      </div>
+    </div>
+  );
+}
+
+function ZoomCameraModal({
+  camera,
+  onClose,
+}: {
+  camera: Camera;
+  onClose: () => void;
+}) {
+  return (
+    <div className="fixed inset-0 z-50 flex flex-col bg-slate-950/95 backdrop-blur-md p-4 md:p-6 text-white">
+      <div className="flex items-center justify-between border-b border-slate-800 pb-3 mb-4">
+        <div>
+          <div className="flex items-center gap-2">
+            <FiVideo className="text-blue-400" size={20} />
+            <h2 className="text-base font-bold text-white">{camera.name}</h2>
+            <span className="flex items-center gap-1 rounded-full bg-emerald-950 px-2 py-0.5 text-[11px] font-medium text-emerald-400 border border-emerald-800">
+              <span className="h-1.5 w-1.5 rounded-full bg-emerald-500 animate-pulse" />
+              EN VIVO
+            </span>
+          </div>
+          {camera.cameraId && (
+            <p className="text-xs text-slate-400 mt-0.5 font-mono">SN/ID: {camera.cameraId}</p>
+          )}
+        </div>
+        <button
+          onClick={onClose}
+          className="flex h-9 w-9 items-center justify-center rounded-lg bg-slate-800 text-slate-400 transition hover:bg-slate-700 hover:text-white"
+          title="Cerrar vista ampliada"
+        >
+          <FiX size={20} />
+        </button>
+      </div>
+
+      <div className="flex-1 w-full max-w-5xl mx-auto overflow-hidden rounded-2xl flex flex-col justify-center">
+        <LiveCameraGridCell camera={camera} />
       </div>
     </div>
   );

@@ -158,9 +158,11 @@ export const EmergencyMarker = ({ alert, onAttend, onViewCameras }: EmergencyMar
               <div className="flex flex-col gap-2">
                 <button
                   onClick={() => onAttend?.(alert.alertId || alert.id, alert.alertId, alert.emitterId, alert.emitterId)}
-                  className="w-full rounded bg-red-600 py-2 text-xs font-bold text-white shadow-md transition hover:bg-red-700 flex items-center justify-center gap-1.5"
+                  disabled={isAttended}
+                  className="w-full rounded bg-red-600 py-2 text-xs font-bold text-white shadow-md transition hover:bg-red-700 disabled:bg-slate-200 disabled:text-slate-400 disabled:cursor-not-allowed disabled:shadow-none flex items-center justify-center gap-1.5"
+                  title={isAttended ? "La emergencia ya se encuentra en atención" : "Atender esta emergencia"}
                 >
-                  <FiCheckCircle size={15} /> Atender Emergencia
+                  <FiCheckCircle size={15} /> {isAttended ? "En atención" : "Atender Emergencia"}
                 </button>
                 <button
                   onClick={() => onViewCameras?.(alert.alertId || alert.id, userCameras)}
