@@ -198,21 +198,25 @@ const AlertMapContainer: React.FC<AlertMapContainerProps> = ({ alertId }) => {
   // ====================================================================
 
   /** ────────────────── FUNCIONES HANDLER ────────────────── */
-  const handleAttend = async (alertId: string, emitterId: string) => {
+  const handleAttend = async (
+    id: string,
+    _alertId?: string,
+    emitterId?: string
+  ) => {
+    const targetAlertId = id || alertId;
+    const targetEmitterId = emitterId || "";
     const recipientId = entityId || "";
 
     console.log(
-      `✅ Atender alerta: alertId(${alertId}) recipientId(${recipientId})`
+      `✅ Atender alerta: alertId(${targetAlertId}) recipientId(${recipientId})`
     );
 
     // Emitir evento Socket.IO al worker para que encole el job
-    socketService.attendAlert(alertId, emitterId, recipientId);
+    socketService.attendAlert(targetAlertId, targetEmitterId, recipientId);
 
     if (pollingIntervalRef.current) {
       clearInterval(pollingIntervalRef.current);
     }
-
-    
 
     setEmergencies([]);
     window.alert("Emergencia atendida correctamente.");

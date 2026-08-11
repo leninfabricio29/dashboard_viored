@@ -39,6 +39,7 @@ type TabDerecha = "seguimiento" | "bitacora" | "reportes";
 
 interface EmergencyAlert {
   id: string;
+  userId?: string;
   nombre: string;
   email: string;
   descripcion: string;
@@ -379,7 +380,7 @@ export default function Live() {
   const [isTransferring, setIsTransferring] = useState<boolean>(false);
 
   const [userCameras, setUserCameras] = useState<Camera[]>([]);
-  const [loadingUserCameras, setLoadingUserCameras] = useState<boolean>(false);
+  const [_loadingUserCameras, setLoadingUserCameras] = useState<boolean>(false);
   const [showUserCamerasGrid, setShowUserCamerasGrid] = useState<boolean>(false);
 
   const entityId = authService.getEntityIdFromToken?.() || authService.getUserIdFromToken?.() || "";
