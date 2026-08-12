@@ -115,7 +115,7 @@ export class MediaMTXWebRTCReader {
       if (m[3] !== undefined) {
         ret.username = this.unquoteCredential(m[3]);
         ret.credential = this.unquoteCredential(m[4]);
-        ret.credentialType = 'password';
+        ret.credential = 'password';
       }
       return ret;
     });
