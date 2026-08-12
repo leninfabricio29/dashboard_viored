@@ -1,0 +1,129 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <title>Prueba WHEP</title>
+  <style>
+    body {
+      font-family: Arial;
+      background: #111;
+      color: white;
+      padding: 30px;
+    }
+
+    video {
+      width: 800px;
+      max-width: 100%;
+      background: black;
+    }
+
+    #status {
+      margin: 15px 0;
+    }
+  </style>
+</head>
+
+<body>
+
+  <h2>Prueba cámara WHEP</h2>
+
+  <div id="status">Conectando...</div>
+
+  <video id="video" autoplay muted playsinline controls></video>
+
+  <script>
+    const whepUrl =
+      "https://streamrtc.viryx.net/cam_1000001_1_0_12/whep";
+
+    const video = document.getElementById("video");
+    const status = document.getElementById("status");
+
+    async function start() {
+      try {
+        const pc = new RTCPeerConnection();
+
+        pc.addTransceiver("video", {
+          direction: "recvonly"
+        });
+
+        pc.addTransceiver("audio", {
+          direction: "recvonly"
+        });
+
+        pc.ontrack = (event) => {
+          console.log("TRACK RECIBIDO:", event);
+
+          if (event.streams && event.streams[0]) {
+            video.srcObject = event.streams[0];
+            status.innerText = "✅ Señal recibida";
+          }
+        };
+
+        pc.onconnectionstatechange = () => {
+          console.log("Connection:", pc.connectionState);
+
+          if (pc.connectionState === "connected") {
+            status.innerText = "🟢 WebRTC conectado";
+          }
+
+          if (pc.connectionState === "failed") {
+            status.innerText = "🔴 WebRTC falló";
+          }
+        };
+
+        // Crear oferta
+        const offer = await pc.createOffer();
+
+        await pc.setLocalDescription(offer);
+
+        // Esperar ICE gathering
+        await new Promise((resolve) => {
+          if (pc.iceGatheringState === "complete") {
+            resolve();
+            return;
+          }
+
+          pc.onicegatheringstatechange = () => {
+            if (pc.iceGatheringState === "complete") {
+              resolve();
+            }
+          };
+        });
+
+        // Enviar SDP al servidor WHEP
+        const response = await fetch(whepUrl, {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/sdp"
+          },
+          body: pc.localDescription.sdp
+        });
+
+        console.log("HTTP:", response.status);
+
+        if (!response.ok) {
+          throw new Error(
+            `WHEP respondió HTTP ${response.status}`
+          );
+        }
+
+        const answer = await response.text();
+
+        console.log("SDP ANSWER:", answer);
+
+        await pc.setRemoteDescription({
+          type: "answer",
+          sdp: answer
+        });
+
+      } catch (error) {
+        console.error(error);
+        status.innerText = "❌ Error: " + error.message;
+      }
+    }
+
+    start();
+  </script>
+
+</body>
+</html>

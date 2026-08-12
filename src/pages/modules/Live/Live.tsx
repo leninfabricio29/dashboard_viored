@@ -15,7 +15,6 @@ import {
   FiDownload,
   FiUser,
   FiFileText,
-  FiVideo,
   FiRotateCw,
   FiVideoOff,
   FiMove,
@@ -385,6 +384,7 @@ export default function Live() {
   const [_loadingUserCameras, setLoadingUserCameras] = useState<boolean>(false);
   const [showUserCamerasGrid, setShowUserCamerasGrid] = useState<boolean>(false);
   const [zoomedCamera, setZoomedCamera] = useState<Camera | null>(null);
+  console.log(zoomedCamera)
 
   const entityId = authService.getEntityIdFromToken?.() || authService.getUserIdFromToken?.() || "";
   const currentUserId = authService.getUserIdFromToken?.() || "";
@@ -1452,14 +1452,6 @@ export default function Live() {
           onZoomCamera={(cam) => setZoomedCamera(cam)}
         />
       )}
-
-      {/* Modal de Zoom para Cámara Individual */}
-      {zoomedCamera && (
-        <ZoomCameraModal
-          camera={zoomedCamera}
-          onClose={() => setZoomedCamera(null)}
-        />
-      )}
     </div>
   );
 }
@@ -1598,7 +1590,6 @@ function FloatingAssignedCamerasPanel({
 
 function LiveCameraGridCell({
   camera,
-  onZoom,
 }: {
   camera: Camera;
   onZoom?: () => void;
@@ -1695,62 +1686,15 @@ function LiveCameraGridCell({
           </div>
         ) : streamData ? (
           <LiveStreamPlayer
-            hlsUrl={streamData.hls}
             webrtcUrl={streamData.webrtc}
             channelName={activeChannelName}
           />
         ) : null}
 
-        {/* Botón de Zoom si se provee handler */}
-        {onZoom && (
-          <button
-            onClick={onZoom}
-            className="absolute bottom-2 right-2 z-20 flex h-7 w-7 items-center justify-center rounded-lg bg-black/60 text-white backdrop-blur hover:bg-black/90 hover:scale-105 transition-all shadow-md"
-            title="Ampliar cámara"
-          >
-            <FiMaximize2 size={13} />
-          </button>
-        )}
+      
       </div>
     </div>
   );
 }
 
-function ZoomCameraModal({
-  camera,
-  onClose,
-}: {
-  camera: Camera;
-  onClose: () => void;
-}) {
-  return (
-    <div className="fixed inset-0 z-50 flex flex-col bg-slate-950/95 backdrop-blur-md p-4 md:p-6 text-white">
-      <div className="flex items-center justify-between border-b border-slate-800 pb-3 mb-4">
-        <div>
-          <div className="flex items-center gap-2">
-            <FiVideo className="text-blue-400" size={20} />
-            <h2 className="text-base font-bold text-white">{camera.name}</h2>
-            <span className="flex items-center gap-1 rounded-full bg-emerald-950 px-2 py-0.5 text-[11px] font-medium text-emerald-400 border border-emerald-800">
-              <span className="h-1.5 w-1.5 rounded-full bg-emerald-500 animate-pulse" />
-              EN VIVO
-            </span>
-          </div>
-          {camera.cameraId && (
-            <p className="text-xs text-slate-400 mt-0.5 font-mono">SN/ID: {camera.cameraId}</p>
-          )}
-        </div>
-        <button
-          onClick={onClose}
-          className="flex h-9 w-9 items-center justify-center rounded-lg bg-slate-800 text-slate-400 transition hover:bg-slate-700 hover:text-white"
-          title="Cerrar vista ampliada"
-        >
-          <FiX size={20} />
-        </button>
-      </div>
 
-      <div className="flex-1 w-full max-w-5xl mx-auto overflow-hidden rounded-2xl flex flex-col justify-center">
-        <LiveCameraGridCell camera={camera} />
-      </div>
-    </div>
-  );
-}

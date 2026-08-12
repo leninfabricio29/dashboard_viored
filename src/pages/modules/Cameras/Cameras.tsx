@@ -17,230 +17,88 @@ import {
   FiCheck,
   FiTrash2,
   FiLayers,
-  FiVolume2,
-  FiVolumeX,
-  FiMaximize,
-  FiAlertCircle,
 } from "react-icons/fi";
 import Map, { Marker, NavigationControl, Popup, type MapLayerMouseEvent } from "react-map-gl";
 import "mapbox-gl/dist/mapbox-gl.css";
-import Hls from "hls.js";
 import cameraService, { DiscoverDevice, OpenCameraResponse } from "../../../services/camera-service";
 import userService from "../../../services/user-service";
 import { User } from "../../../types/user.types";
 
 /* ------------------------------------------------------------------ */
-/*  Componente de Reproductor HLS Optimizado con Hls.js               */
+/*  Componente de Reproductor WebRTC / HLS                            */
 /* ------------------------------------------------------------------ */
 
 export function LiveStreamPlayer({
+  webrtcUrl,
   hlsUrl,
   channelName,
   isChangingChannel,
 }: {
-  hlsUrl?: string;
   webrtcUrl?: string;
+  hlsUrl?: string;
   channelName: string;
   isChangingChannel?: boolean;
 }) {
+  const cleanWebrtcUrl = useMemo(() => {
+    if (!webrtcUrl) return "";
+    return webrtcUrl.replace(/\/whep\/?$/i, "");
+  }, [webrtcUrl]);
+
+  const iframeSrc = useMemo(() => {
+    if (!cleanWebrtcUrl) return "";
+    const separator = cleanWebrtcUrl.includes("?") ? "&" : "?";
+    return `${cleanWebrtcUrl}${separator}controls=1&muted=1&autoplay=1&playsinline=1`;
+  }, [cleanWebrtcUrl]);
+
   const videoRef = useRef<HTMLVideoElement | null>(null);
-  const [isPlaying, setIsPlaying] = useState(false);
-  const [isBuffering, setIsBuffering] = useState(true);
-  const [isMuted, setIsMuted] = useState(true);
-  const [streamError, setStreamError] = useState<string | null>(null);
-  const hlsInstanceRef = useRef<Hls | null>(null);
 
-  useEffect(() => {
-    const video = videoRef.current;
-    if (!video || !hlsUrl) return;
+  if (cleanWebrtcUrl) {
+    return (
+      <div className="relative flex-1 w-full h-full min-h-[420px] flex items-center justify-center bg-slate-950 rounded-2xl overflow-hidden border border-slate-800 shadow-2xl group">
+        {isChangingChannel && (
+          <div className="absolute inset-0 bg-slate-950/75 backdrop-blur-sm flex flex-col items-center justify-center gap-3 text-white transition-opacity duration-300 z-20">
+            <div className="relative flex items-center justify-center">
+              <div className="h-12 w-12 rounded-full border-4 border-blue-500/20 border-t-blue-500 animate-spin" />
+              <FiTv className="absolute text-blue-400" size={18} />
+            </div>
+            <div className="text-center">
+              <p className="text-xs font-semibold uppercase tracking-wider text-slate-300">
+                Cambiando de canal...
+              </p>
+              <p className="text-[11px] text-slate-400 mt-0.5">{channelName}</p>
+            </div>
+          </div>
+        )}
 
-    setIsBuffering(true);
-    setStreamError(null);
-    setIsPlaying(false);
+        <iframe
+          src={iframeSrc}
+          className="w-full h-full min-h-[420px] border-0 rounded-2xl bg-black"
+          allow="autoplay; fullscreen; picture-in-picture"
+          allowFullScreen
+          title={`Live Stream - ${channelName}`}
+        />
 
-    // Destruir instancia previa de Hls.js inmediatamente
-    if (hlsInstanceRef.current) {
-      hlsInstanceRef.current.destroy();
-      hlsInstanceRef.current = null;
-    }
-
-    let hls: Hls | null = null;
-
-    if (Hls.isSupported()) {
-      hls = new Hls({
-        enableWorker: true,
-        lowLatencyMode: true,
-        backBufferLength: 10,
-        maxBufferLength: 15,
-        maxMaxBufferLength: 30,
-        maxBufferHole: 0.5,
-        highBufferWatchdogPeriod: 2,
-        manifestLoadingTimeOut: 10000,
-        manifestLoadingMaxRetry: 4,
-        levelLoadingTimeOut: 10000,
-        fragLoadingTimeOut: 15000,
-      });
-
-      hlsInstanceRef.current = hls;
-
-      hls.loadSource(hlsUrl);
-      hls.attachMedia(video);
-
-      hls.on(Hls.Events.MANIFEST_PARSED, () => {
-        setIsBuffering(false);
-        video.muted = true;
-        setIsMuted(true);
-        video
-          .play()
-          .then(() => setIsPlaying(true))
-          .catch((err) => {
-            console.warn("Autoplay bloqueado:", err);
-            setIsPlaying(false);
-          });
-      });
-
-      hls.on(Hls.Events.FRAG_BUFFERED, () => {
-        setIsBuffering(false);
-      });
-
-      hls.on(Hls.Events.ERROR, (_event: any, data: any) => {
-        if (data.fatal) {
-          switch (data.type) {
-            case Hls.ErrorTypes.NETWORK_ERROR:
-              console.warn("HLS fatal network error, reintentando carga...");
-              hls?.startLoad();
-              break;
-            case Hls.ErrorTypes.MEDIA_ERROR:
-              console.warn("HLS fatal media error, recuperando...");
-              hls?.recoverMediaError();
-              break;
-            default:
-              console.error("HLS fatal error:", data);
-              setStreamError("Error al procesar la señal de video.");
-              hls?.destroy();
-              break;
-          }
-        }
-      });
-    } else if (video.canPlayType("application/vnd.apple.mpegurl")) {
-      // Safari / iOS nativo HLS
-      video.src = hlsUrl;
-      video.muted = true;
-      setIsMuted(true);
-
-      const handleLoadedMetadata = () => {
-        setIsBuffering(false);
-        video
-          .play()
-          .then(() => setIsPlaying(true))
-          .catch(() => setIsPlaying(false));
-      };
-
-      const handleError = () => {
-        setStreamError("No se pudo cargar la señal HLS nativa.");
-        setIsBuffering(false);
-      };
-
-      video.addEventListener("loadedmetadata", handleLoadedMetadata);
-      video.addEventListener("error", handleError);
-
-      return () => {
-        video.removeEventListener("loadedmetadata", handleLoadedMetadata);
-        video.removeEventListener("error", handleError);
-      };
-    } else {
-      setStreamError("Tu navegador no soporta reproducción HLS.");
-      setIsBuffering(false);
-    }
-
-    return () => {
-      if (hlsInstanceRef.current) {
-        hlsInstanceRef.current.destroy();
-        hlsInstanceRef.current = null;
-      }
-    };
-  }, [hlsUrl]);
-
-  function toggleMute() {
-    if (videoRef.current) {
-      const nextMuted = !videoRef.current.muted;
-      videoRef.current.muted = nextMuted;
-      setIsMuted(nextMuted);
-    }
-  }
-
-  function toggleFullscreen() {
-    if (videoRef.current) {
-      if (document.fullscreenElement) {
-        document.exitFullscreen().catch(console.error);
-      } else {
-        videoRef.current.requestFullscreen().catch(console.error);
-      }
-    }
-  }
-
-  function handleManualPlay() {
-    if (videoRef.current) {
-      videoRef.current
-        .play()
-        .then(() => setIsPlaying(true))
-        .catch(console.error);
-    }
+        {/* Etiqueta de Canal */}
+        <div className="absolute top-4 left-4 bg-slate-900/85 backdrop-blur-md border border-white/10 px-3 py-1.5 rounded-lg text-xs font-medium text-white flex items-center gap-2 z-10 shadow-lg pointer-events-none">
+          <span className="h-2 w-2 rounded-full bg-emerald-500 animate-pulse" />
+          <FiTv className="text-emerald-400" size={14} />
+          <span className="truncate max-w-[240px]">{channelName}</span>
+        </div>
+      </div>
+    );
   }
 
   return (
-    <div className="relative flex-1 w-full flex items-center justify-center bg-slate-950 rounded-2xl overflow-hidden border border-slate-800 shadow-2xl group">
+    <div className="relative flex-1 w-full h-full min-h-[420px] flex items-center justify-center bg-slate-950 rounded-2xl overflow-hidden border border-slate-800 shadow-2xl group">
       <video
         ref={videoRef}
+        src={hlsUrl}
+        controls
+        autoPlay
+        muted
         playsInline
         className="h-full w-full object-contain"
-        onWaiting={() => setIsBuffering(true)}
-        onPlaying={() => {
-          setIsBuffering(false);
-          setIsPlaying(true);
-        }}
       />
-
-      {/* Overlay de Carga / Buffering / Cambio de Canal */}
-      {(isBuffering || isChangingChannel) && !streamError && (
-        <div className="absolute inset-0 bg-slate-950/75 backdrop-blur-sm flex flex-col items-center justify-center gap-3 text-white transition-opacity duration-300 z-10">
-          <div className="relative flex items-center justify-center">
-            <div className="h-12 w-12 rounded-full border-4 border-blue-500/20 border-t-blue-500 animate-spin" />
-            <FiTv className="absolute text-blue-400" size={18} />
-          </div>
-          <div className="text-center">
-            <p className="text-xs font-semibold uppercase tracking-wider text-slate-300">
-              {isChangingChannel ? "Cambiando de canal..." : "Conectando señal en vivo..."}
-            </p>
-            <p className="text-[11px] text-slate-400 mt-0.5">{channelName}</p>
-          </div>
-        </div>
-      )}
-
-      {/* Overlay de Error */}
-      {streamError && (
-        <div className="absolute inset-0 bg-slate-950/90 flex flex-col items-center justify-center gap-3 text-red-400 p-6 text-center z-10">
-          <FiAlertCircle size={36} className="text-red-500" />
-          <div>
-            <p className="text-sm font-semibold">{streamError}</p>
-            <p className="text-xs text-slate-400 mt-1">
-              La transmisión puede estar cargando o inactiva temporalmente.
-            </p>
-          </div>
-          <button
-            onClick={() => {
-              setStreamError(null);
-              setIsBuffering(true);
-              if (hlsInstanceRef.current && hlsUrl) {
-                hlsInstanceRef.current.loadSource(hlsUrl);
-              }
-            }}
-            className="mt-2 flex items-center gap-2 rounded-lg bg-blue-600 px-4 py-2 text-xs font-medium text-white hover:bg-blue-700 transition-colors"
-          >
-            <FiRotateCw /> Reintentar señal
-          </button>
-        </div>
-      )}
 
       {/* Etiqueta de Canal */}
       <div className="absolute top-4 left-4 bg-slate-900/85 backdrop-blur-md border border-white/10 px-3 py-1.5 rounded-lg text-xs font-medium text-white flex items-center gap-2 z-10 shadow-lg">
@@ -248,39 +106,9 @@ export function LiveStreamPlayer({
         <FiTv className="text-emerald-400" size={14} />
         <span className="truncate max-w-[240px]">{channelName}</span>
       </div>
-
-      {/* Play Button si está pausado */}
-      {!isPlaying && !isBuffering && !streamError && (
-        <div className="absolute inset-0 bg-black/40 flex items-center justify-center z-10">
-          <button
-            onClick={handleManualPlay}
-            className="flex items-center gap-2 rounded-xl bg-blue-600 px-5 py-2.5 text-xs font-semibold text-white shadow-xl hover:bg-blue-500 transition-colors"
-          >
-            Reproducir Señal
-          </button>
-        </div>
-      )}
-
-      {/* Botones de Control Flotante */}
-      <div className="absolute bottom-4 right-4 flex items-center gap-2 opacity-0 group-hover:opacity-100 transition-opacity duration-200 z-10">
-        <button
-          onClick={toggleMute}
-          className="flex h-9 w-9 items-center justify-center rounded-lg bg-slate-900/85 text-white backdrop-blur border border-white/10 hover:bg-slate-800 transition-colors"
-          title={isMuted ? "Activar sonido" : "Silenciar"}
-        >
-          {isMuted ? <FiVolumeX size={16} className="text-amber-400" /> : <FiVolume2 size={16} />}
-        </button>
-        <button
-          onClick={toggleFullscreen}
-          className="flex h-9 w-9 items-center justify-center rounded-lg bg-slate-900/85 text-white backdrop-blur border border-white/10 hover:bg-slate-800 transition-colors"
-          title="Pantalla completa"
-        >
-          <FiMaximize size={16} />
-        </button>
-      </div>
     </div>
   );
-}
+}  
 
 type CameraTab = "records" | "map";
 
@@ -828,12 +656,19 @@ function ExpandedView({ camera, onClose }: { camera: CameraRecord; onClose: () =
               <div className="flex items-center justify-between rounded-xl border border-slate-800 bg-slate-900 px-4 py-3 text-xs">
                 <div className="truncate pr-2">
                   <span className="text-[10px] uppercase tracking-wider text-slate-400 block font-semibold">
-                    WebRTC (WHEP)
+                    WebRTC Stream
                   </span>
-                  <span className="font-mono text-slate-300 truncate block mt-0.5">{streamData.webrtc}</span>
+                  <span className="font-mono text-slate-300 truncate block mt-0.5">
+                    {streamData.webrtc ? streamData.webrtc.replace(/\/whep\/?$/i, "") : ""}
+                  </span>
                 </div>
                 <button
-                  onClick={() => copyToClipboard(streamData.webrtc, "webrtc")}
+                  onClick={() =>
+                    copyToClipboard(
+                      streamData.webrtc ? streamData.webrtc.replace(/\/whep\/?$/i, "") : "",
+                      "webrtc"
+                    )
+                  }
                   className="flex items-center gap-1 rounded-md bg-slate-800 px-2.5 py-1.5 font-medium text-slate-200 hover:bg-slate-700 transition-colors shrink-0"
                 >
                   {copiedType === "webrtc" ? <FiCheck className="text-emerald-400" /> : <FiCopy />}
