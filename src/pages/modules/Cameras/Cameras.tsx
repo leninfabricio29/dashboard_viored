@@ -17,12 +17,14 @@ import {
   FiCheck,
   FiTrash2,
   FiLayers,
+  FiAlertCircle,
 } from "react-icons/fi";
 import Map, { Marker, NavigationControl, Popup, type MapLayerMouseEvent } from "react-map-gl";
 import "mapbox-gl/dist/mapbox-gl.css";
 import cameraService, { DiscoverDevice, OpenCameraResponse } from "../../../services/camera-service";
 import userService from "../../../services/user-service";
 import { User } from "../../../types/user.types";
+import { MediaMTXWebRTCReader } from "../../../utils/media-mtx-reader";
 
 /* ------------------------------------------------------------------ */
 /*  Componente de Reproductor WebRTC / HLS                            */
@@ -30,7 +32,6 @@ import { User } from "../../../types/user.types";
 
 export function LiveStreamPlayer({
   webrtcUrl,
-  hlsUrl,
   channelName,
   isChangingChannel,
 }: {
@@ -39,69 +40,90 @@ export function LiveStreamPlayer({
   channelName: string;
   isChangingChannel?: boolean;
 }) {
-  const cleanWebrtcUrl = useMemo(() => {
-    if (!webrtcUrl) return "";
-    return webrtcUrl.replace(/\/whep\/?$/i, "");
-  }, [webrtcUrl]);
-
-  const iframeSrc = useMemo(() => {
-    if (!cleanWebrtcUrl) return "";
-    const separator = cleanWebrtcUrl.includes("?") ? "&" : "?";
-    return `${cleanWebrtcUrl}${separator}controls=1&muted=1&autoplay=1&playsinline=1`;
-  }, [cleanWebrtcUrl]);
-
   const videoRef = useRef<HTMLVideoElement | null>(null);
+  const readerRef = useRef<MediaMTXWebRTCReader | null>(null);
+  const [isBuffering, setIsBuffering] = useState(true);
+  const [streamError, setStreamError] = useState<string | null>(null);
 
-  if (cleanWebrtcUrl) {
-    return (
-      <div className="relative flex-1 w-full h-full min-h-[420px] flex items-center justify-center bg-slate-950 rounded-2xl overflow-hidden border border-slate-800 shadow-2xl group">
-        {isChangingChannel && (
-          <div className="absolute inset-0 bg-slate-950/75 backdrop-blur-sm flex flex-col items-center justify-center gap-3 text-white transition-opacity duration-300 z-20">
-            <div className="relative flex items-center justify-center">
-              <div className="h-12 w-12 rounded-full border-4 border-blue-500/20 border-t-blue-500 animate-spin" />
-              <FiTv className="absolute text-blue-400" size={18} />
-            </div>
-            <div className="text-center">
-              <p className="text-xs font-semibold uppercase tracking-wider text-slate-300">
-                Cambiando de canal...
-              </p>
-              <p className="text-[11px] text-slate-400 mt-0.5">{channelName}</p>
-            </div>
-          </div>
-        )}
+  useEffect(() => {
+    const video = videoRef.current;
+    if (!video || !webrtcUrl) return;
 
-        <iframe
-          src={iframeSrc}
-          className="w-full h-full min-h-[420px] border-0 rounded-2xl bg-black"
-          allow="autoplay; fullscreen; picture-in-picture"
-          allowFullScreen
-          title={`Live Stream - ${channelName}`}
-        />
+    setIsBuffering(true);
+    setStreamError(null);
 
-        {/* Etiqueta de Canal */}
-        <div className="absolute top-4 left-4 bg-slate-900/85 backdrop-blur-md border border-white/10 px-3 py-1.5 rounded-lg text-xs font-medium text-white flex items-center gap-2 z-10 shadow-lg pointer-events-none">
-          <span className="h-2 w-2 rounded-full bg-emerald-500 animate-pulse" />
-          <FiTv className="text-emerald-400" size={14} />
-          <span className="truncate max-w-[240px]">{channelName}</span>
-        </div>
-      </div>
-    );
-  }
+    if (readerRef.current) {
+      readerRef.current.close();
+      readerRef.current = null;
+    }
+
+    const reader = new MediaMTXWebRTCReader({
+      url: webrtcUrl,
+      onTrack: (evt) => {
+        if (videoRef.current && evt.streams && evt.streams[0]) {
+          videoRef.current.srcObject = evt.streams[0];
+          videoRef.current.muted = true;
+          videoRef.current
+            .play()
+            .then(() => setIsBuffering(false))
+            .catch(() => setIsBuffering(false));
+        }
+      },
+      onError: (err) => {
+        console.error("MediaMTX WebRTC Error:", err);
+        setStreamError("WebRTC falló");
+        setIsBuffering(false);
+      },
+    });
+
+    readerRef.current = reader;
+
+    return () => {
+      if (readerRef.current) {
+        readerRef.current.close();
+        readerRef.current = null;
+      }
+      if (videoRef.current) {
+        videoRef.current.pause();
+        videoRef.current.srcObject = null;
+      }
+    };
+  }, [webrtcUrl]);
 
   return (
     <div className="relative flex-1 w-full h-full min-h-[420px] flex items-center justify-center bg-slate-950 rounded-2xl overflow-hidden border border-slate-800 shadow-2xl group">
       <video
         ref={videoRef}
-        src={hlsUrl}
-        controls
         autoPlay
         muted
         playsInline
+        controls
         className="h-full w-full object-contain"
       />
 
-      {/* Etiqueta de Canal */}
-      <div className="absolute top-4 left-4 bg-slate-900/85 backdrop-blur-md border border-white/10 px-3 py-1.5 rounded-lg text-xs font-medium text-white flex items-center gap-2 z-10 shadow-lg">
+      {(isBuffering || isChangingChannel) && !streamError && (
+        <div className="absolute inset-0 bg-slate-950/75 backdrop-blur-sm flex flex-col items-center justify-center gap-3 text-white transition-opacity duration-300 z-10 pointer-events-none">
+          <div className="relative flex items-center justify-center">
+            <div className="h-12 w-12 rounded-full border-4 border-blue-500/20 border-t-blue-500 animate-spin" />
+            <FiTv className="absolute text-blue-400" size={18} />
+          </div>
+          <div className="text-center">
+            <p className="text-xs font-semibold uppercase tracking-wider text-slate-300">
+              {isChangingChannel ? "Cambiando de canal..." : "Conectando WebRTC..."}
+            </p>
+            <p className="text-[11px] text-slate-400 mt-0.5">{channelName}</p>
+          </div>
+        </div>
+      )}
+
+      {streamError && (
+        <div className="absolute inset-0 bg-slate-950/90 flex flex-col items-center justify-center gap-3 text-red-400 p-6 text-center z-10">
+          <FiAlertCircle size={36} className="text-red-500" />
+          <p className="text-sm font-semibold">{streamError}</p>
+        </div>
+      )}
+
+      <div className="absolute top-4 left-4 bg-slate-900/85 backdrop-blur-md border border-white/10 px-3 py-1.5 rounded-lg text-xs font-medium text-white flex items-center gap-2 z-10 shadow-lg pointer-events-none">
         <span className="h-2 w-2 rounded-full bg-emerald-500 animate-pulse" />
         <FiTv className="text-emerald-400" size={14} />
         <span className="truncate max-w-[240px]">{channelName}</span>
@@ -502,6 +524,9 @@ function ExpandedView({ camera, onClose }: { camera: CameraRecord; onClose: () =
     };
   }, [targetCameraId]);
 
+  const viewerIdRef = useRef<string | null>(null);
+  const heartbeatTimerRef = useRef<ReturnType<typeof setInterval> | null>(null);
+
   // Abrir stream del canal seleccionado y asegurar cierre al cambiar o desmontar
   useEffect(() => {
     if (loadingDevice) return;
@@ -516,8 +541,25 @@ function ExpandedView({ camera, onClose }: { camera: CameraRecord; onClose: () =
         const res = await cameraService.openCamera(targetCameraId, currentSeq);
         if (isMounted) {
           if (res.success) {
-            setStreamData(res);
-            activeChannelSeqRef.current = currentSeq;
+            if (res.viewerId) {
+              viewerIdRef.current = res.viewerId;
+              if (heartbeatTimerRef.current) {
+                clearInterval(heartbeatTimerRef.current);
+              }
+              heartbeatTimerRef.current = setInterval(() => {
+                if (viewerIdRef.current) {
+                  cameraService.sendHeartbeat(viewerIdRef.current);
+                }
+              }, 10000);
+            }
+
+            // 3 segundos de espera sincronizados con la lógica de nettSoft
+            await new Promise((r) => setTimeout(r, 3000));
+
+            if (isMounted) {
+              setStreamData(res);
+              activeChannelSeqRef.current = currentSeq;
+            }
           } else {
             setStreamError("No se pudo iniciar la transmisión.");
           }
@@ -536,11 +578,16 @@ function ExpandedView({ camera, onClose }: { camera: CameraRecord; onClose: () =
 
     return () => {
       isMounted = false;
-      // Cerrar canal al cambiar o salir
+      if (heartbeatTimerRef.current) {
+        clearInterval(heartbeatTimerRef.current);
+        heartbeatTimerRef.current = null;
+      }
       if (activeChannelSeqRef.current !== null) {
         const seqToClose = activeChannelSeqRef.current;
+        const vId = viewerIdRef.current;
         activeChannelSeqRef.current = null;
-        cameraService.closeCamera(targetCameraId, seqToClose).catch((e) =>
+        viewerIdRef.current = null;
+        cameraService.closeCamera(targetCameraId, seqToClose, vId || undefined).catch((e) =>
           console.error(`Error cerrando canal ${seqToClose}:`, e)
         );
       }

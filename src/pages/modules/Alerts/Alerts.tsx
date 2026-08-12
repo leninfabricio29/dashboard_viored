@@ -413,7 +413,7 @@ export default function Alerts() {
                         alert.entities?.[0]?.entityId?.name ||
                         alert.attendedBy?.name ||
                         alert.transferredTo?.name ||
-                        "Policía / Centro de Monitoreo";
+                        "Centro de Monitoreo Viored";
 
                       return (
                         <tr
@@ -585,7 +585,7 @@ export default function Alerts() {
               <div className="space-y-1 bg-slate-50 p-3 rounded-xl border border-slate-100 text-xs">
                 <p className="text-slate-700">
                   <strong className="text-slate-900">Entidad Responsable:</strong>{" "}
-                  {selectedAlert.entities?.[0]?.entityId?.name || selectedAlert.attendedBy?.name || "Policía / Monitoreo Viored"}
+                  {selectedAlert.entities?.[0]?.entityId?.name || selectedAlert.attendedBy?.name || "Monitoreo Viored"}
                 </p>
                 <p className="text-slate-700">
                   <strong className="text-slate-900">Atendido Inicialmente Por:</strong>{" "}

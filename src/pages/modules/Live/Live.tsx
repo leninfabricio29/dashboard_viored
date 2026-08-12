@@ -1600,6 +1600,8 @@ function LiveCameraGridCell({
   const [streamData, setStreamData] = useState<OpenCameraResponse | null>(null);
   const [activeChannelName, setActiveChannelName] = useState<string>(camera.name);
   const activeSeqRef = useRef<number | null>(null);
+  const viewerIdRef = useRef<string | null>(null);
+  const heartbeatTimerRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
   useEffect(() => {
     let isMounted = true;
@@ -1633,8 +1635,25 @@ function LiveCameraGridCell({
         const openRes = await cameraService.openCamera(targetCameraId, channelToOpen);
         if (isMounted) {
           if (openRes.success) {
-            setStreamData(openRes);
-            activeSeqRef.current = channelToOpen;
+            if (openRes.viewerId) {
+              viewerIdRef.current = openRes.viewerId;
+              if (heartbeatTimerRef.current) {
+                clearInterval(heartbeatTimerRef.current);
+              }
+              heartbeatTimerRef.current = setInterval(() => {
+                if (viewerIdRef.current) {
+                  cameraService.sendHeartbeat(viewerIdRef.current);
+                }
+              }, 10000);
+            }
+
+            // 3 segundos de espera sincronizados con nettSoft
+            await new Promise((r) => setTimeout(r, 3000));
+
+            if (isMounted) {
+              setStreamData(openRes);
+              activeSeqRef.current = channelToOpen;
+            }
           } else {
             setError("No se pudo iniciar la transmisión.");
           }
@@ -1653,10 +1672,16 @@ function LiveCameraGridCell({
 
     return () => {
       isMounted = false;
+      if (heartbeatTimerRef.current) {
+        clearInterval(heartbeatTimerRef.current);
+        heartbeatTimerRef.current = null;
+      }
       if (activeSeqRef.current !== null) {
         const seqToClose = activeSeqRef.current;
+        const vId = viewerIdRef.current;
         activeSeqRef.current = null;
-        cameraService.closeCamera(targetCameraId, seqToClose).catch(console.error);
+        viewerIdRef.current = null;
+        cameraService.closeCamera(targetCameraId, seqToClose, vId || undefined).catch(console.error);
       }
     };
   }, [targetCameraId]);

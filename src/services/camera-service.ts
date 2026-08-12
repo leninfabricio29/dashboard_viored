@@ -23,6 +23,7 @@ export interface DiscoverDeviceResponse {
 export interface OpenCameraResponse {
   success: boolean;
   cameraId: string;
+  viewerId?: string;
   path: string;
   webrtc: string;
   hls: string;
@@ -99,9 +100,17 @@ const cameraService = {
     return response.data;
   },
 
-  closeCamera: async (cameraId: string, channelSeq: number = 0): Promise<CloseCameraResponse> => {
-    const response = await api.post(`${BASE_PATH}/close`, { cameraId, channelSeq });
+  closeCamera: async (
+    cameraId: string,
+    channelSeq: number = 0,
+    viewerId?: string
+  ): Promise<CloseCameraResponse> => {
+    const response = await api.post(`${BASE_PATH}/close`, { cameraId, channelSeq, viewerId });
     return response.data;
+  },
+
+  sendHeartbeat: async (viewerId: string): Promise<void> => {
+    await api.post(`${BASE_PATH}/heartbeat`, { viewerId }).catch(() => {});
   },
 
   assignCameraToUser: async (cameraId: string, userId: string, channels?: number[]): Promise<{ message: string; camera: Camera }> => {
