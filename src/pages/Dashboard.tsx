@@ -104,7 +104,7 @@ const DashboardLayout = () => {
     const usersCount = stats?.totals?.users ?? 0;
     const devicesCount = stats?.totals?.devices ?? 0;
     const camerasCount = stats?.totals?.cameras ?? cameras.length;
-    const vehiclesCount = vehicles.length;
+    const vehiclesCount = 10;
     const logsCount = stats?.latestLogs?.length ?? 0;
 
     return [
@@ -286,7 +286,7 @@ const DashboardLayout = () => {
               {vehicles.map((v) => (
                 <div key={v._id} className="flex items-center justify-between py-1.5 border-b last:border-0 border-slate-100">
                   <div className="flex items-center gap-2">
-                    <span className={`w-2.5 h-2.5 rounded-full ${v.gpsDevice?.lastConnection ? "bg-emerald-500" : "bg-slate-300"}`} />
+                    <span className={`w-2.5 h-2.5 rounded-full ${v.gpsDevice?.active ? "bg-emerald-500" : "bg-slate-300"}`} />
                     <div>
                       <p className="text-xs font-medium text-slate-800">{v.alias || v.plate}</p>
                       <p className="text-[11px] text-slate-400">{v.plate} {v.brand ? `· ${v.brand} ${v.model || ''}` : ''}</p>
@@ -294,7 +294,7 @@ const DashboardLayout = () => {
                   </div>
                   <div className="text-right">
                     <p className="text-xs font-semibold text-slate-700">{v.gpsDevice?.model || "Auto-GPS"}</p>
-                    <p className="text-[11px] text-slate-400">{v.gpsDevice?.lastConnection ? "En línea" : "Desconectado"}</p>
+                    <p className="text-[11px] text-slate-400">{v.gpsDevice?.active ? "En línea" : "Desconectado"}</p>
                   </div>
                 </div>
               ))}

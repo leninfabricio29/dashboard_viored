@@ -150,6 +150,12 @@ class SocketService {
       this.emit('location-update', data);
     });
 
+    // Evento: Actualización de estado de vehículo (Rastreo Satelital)
+    this.socket.on('vehicle-state-update', (data) => {
+      console.log('🚗 vehicle-state-update recibido desde server:', data);
+      this.emit('vehicle-state-update', data);
+    });
+
     return this.socket;
   }
 

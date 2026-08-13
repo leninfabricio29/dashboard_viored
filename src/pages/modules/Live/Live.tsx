@@ -530,13 +530,15 @@ export default function Live() {
       void fetchAlerts();
     };
 
-    const handleAlertAttended = (data: any) => {
-      console.log(data)
+    const handleAlertAttended = () => {
+      setShowUserCamerasGrid(false);
+      setShowCameras(false);
       void fetchAlerts();
     };
 
-    const handleAlertFinalized = (data: any) => {
-      console.log(data)
+    const handleAlertFinalized = () => {
+      setShowUserCamerasGrid(false);
+      setShowCameras(false);
       void fetchAlerts();
     };
 
@@ -577,6 +579,20 @@ export default function Live() {
     () => alertas.find((a) => a.id === selectedId) ?? null,
     [alertas, selectedId]
   );
+
+  // Regla: Si se cambia de una alerta a otra, o si la alerta seleccionada cambia de estado (en atención o cerrada),
+  // el modal/panel flotante de cámaras DEBE cerrarse automáticamente.
+  useEffect(() => {
+    setShowUserCamerasGrid(false);
+    setShowCameras(false);
+  }, [selectedId]);
+
+  useEffect(() => {
+    if (selectedAlert && selectedAlert.estado !== "pendiente") {
+      setShowUserCamerasGrid(false);
+      setShowCameras(false);
+    }
+  }, [selectedAlert?.estado]);
   const activeAlertsOnMap = useMemo(
     () => alertas.filter((alert) => alert.visibleOnMap),
     [alertas]
@@ -627,9 +643,16 @@ export default function Live() {
   function handleSelectAlert(id: string) {
     setSelectedId(id);
     setShowCameras(false);
+    const targetAlert = alertas.find((a) => a.id === id);
+    if (targetAlert && targetAlert.estado !== "pendiente") {
+      setShowUserCamerasGrid(false);
+    }
   }
 
   async function handleAtender(id: string) {
+    // Al presionar Atender Emergencia, siempre cerrar el contenedor arrastrable de cámaras
+    setShowUserCamerasGrid(false);
+    setShowCameras(false);
     try {
       await api.put(`/api/alerts/${id}/attend`);
       setSelectedId(id);
@@ -646,6 +669,8 @@ export default function Live() {
       alert("Por favor seleccione un colaborador de la lista para transferir la emergencia.");
       return;
     }
+    setShowUserCamerasGrid(false);
+    setShowCameras(false);
     try {
       setIsTransferring(true);
       const response = await api.put(`/api/alerts/${selectedId}/transfer`, {
@@ -668,14 +693,16 @@ export default function Live() {
       alert("La emergencia fue transferida a otro colaborador. Solo el usuario delegado puede cerrarla.");
       return;
     }
+    setShowUserCamerasGrid(false);
+    setShowCameras(false);
     try {
       await api.put(`/api/alerts/${selectedId}/close`);
       
-            Swal.fire({
-              icon: 'success',
-              title: 'Proceso exitoso',
-              text: 'Emergencia cerrada con éxito.',
-            });
+      Swal.fire({
+        icon: 'success',
+        title: 'Proceso exitoso',
+        text: 'Emergencia cerrada con éxito.',
+      });
       void fetchAlerts();
       void fetchBitacoraEvents(selectedId);
     } catch (err: any) {
@@ -770,6 +797,7 @@ export default function Live() {
             <div className="absolute inset-0 z-0">
               <MapAlert
                 markers={mapMarkers}
+                selectedAlertId={selectedId}
                 route={selectedAlertRoute}
                 zoom={12}
                 alertZoom={14}
