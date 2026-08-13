@@ -1,7 +1,8 @@
 import { Marker } from "react-map-gl";
-import { Position } from "../../services/tracking-service";
+import { type TrackingPosition } from "../../services/tracking-service";
 
-export function VehicleMarker({ position, color = "#2563eb" }: { position: Position; color?: string }) {
+
+export function VehicleMarker({ position, color = "#2563eb" }: { position: TrackingPosition; color?: string }) {
   const rotation = position.heading ?? 0;
   return (
     <Marker longitude={position.longitude} latitude={position.latitude} anchor="bottom">
