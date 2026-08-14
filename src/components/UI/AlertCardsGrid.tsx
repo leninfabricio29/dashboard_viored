@@ -53,7 +53,7 @@ const AlertCardsGrid: React.FC<AlertCardsGridProps> = ({ onTrackingClick }) => {
   const entityId = authService.getEntityIdFromToken?.() || authService.getUserIdFromToken() || "";
 
   // ====================================================================
-  // POLLING: Obtener alertas activas cada 3 segundos (fallback)
+  // CARGA INICIAL (Sin Polling recurrentes)
   // ====================================================================
   useEffect(() => {
     if (!entityId || entityId === "") return;
@@ -65,9 +65,13 @@ const AlertCardsGrid: React.FC<AlertCardsGridProps> = ({ onTrackingClick }) => {
         // Transformar las alertas del backend al formato AlertCardData
         const transformedAlerts: AlertCardData[] = activeAlerts.map((alert: any) => {
           const [lng, lat] = alert.lastLocation?.coordinates || [0, 0];
+          const aId = alert._id || alert.id;
+          if (aId) {
+            socketService.joinAlertRoom(aId);
+          }
           return {
-            id: alert._id,
-            alertId: alert._id,
+            id: aId,
+            alertId: aId,
             lat,
             lng,
             emitterName: alert.reporter?.name || "Desconocido",
@@ -77,50 +81,19 @@ const AlertCardsGrid: React.FC<AlertCardsGridProps> = ({ onTrackingClick }) => {
           };
         });
 
-        // Actualizar el estado solo si hay cambios
-        setAlerts((prev) => {
-          // Crear un mapa de las alertas actuales
-          const currentAlertIds = new Set(prev.map(a => a.alertId));
-          const newAlertIds = new Set(transformedAlerts.map(a => a.alertId));
-          
-          // Verificar si hay diferencias
-          const hasChanges = 
-            prev.length !== transformedAlerts.length ||
-            transformedAlerts.some(a => !currentAlertIds.has(a.alertId)) ||
-            prev.some(a => !newAlertIds.has(a.alertId));
-          
-          if (hasChanges) {
-            console.log("📡 Alertas actualizadas desde API", transformedAlerts);
-            return transformedAlerts;
-          }
-          
-          // Si no hay cambios en IDs, actualizar coordenadas si cambiaron
-          const updatedAlerts = prev.map(prevAlert => {
-            const newAlert = transformedAlerts.find(a => a.alertId === prevAlert.alertId);
-            if (newAlert && (newAlert.lat !== prevAlert.lat || newAlert.lng !== prevAlert.lng)) {
-              return { ...prevAlert, lat: newAlert.lat, lng: newAlert.lng };
-            }
-            return prevAlert;
-          });
-          
-          return updatedAlerts;
-        });
+        setAlerts(transformedAlerts);
       } catch (error) {
         console.error("❌ Error al obtener alertas activas:", error);
       }
     };
 
-    // Fetch inmediato
+    // Carga inicial única
     fetchActiveAlerts();
-
-    // Polling cada 3 segundos
-    const interval = setInterval(fetchActiveAlerts, 3000);
-
-    return () => clearInterval(interval);
   }, [entityId]);
 
   // Conectar al socket
-  useSocketConnection(entityId && entityId !== "" ? entityId : "");
+  useSocketConnection(entityId);
+
 
   // ====================================================================
   // SOCKET LISTENERS

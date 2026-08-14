@@ -506,14 +506,8 @@ export default function Live() {
 
   useEffect(() => {
     void fetchAlerts();
-    const intervalId = window.setInterval(() => {
-      void fetchAlerts();
-    }, 15000);
-
-    return () => {
-      window.clearInterval(intervalId);
-    };
   }, [entityId]);
+
 
   // Cargar eventos de bitácora cuando cambia la alerta seleccionada
   useEffect(() => {

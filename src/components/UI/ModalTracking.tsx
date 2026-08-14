@@ -3,6 +3,8 @@ import { FiClock, FiMapPin, FiX } from "react-icons/fi";
 import api from "../../services/api";
 import MapAlert from "./MapAlert";
 import type { AlertData } from "./AlertMapContainer";
+import socketService from "../../services/socket.service";
+
 
 type RoutePoint = { lat: number; lng: number };
 
@@ -48,10 +50,11 @@ export default function ModalTracking({ alertId, initialAlert, onClose }: ModalT
   const [lastUpdate, setLastUpdate] = useState<Date | null>(null);
   const [hasError, setHasError] = useState(false);
 
+  // Carga inicial única sin polling
   useEffect(() => {
     let mounted = true;
 
-    const pollLocation = async () => {
+    const fetchInitialLocation = async () => {
       try {
         const response = await api.get(`/api/alerts/${alertId}`);
         const alert = response.data?.alert ?? response.data;
@@ -69,6 +72,7 @@ export default function ModalTracking({ alertId, initialAlert, onClose }: ModalT
           createdAt: alert?.reportedAt ?? alert?.createdAt ?? current.createdAt,
           status: alert?.status ?? current.status,
         }));
+
         setRoute((current) => {
           if (current.length <= 1 && alert?.locations && alert.locations.length > 0) {
             const history = alert.locations.map((loc: any) => ({
@@ -90,17 +94,55 @@ export default function ModalTracking({ alertId, initialAlert, onClose }: ModalT
         setHasError(false);
       } catch (error) {
         if (mounted) setHasError(true);
-        console.error("No se pudo actualizar el rastreo de la alerta:", error);
+        console.error("No se pudo obtener la posición inicial de la alerta:", error);
       }
     };
 
-    void pollLocation();
-    const intervalId = window.setInterval(() => void pollLocation(), 3000);
+    void fetchInitialLocation();
+
     return () => {
       mounted = false;
-      window.clearInterval(intervalId);
     };
   }, [alertId]);
+
+  // Suscripción a WebSockets para actualizaciones en vivo
+  useEffect(() => {
+    if (!alertId) return;
+
+    socketService.joinAlertRoom(alertId);
+
+    const handleRealtimeLocation = (data: any) => {
+      if (!data?.alertId || data.alertId !== alertId) return;
+
+      const [lng, lat] = data.coordinates || [0, 0];
+      if (isNaN(lat) || isNaN(lng) || (lat === 0 && lng === 0)) return;
+
+      setMarker((current) => ({
+        ...current,
+        lat,
+        lng,
+      }));
+
+      setRoute((current) => {
+        const lastPoint = current[current.length - 1];
+        if (lastPoint && lastPoint.lat === lat && lastPoint.lng === lng) {
+          return current;
+        }
+        return [...current, { lat, lng }];
+      });
+
+      setLastUpdate(new Date());
+    };
+
+    socketService.on("location-update", handleRealtimeLocation, alertId);
+    socketService.on("alert:location", handleRealtimeLocation, alertId);
+
+    return () => {
+      socketService.off("location-update", handleRealtimeLocation, alertId);
+      socketService.off("alert:location", handleRealtimeLocation, alertId);
+    };
+  }, [alertId]);
+
 
   return (
     <div className="fixed inset-0 z-[70] flex items-center justify-center bg-slate-950/70 p-4">

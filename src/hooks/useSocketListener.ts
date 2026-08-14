@@ -1,6 +1,7 @@
 // src/hooks/useSocketListener.ts
 import { useEffect } from 'react';
 import socketService from '../services/socket.service';
+import authService from '../services/auth-service';
 
 /**
  * Hook para escuchar eventos de socket
@@ -14,7 +15,6 @@ export const useSocketListener = (
   alertId?: string
 ) => {
   useEffect(() => {
-
     // Registrar el listener con socketService
     socketService.on(eventName, onEvent, alertId);
 
@@ -27,28 +27,23 @@ export const useSocketListener = (
 
 /**
  * Hook para manejar la conexión de socket
- * @param entityId - ID de la entidad para unirse a salas
+ * @param entityId - ID opcional de la entidad para unirse a salas
  * @param alertId - ID opcional de alerta en seguimiento
  */
-export const useSocketConnection = (entityId: string, alertId?: string) => {
+export const useSocketConnection = (entityId?: string, alertId?: string) => {
   useEffect(() => {
+    const resolvedEntityId =
+      (entityId && entityId.trim() !== '')
+        ? entityId.trim()
+        : (authService.getEntityIdFromToken() || authService.getUserIdFromToken() || '');
+
     console.log(
-      `🔌 Conectando socket con entityId: ${entityId}${alertId ? `, alertId: ${alertId}` : ''}`
+      `🔌 Conectando socket con entityId: ${resolvedEntityId}${alertId ? `, alertId: ${alertId}` : ''}`
     );
 
-    if (!entityId || entityId.trim() === '') {
-      console.warn('⚠️ entityId vacío, no se establece conexión Socket.IO');
-      return;
-    }
+    // Conectar al socket utilizando entityId resuelto o de token
+    socketService.connect(resolvedEntityId, alertId);
 
-    // Conectar al socket
-    socketService.connect(entityId, alertId);
-
-    // Cleanup: Desconectar al desmontar
-    return () => {
-      console.log('🔌 Cleanup de socket connection');
-      socketService.disconnect();
-    };
   }, [entityId, alertId]);
 };
 
@@ -96,3 +91,4 @@ export const usePanicAlerts = (
     });
   }
 };
+

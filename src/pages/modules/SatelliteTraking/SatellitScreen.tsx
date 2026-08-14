@@ -27,6 +27,8 @@ import trackingService, {
   type VehicleStateItem,
 } from "../../../services/tracking-service";
 import socketService from "../../../services/socket.service";
+import authService from "../../../services/auth-service";
+
 
 type MainTab = "live" | "history";
 type PeriodPreset = "today" | "custom";
@@ -385,8 +387,6 @@ export default function SatellitScreen() {
 
   useEffect(() => {
     void loadFleetState();
-    const intervalId = window.setInterval(() => void loadFleetState(), 5000);
-    return () => window.clearInterval(intervalId);
   }, [loadFleetState]);
 
   // Cargar posiciones de hoy
@@ -402,17 +402,12 @@ export default function SatellitScreen() {
   useEffect(() => {
     if (!selectedVehicleId) return;
     void loadLiveHistory(selectedVehicleId);
-    if (mainTab === "live") {
-      const intervalId = window.setInterval(() => {
-        void loadLiveHistory(selectedVehicleId);
-      }, 3000);
-      return () => window.clearInterval(intervalId);
-    }
-  }, [selectedVehicleId, mainTab, loadLiveHistory]);
+  }, [selectedVehicleId, loadLiveHistory]);
 
   // Escuchar Socket.IO
   useEffect(() => {
-    socketService.connect("entity-1");
+    const entityId = authService.getEntityIdFromToken() || authService.getUserIdFromToken() || "";
+    socketService.connect(entityId);
 
     const handleUpdate = (data: any) => {
       if (!data) return;
@@ -471,6 +466,7 @@ export default function SatellitScreen() {
       socketService.off("location-update", handleUpdate);
     };
   }, [selectedVehicleId]);
+
 
   const selectedItem = useMemo(() => {
     return vehiclesState.find((item) => item.vehicle._id === selectedVehicleId) || null;

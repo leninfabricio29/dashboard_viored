@@ -1,26 +1,36 @@
 // src/services/socket.service.ts
 import { io, Socket } from 'socket.io-client';
+import authService from './auth-service';
 
 type EventCallback = (data: any) => void;
 
 class SocketService {
-  
   private socket: Socket | null = null;
   private reconnectAttempts = 0;
-  private maxReconnectAttempts = 5;
-  
+  private maxReconnectAttempts = 10;
+  private activeEntityId: string = '';
+  private registeredEntityRooms: Set<string> = new Set();
+  private registeredAlertRooms: Set<string> = new Set();
+
   // Listeners registrados
-  // Para location-update, guardamos por alertId para independencia
   private listeners: { [key: string]: any } = {
     'panic-alert': [],
+    'panicAlert': [],
     'alert-created': [],
+    'alerta-creada': [],
     'alert-attended': [],
+    'alerta-atendida': [],
+    'alert:attended': [],
     'alert-finalized': [],
-    'location-update': {}, // Por alertId
+    'alerta-finalizada': [],
+    'alert:closed': [],
+    'location-update': {}, // Por alertId o global
+    'alert:location': {}, // Por alertId o global
+    'vehicle-state-update': [],
   };
 
   disconnect() {
-    if (this.socket?.connected) {
+    if (this.socket) {
       this.socket.removeAllListeners();
       this.socket.disconnect();
       this.socket = null;
@@ -30,12 +40,27 @@ class SocketService {
 
   /**
    * Conectar al servidor Socket.IO del worker
-   * @param entityId - ID de la entidad (para unirse a salas específicas)
+   * @param entityId - ID de la entidad (opcional, si es vacío lo recupera del token/localStorage)
    * @param alertId - ID de la alerta actual (opcional, para tracking)
    */
-  connect(entityId: string, alertId?: string) {
+  connect(entityId?: string, alertId?: string) {
+    // Si no se pasó entityId, intentar obtenerlo automáticamente
+    const resolvedEntityId =
+      (entityId && entityId.trim() !== '')
+        ? entityId.trim()
+        : (authService.getEntityIdFromToken() || authService.getUserIdFromToken() || '');
+
+    if (resolvedEntityId) {
+      this.activeEntityId = resolvedEntityId;
+    }
+
     if (this.socket?.connected) {
-      console.log('✅ Socket ya está conectado');
+      if (resolvedEntityId) {
+        this.joinEntityRoom(resolvedEntityId);
+      }
+      if (alertId) {
+        this.joinAlertRoom(alertId);
+      }
       return this.socket;
     }
 
@@ -44,18 +69,17 @@ class SocketService {
       return this.socket;
     }
 
-    // Conectar al worker socket.io en la URL principal (sin puerto)
-    const socketURL = 'https://apipanic.viryx.net';
-    console.log(`🔌 Intentando conectar a socket en: ${socketURL}`);
-    
+    const socketURL = (import.meta as any).env?.VITE_SOCKET_URL || 'https://apipanic.viryx.net';
+    console.log(`🔌 Intentando conectar a Socket.IO en: ${socketURL}`);
+
     this.socket = io(socketURL, {
-      transports: ['websocket'], // Solo WebSocket, no polling
+      transports: ['websocket', 'polling'], // websocket preferido con fallback a polling si hay proxy
       reconnection: true,
       reconnectionDelay: 1000,
       reconnectionDelayMax: 5000,
       reconnectionAttempts: this.maxReconnectAttempts,
       autoConnect: true,
-      rejectUnauthorized: false, // Para HTTPS con certificados auto-firmados
+      rejectUnauthorized: false,
     });
 
     // Evento: Conexión exitosa
@@ -63,21 +87,28 @@ class SocketService {
       console.log('✅ Conectado al worker Socket.IO:', this.socket?.id);
       this.reconnectAttempts = 0;
 
-      // Esperar un pequeño delay para asegurar que el servidor está listo
       setTimeout(() => {
-        // Unirse a sala de entidad: entity:{entityId}
-        this.joinEntityRoom(entityId);
+        // Re-unirse a salas de entidad registradas
+        if (this.activeEntityId) {
+          this.joinEntityRoom(this.activeEntityId);
+        }
+        this.registeredEntityRooms.forEach((eId) => {
+          this.joinEntityRoom(eId);
+        });
 
-        // Si hay alerta activa, unirse a sala de alerta
+        // Re-unirse a salas de alerta registradas
         if (alertId) {
           this.joinAlertRoom(alertId);
         }
+        this.registeredAlertRooms.forEach((aId) => {
+          this.joinAlertRoom(aId);
+        });
       }, 100);
     });
 
     // Evento: Desconexión
-    this.socket.on('disconnect', () => {
-      console.warn('⚠️ Desconectado del worker Socket.IO');
+    this.socket.on('disconnect', (reason) => {
+      console.warn('⚠️ Desconectado del worker Socket.IO. Razón:', reason);
     });
 
     // Evento: Error de conexión
@@ -87,109 +118,97 @@ class SocketService {
         `❌ Error de conexión Socket.IO (intento ${this.reconnectAttempts}/${this.maxReconnectAttempts}):`,
         error?.message || error
       );
-
-      // Log detallado
-      if (error?.code === 'ECONNREFUSED') {
-        console.error('❌ ECONNREFUSED: MongoDB o servidor no disponible');
-      } else if (error?.type === 'UnauthorizedError') {
-        console.error('❌ UnauthorizedError: Token inválido');
-      } else if (error?.statusCode === 403) {
-        console.error('❌ CORS Error: El servidor rechazó la conexión por CORS');
-      }
-
-      if (this.reconnectAttempts >= this.maxReconnectAttempts) {
-        console.error(
-          `❌ No se pudo conectar al worker Socket.IO después de ${this.maxReconnectAttempts} intentos.`,
-          `Próxima URL a intentar: https://apipanic.viryx.net (sin puerto)`
-        );
-
-        // Opcional: intentar reconectarse sin puerto después de fallar con puerto
-        // Descomenta si es necesario un fallback
-        /*
-        setTimeout(() => {
-          console.log('🔄 Intentando fallback sin puerto...');
-          this.socket?.disconnect();
-          this.reconnectAttempts = 0;
-          this.connect(entityId, alertId);
-        }, 5000);
-        */
-      }
     });
 
     // ====================================================================
-    // EVENTOS DE ALERTA - Escuchar emitidos por el worker
+    // EVENTOS DEL BACKEND - Mapear y emitir internamente
     // ====================================================================
 
-    // Evento: Alerta de pánico recibida
-    this.socket.on('panicAlert', (data) => {
+    // 🚨 Nueva alerta de pánico
+    const handlePanicAlert = (data: any) => {
       console.log('🚨 panicAlert recibido desde server:', data);
       this.emit('panic-alert', data);
-    });
+      this.emit('panicAlert', data);
+    };
+    this.socket.on('panicAlert', handlePanicAlert);
+    this.socket.on('panic-alert', handlePanicAlert);
 
-    // Evento: Alerta fue creada (confirmación)
-    this.socket.on('alerta-creada', (data) => {
+    // ✅ Alerta creada
+    const handleAlertaCreada = (data: any) => {
       console.log('✅ alerta-creada recibido desde server:', data);
       this.emit('alert-created', data);
-    });
+      this.emit('alerta-creada', data);
+    };
+    this.socket.on('alerta-creada', handleAlertaCreada);
+    this.socket.on('alert-created', handleAlertaCreada);
 
-    // Evento: Alerta fue atendida por una entidad
-    this.socket.on('alerta-atendida', (data) => {
+    // 👤 Alerta atendida
+    const handleAlertaAtendida = (data: any) => {
       console.log('👤 alerta-atendida recibido desde server:', data);
       this.emit('alert-attended', data);
-    });
+      this.emit('alerta-atendida', data);
+      this.emit('alert:attended', data);
+    };
+    this.socket.on('alerta-atendida', handleAlertaAtendida);
+    this.socket.on('alert-attended', handleAlertaAtendida);
+    this.socket.on('alert:attended', handleAlertaAtendida);
 
-    // Evento: Alerta fue finalizada (remover de vista)
-    this.socket.on('alerta-finalizada', (data) => {
+    // 🛑 Alerta finalizada / cerrada
+    const handleAlertaFinalizada = (data: any) => {
       console.log('🛑 alerta-finalizada recibido desde server:', data);
       this.emit('alert-finalized', data);
-    });
+      this.emit('alerta-finalizada', data);
+      this.emit('alert:closed', data);
+    };
+    this.socket.on('alerta-finalizada', handleAlertaFinalizada);
+    this.socket.on('alert-finalized', handleAlertaFinalizada);
+    this.socket.on('alert:closed', handleAlertaFinalizada);
 
-    // Evento: Actualización de ubicación en tiempo real
-    this.socket.on('location-update', (data) => {
+    // 📍 Ubicación en tiempo real
+    const handleLocationUpdate = (data: any) => {
       console.log('📍 location-update recibido desde server:', data);
       this.emit('location-update', data);
-    });
+      this.emit('alert:location', data);
+    };
+    this.socket.on('location-update', handleLocationUpdate);
+    this.socket.on('alert:location', handleLocationUpdate);
 
-    // Evento: Actualización de estado de vehículo (Rastreo Satelital)
-    this.socket.on('vehicle-state-update', (data) => {
+    // 🚗 Rastreo Satelital GPS
+    const handleVehicleUpdate = (data: any) => {
       console.log('🚗 vehicle-state-update recibido desde server:', data);
       this.emit('vehicle-state-update', data);
-    });
+    };
+    this.socket.on('vehicle-state-update', handleVehicleUpdate);
 
     return this.socket;
   }
 
   /**
    * Registrar un listener para un evento
-   * Para location-update, se puede especificar un alertId para independencia
    */
   on(eventName: string, callback: EventCallback, alertId?: string) {
     console.log(`🎧 Registrando listener para: ${eventName}${alertId ? ` [alertId: ${alertId}]` : ''}`);
+    
+    const isLocationEvent = eventName === 'location-update' || eventName === 'alert:location';
+
     if (!this.listeners[eventName]) {
-      if (eventName === 'location-update') {
-        this.listeners[eventName] = {};
-      } else {
-        this.listeners[eventName] = [];
-      }
+      this.listeners[eventName] = isLocationEvent ? {} : [];
     }
 
-    if (eventName === 'location-update' && alertId) {
+    if (isLocationEvent && alertId) {
       if (!this.listeners[eventName][alertId]) {
         this.listeners[eventName][alertId] = [];
       }
       this.listeners[eventName][alertId].push(callback);
-      console.log(`📌 Listener registrado para: ${eventName} [alertId: ${alertId}]`);
-    } else if (eventName === 'location-update') {
-      // Si no hay alertId, usar clave 'global'
+      // Asegurarse de estar unidos a la sala de la alerta
+      this.joinAlertRoom(alertId);
+    } else if (isLocationEvent) {
       if (!this.listeners[eventName]['global']) {
         this.listeners[eventName]['global'] = [];
       }
       this.listeners[eventName]['global'].push(callback);
-      console.log(`📌 Listener registrado para: ${eventName} [global]`);
     } else {
-      // Para otros eventos, es un array normal
       this.listeners[eventName].push(callback);
-      console.log(`📌 Listener registrado para: ${eventName}`);
     }
   }
 
@@ -199,19 +218,21 @@ class SocketService {
   off(eventName: string, callback: EventCallback, alertId?: string) {
     if (!this.listeners[eventName]) return;
 
-    if (eventName === 'location-update' && alertId) {
+    const isLocationEvent = eventName === 'location-update' || eventName === 'alert:location';
+
+    if (isLocationEvent && alertId) {
       if (this.listeners[eventName][alertId]) {
         this.listeners[eventName][alertId] = this.listeners[eventName][alertId].filter(
           (cb: any) => cb !== callback
         );
       }
-    } else if (eventName === 'location-update') {
+    } else if (isLocationEvent) {
       if (this.listeners[eventName]['global']) {
         this.listeners[eventName]['global'] = this.listeners[eventName]['global'].filter(
           (cb: any) => cb !== callback
         );
       }
-    } else {
+    } else if (Array.isArray(this.listeners[eventName])) {
       this.listeners[eventName] = this.listeners[eventName].filter(
         (cb: any) => cb !== callback
       );
@@ -224,37 +245,22 @@ class SocketService {
   private emit(eventName: string, data: any) {
     if (!this.listeners[eventName]) return;
 
-    // Para location-update, emitir solo a listeners de esa alerta específica
-    if (eventName === 'location-update' && data.alertId) {
+    const isLocationEvent = eventName === 'location-update' || eventName === 'alert:location';
+
+    if (isLocationEvent && data?.alertId) {
       const callbacks = this.listeners[eventName][data.alertId] || [];
       callbacks.forEach((callback: any) => {
-        try {
-          callback(data);
-        } catch (error) {
-          console.error(`Error en listener de ${eventName}:`, error);
-        }
+        try { callback(data); } catch (error) { console.error(`Error en listener de ${eventName}:`, error); }
       });
 
-      // También emitir a listeners globales
       const globalCallbacks = this.listeners[eventName]['global'] || [];
       globalCallbacks.forEach((callback: any) => {
-        try {
-          callback(data);
-        } catch (error) {
-          console.error(`Error en listener global de ${eventName}:`, error);
-        }
+        try { callback(data); } catch (error) { console.error(`Error en listener global de ${eventName}:`, error); }
       });
     } else {
-      // Para otros eventos
-      const callbacks = Array.isArray(this.listeners[eventName])
-        ? this.listeners[eventName]
-        : [];
+      const callbacks = Array.isArray(this.listeners[eventName]) ? this.listeners[eventName] : [];
       callbacks.forEach((callback: any) => {
-        try {
-          callback(data);
-        } catch (error) {
-          console.error(`Error en listener de ${eventName}:`, error);
-        }
+        try { callback(data); } catch (error) { console.error(`Error en listener de ${eventName}:`, error); }
       });
     }
   }
@@ -263,36 +269,23 @@ class SocketService {
    * Unirse a la sala de una entidad: entity:{entityId}
    */
   joinEntityRoom(entityId: string) {
-    if (!this.socket) {
-      console.error('❌ Socket no está inicializado');
-      return;
-    }
+    if (!entityId || entityId.trim() === '') return;
+    this.registeredEntityRooms.add(entityId);
 
-    if (!entityId || entityId.trim() === '') {
-      console.warn('⚠️ entityId vacío, no se puede unir a sala');
+    if (!this.socket) {
+      this.connect(entityId);
       return;
     }
 
     const room = `entity:${entityId}`;
-    
-    // Escuchar confirmación de la sala
-    this.socket.once('room-joined', (response: any) => {
-      if (response.success) {
-        console.log(`✅ Confirmado: Unido a sala ${room} [Socket: ${response.socketId}]`);
-      } else {
-        console.error(`❌ Error al unirse a sala ${room}:`, response.error);
-      }
-    });
-    
-    // Esperar a que esté conectado antes de emitir
     if (this.socket.connected) {
       this.socket.emit('join-room', { room });
-      console.log(`📤 Emitido join-room para: ${room}`);
+      this.socket.emit('join-entity', entityId);
+      console.log(`📤 Emitido join-room (${room}) y join-entity (${entityId})`);
     } else {
-      console.warn(`⏳ Socket no conectado aún. Esperando conexión...`);
       this.socket.once('connect', () => {
         this.socket?.emit('join-room', { room });
-        console.log(`📤 Emitido join-room (post-connect) para: ${room}`);
+        this.socket?.emit('join-entity', entityId);
       });
     }
   }
@@ -301,44 +294,29 @@ class SocketService {
    * Unirse a la sala de una alerta: alert:{alertId}
    */
   joinAlertRoom(alertId: string) {
-    if (!this.socket) {
-      console.error('❌ Socket no está inicializado');
-      return;
-    }
+    if (!alertId || alertId.trim() === '') return;
+    this.registeredAlertRooms.add(alertId);
 
-    if (!alertId || alertId.trim() === '') {
-      console.warn('⚠️ alertId vacío, no se puede unir a sala');
+    if (!this.socket) {
+      this.connect(undefined, alertId);
       return;
     }
 
     const room = `alert:${alertId}`;
-    
-    // Escuchar confirmación de la sala
-    this.socket.once('room-joined', (response: any) => {
-      if (response.success) {
-        console.log(`✅ Confirmado: Unido a sala ${room} [Socket: ${response.socketId}]`);
-      } else {
-        console.error(`❌ Error al unirse a sala ${room}:`, response.error);
-      }
-    });
-    
     if (this.socket.connected) {
       this.socket.emit('join-room', { room });
-      console.log(`📤 Emitido join-room para: ${room}`);
+      this.socket.emit('join-panic-room', alertId);
+      console.log(`📤 Emitido join-room (${room}) y join-panic-room (${alertId})`);
     } else {
-      console.warn(`⏳ Socket no conectado aún. Esperando conexión...`);
       this.socket.once('connect', () => {
         this.socket?.emit('join-room', { room });
-        console.log(`📤 Emitido join-room (post-connect) para: ${room}`);
+        this.socket?.emit('join-panic-room', alertId);
       });
     }
   }
 
   /**
    * Atender una alerta (enviar evento al worker para que encole job)
-   * @param alertId - ID de la alerta
-   * @param userId - ID del usuario que atiende
-   * @param recipientId - ID de la entidad que atiende
    */
   attendAlert(alertId: string, userId: string, recipientId: string) {
     if (!this.socket) {
@@ -355,14 +333,10 @@ class SocketService {
       `📤 Emitiendo attend-alert [alertId: ${alertId}, userId: ${userId}, recipientId: ${recipientId}]`
     );
 
-    // Emitir evento al worker
-    this.socket.emit('attend-alert', {
-      alertId,
-      userId,
-      recipientId,
-    });
+    // Emitir eventos compatibles con panic.worker.js y socket.js
+    this.socket.emit('attend-alert', { alertId, userId, recipientId });
+    this.socket.emit('atender-alerta', { alertId, userId, recipientId });
 
-    // Escuchar respuesta del servidor
     this.socket.once('attend-alert-ack', (response) => {
       console.log('✅ Servidor confirmó attend-alert:', response);
     });
@@ -372,20 +346,14 @@ class SocketService {
     });
   }
 
-  /**
-   * Obtener instancia del socket (para casos especiales)
-   */
   getSocket(): Socket | null {
     return this.socket;
   }
 
-  /**
-   * Verificar si está conectado
-   */
   isConnected(): boolean {
     return this.socket?.connected || false;
   }
 }
 
-// Exportar instancia singleton
 export default new SocketService();
+
