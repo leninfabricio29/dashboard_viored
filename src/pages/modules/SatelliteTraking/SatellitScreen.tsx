@@ -130,6 +130,7 @@ function TrackingMap({
   heading = 0,
   positions = [],
   stops = [],
+  isPlaying = false,
   mapRef,
 }: {
   centerLat?: number;
@@ -138,6 +139,7 @@ function TrackingMap({
   positions?: TrackingPosition[];
   stops?: TrackingEvent[];
   events?: TrackingEvent[];
+  isPlaying?: boolean;
   mapRef?: MutableRefObject<MapRef | null>;
 }) {
   const validCenterLat = Number.isFinite(centerLat) && centerLat !== 0 ? centerLat : undefined;
@@ -164,11 +166,12 @@ function TrackingMap({
       try {
         mapRef.current.easeTo({
           center: [validCenterLon, validCenterLat],
-          duration: 600,
+          duration: isPlaying ? 0 : 300,
         });
       } catch (e) {}
     }
-  }, [validCenterLat, validCenterLon, mapRef]);
+  }, [validCenterLat, validCenterLon, mapRef, isPlaying]);
+
 
   const routeGeoJson = useMemo(() => {
     if (validPositions.length < 2) return null;
@@ -334,6 +337,13 @@ export default function SatellitScreen() {
   const [isPlaying, setIsPlaying] = useState(false);
   const [playProgress, setPlayProgress] = useState(0);
   const [playbackSpeed, setPlaybackSpeed] = useState<number>(1);
+  const playProgressRef = useRef(0);
+
+  const updateProgress = useCallback((val: number) => {
+    const safeVal = Math.min(1, Math.max(0, Number.isFinite(val) ? val : 0));
+    playProgressRef.current = safeVal;
+    setPlayProgress(safeVal);
+  }, []);
 
   // Modal de Reporte PDF
   const [isReportModalOpen, setIsReportModalOpen] = useState(false);
@@ -366,8 +376,9 @@ export default function SatellitScreen() {
     setPeriodSummary(null);
     setLivePositions([]);
     setIsPlaying(false);
-    setPlayProgress(0);
-  }, [selectedVehicleId]);
+    updateProgress(0);
+  }, [selectedVehicleId, updateProgress]);
+
 
   // Cargar lista de vehículos
   const loadFleetState = useCallback(async () => {
@@ -503,7 +514,7 @@ export default function SatellitScreen() {
       setRouteData(route);
       setPeriodSummary(summary);
       setIsPlaying(false);
-      setPlayProgress(0);
+      updateProgress(0);
     } catch {
       setError("Error al consultar el historial del vehículo.");
     } finally {
@@ -511,26 +522,41 @@ export default function SatellitScreen() {
     }
   };
 
+  const handlePlayToggle = () => {
+    if (!routeData || !routeData.points || routeData.points.length < 2) return;
+    if (!isPlaying) {
+      if (playProgressRef.current >= 0.99) {
+        updateProgress(0);
+      }
+      setIsPlaying(true);
+    } else {
+      setIsPlaying(false);
+    }
+  };
+
   useEffect(() => {
     if (!isPlaying || !routeData || !routeData.points || routeData.points.length < 2) return;
-    const baseDuration = Math.min(Math.max(routeData.points.length * 120, 8000), 60000);
+    const baseDuration = Math.min(Math.max(routeData.points.length * 150, 5000), 60000);
     const totalMs = baseDuration / playbackSpeed;
-    const startedAt = performance.now() - playProgress * totalMs;
-    let frame = 0;
+    const startedAt = performance.now() - playProgressRef.current * totalMs;
+    let frameId = 0;
 
     const animate = (now: number) => {
-      const next = Math.min(1, (now - startedAt) / totalMs);
+      const next = Math.min(1, Math.max(0, (now - startedAt) / totalMs));
+      playProgressRef.current = next;
       setPlayProgress(next);
+
       if (next < 1) {
-        frame = requestAnimationFrame(animate);
+        frameId = requestAnimationFrame(animate);
       } else {
         setIsPlaying(false);
       }
     };
 
-    frame = requestAnimationFrame(animate);
-    return () => cancelAnimationFrame(frame);
-  }, [isPlaying, routeData, playProgress, playbackSpeed]);
+    frameId = requestAnimationFrame(animate);
+    return () => cancelAnimationFrame(frameId);
+  }, [isPlaying, routeData, playbackSpeed]);
+
 
   const animatedPosition = useMemo(() => {
     if (!routeData || !routeData.points || routeData.points.length === 0) return null;
@@ -854,17 +880,17 @@ export default function SatellitScreen() {
 
           <TrackingMap
             centerLat={
-              isPlaying && animatedPosition
+              mainTab === "history" && animatedPosition
                 ? animatedPosition.latitude
                 : selectedItem?.latitude
             }
             centerLon={
-              isPlaying && animatedPosition
+              mainTab === "history" && animatedPosition
                 ? animatedPosition.longitude
                 : selectedItem?.longitude
             }
             heading={
-              isPlaying && animatedPosition
+              mainTab === "history" && animatedPosition
                 ? animatedPosition.heading
                 : selectedItem?.heading
             }
@@ -872,7 +898,9 @@ export default function SatellitScreen() {
             stops={mapStops}
             events={routeData?.events || []}
             mapRef={mapRef}
+            isPlaying={isPlaying}
           />
+
         </div>
 
         {/* 3. PANEL DERECHO DE FILTROS, HISTORIAL Y REPRODUCCIÓN */}
@@ -1039,7 +1067,7 @@ export default function SatellitScreen() {
                       value={playProgress}
                       onChange={(e) => {
                         setIsPlaying(false);
-                        setPlayProgress(parseFloat(e.target.value));
+                        updateProgress(parseFloat(e.target.value));
                       }}
                       className="h-1.5 flex-1 accent-blue-600 bg-slate-200 rounded-lg cursor-pointer"
                     />
@@ -1047,10 +1075,11 @@ export default function SatellitScreen() {
                   </div>
 
                   <button
-                    onClick={() => setIsPlaying(!isPlaying)}
+                    onClick={handlePlayToggle}
                     disabled={!routeData.points || routeData.points.length < 2}
                     className="w-full flex items-center justify-center gap-2 rounded-lg bg-blue-600 p-2 text-xs font-bold text-white hover:bg-blue-500 shadow-sm disabled:opacity-50"
                   >
+
                     {isPlaying ? <Pause size={14} /> : <Play size={14} />} {isPlaying ? "Pausar" : "Reproducir Ruta"}
                   </button>
                 </div>
