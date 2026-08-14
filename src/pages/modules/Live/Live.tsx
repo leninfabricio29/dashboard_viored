@@ -617,20 +617,7 @@ export default function Live() {
     return currentUserId !== targetId;
   }, [selectedAlert, currentUserId]);
 
-  const selectedAlertRoute = useMemo(() => {
-    if (!selectedAlert || !selectedAlert.rawAlert) return [];
-    const locs = selectedAlert.rawAlert.locations || selectedAlert.rawAlert.lastLocation?.coordinates;
-    if (Array.isArray(locs)) {
-      return locs.map((loc: any) => {
-        const coords = loc.coordinates || loc;
-        return {
-          lng: Number(coords[0]) || 0,
-          lat: Number(coords[1]) || 0,
-        };
-      }).filter(p => p.lat !== 0 && p.lng !== 0);
-    }
-    return [];
-  }, [selectedAlert]);
+
 
   /* --------------------------- actions --------------------------- */
 
@@ -792,9 +779,10 @@ export default function Live() {
               <MapAlert
                 markers={mapMarkers}
                 selectedAlertId={selectedId}
-                route={selectedAlertRoute}
+                route={[]}
                 zoom={12}
                 alertZoom={14}
+
                 height="100%"
                 width="100%"
                 onAttend={(alertId) => {
