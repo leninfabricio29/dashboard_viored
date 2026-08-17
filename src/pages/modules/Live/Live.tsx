@@ -518,19 +518,22 @@ export default function Live() {
 
   useEffect(() => {
     const handlePanicAlert = (data: any) => {
+      console.log("🚨 Evento de alerta de pánico recibido vía socket en Live:", data);
       const alertId = data?.alertId ?? data?._id ?? data?.id;
       if (!alertId) return;
 
       void fetchAlerts();
     };
 
-    const handleAlertAttended = () => {
+    const handleAlertAttended = (data: any) => {
+      console.log("👤 Evento de alerta atendida recibido vía socket en Live:", data);
       setShowUserCamerasGrid(false);
       setShowCameras(false);
       void fetchAlerts();
     };
 
-    const handleAlertFinalized = () => {
+    const handleAlertFinalized = (data: any) => {
+      console.log("🛑 Evento de alerta finalizada recibido vía socket en Live:", data);
       setShowUserCamerasGrid(false);
       setShowCameras(false);
       void fetchAlerts();
@@ -556,16 +559,39 @@ export default function Live() {
       );
     };
 
+    // Suscribir a todas las variantes de eventos de socket
     socketService.on("panic-alert", handlePanicAlert);
+    socketService.on("panicAlert", handlePanicAlert);
+    socketService.on("alert-created", handlePanicAlert);
+    socketService.on("alerta-creada", handlePanicAlert);
+
     socketService.on("alert-attended", handleAlertAttended);
+    socketService.on("alerta-atendida", handleAlertAttended);
+    socketService.on("alert:attended", handleAlertAttended);
+
     socketService.on("alert-finalized", handleAlertFinalized);
+    socketService.on("alerta-finalizada", handleAlertFinalized);
+    socketService.on("alert:closed", handleAlertFinalized);
+
     socketService.on("location-update", handleLocationUpdate);
+    socketService.on("alert:location", handleLocationUpdate);
 
     return () => {
       socketService.off("panic-alert", handlePanicAlert);
+      socketService.off("panicAlert", handlePanicAlert);
+      socketService.off("alert-created", handlePanicAlert);
+      socketService.off("alerta-creada", handlePanicAlert);
+
       socketService.off("alert-attended", handleAlertAttended);
+      socketService.off("alerta-atendida", handleAlertAttended);
+      socketService.off("alert:attended", handleAlertAttended);
+
       socketService.off("alert-finalized", handleAlertFinalized);
+      socketService.off("alerta-finalizada", handleAlertFinalized);
+      socketService.off("alert:closed", handleAlertFinalized);
+
       socketService.off("location-update", handleLocationUpdate);
+      socketService.off("alert:location", handleLocationUpdate);
     };
   }, []);
 
