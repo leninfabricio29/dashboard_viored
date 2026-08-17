@@ -506,6 +506,13 @@ export default function Live() {
 
   useEffect(() => {
     void fetchAlerts();
+
+    // Fallback polling cada 3 segundos para garantizar la recepción de alertas
+    const interval = setInterval(() => {
+      void fetchAlerts();
+    }, 3000);
+
+    return () => clearInterval(interval);
   }, [entityId]);
 
 
