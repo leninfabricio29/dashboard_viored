@@ -432,6 +432,86 @@ export default function SatellitScreen() {
     void loadLiveHistory(selectedVehicleId);
   }, [selectedVehicleId, loadLiveHistory]);
 
+  // Fallback cuando Socket.IO no entrega actualizaciones.
+  useEffect(() => {
+    if (!selectedVehicleId) return;
+
+    let isCancelled = false;
+    let requestInFlight = false;
+
+    const pollCurrentPosition = async () => {
+      if (isCancelled || requestInFlight) return;
+      requestInFlight = true;
+
+      try {
+        const state = await trackingService.getVehicleState(selectedVehicleId);
+        if (isCancelled || !state) return;
+
+        const latitude = Number(state.latitude);
+        const longitude = Number(state.longitude);
+        if (!Number.isFinite(latitude) || !Number.isFinite(longitude)) return;
+
+        const timestamp = state.lastPositionAt || new Date().toISOString();
+        setVehiclesState((prev) =>
+          prev.map((item) =>
+            String(item.vehicle._id) === String(selectedVehicleId)
+              ? {
+                  ...item,
+                  latitude,
+                  longitude,
+                  speed: Number(state.speed) || 0,
+                  heading: Number(state.heading) || 0,
+                  altitude: Number(state.altitude) || 0,
+                  ignition: Boolean(state.ignition),
+                  status: state.status === "OFFLINE" ? "OFFLINE" : "MOVING",
+                  lastPositionAt: timestamp,
+                  lastCommunicationAt: state.lastCommunicationAt || timestamp,
+                }
+              : item
+          )
+        );
+
+        setLivePositions((prev) => {
+          const last = prev[prev.length - 1];
+          if (
+            last &&
+            (last.timestamp === timestamp ||
+              (last.latitude === latitude && last.longitude === longitude))
+          ) {
+            return prev;
+          }
+
+          return [
+            ...prev,
+            {
+              _id: `poll-${selectedVehicleId}-${timestamp}`,
+              vehicle: selectedVehicleId,
+              latitude,
+              longitude,
+              speed: Number(state.speed) || 0,
+              heading: Number(state.heading) || 0,
+              altitude: Number(state.altitude) || 0,
+              ignition: Boolean(state.ignition),
+              timestamp,
+            },
+          ];
+        });
+      } catch {
+        // El socket continúa siendo la vía principal; el siguiente ciclo reintenta.
+      } finally {
+        requestInFlight = false;
+      }
+    };
+
+    void pollCurrentPosition();
+    const intervalId = window.setInterval(() => void pollCurrentPosition(), 3000);
+
+    return () => {
+      isCancelled = true;
+      window.clearInterval(intervalId);
+    };
+  }, [selectedVehicleId]);
+
   // Escuchar Socket.IO
   useEffect(() => {
     const entityId = authService.getEntityIdFromToken() || authService.getUserIdFromToken() || "";
