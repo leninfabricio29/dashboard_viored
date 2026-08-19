@@ -124,6 +124,23 @@ function StatusBadge({ status }: { status: TrackingStatus }) {
   );
 }
 
+/** El socket puede entregar coordenadas como texto o dentro de `data`. */
+function getRealtimePosition(payload: any) {
+  const data = payload?.data ?? payload;
+  const vehicle = data?.vehicleId ?? data?.vehicle?._id ?? data?.vehicle;
+  const latitude = Number(data?.latitude ?? data?.lat ?? data?.coordinates?.[1]);
+  const longitude = Number(data?.longitude ?? data?.lng ?? data?.lon ?? data?.coordinates?.[0]);
+
+  if (!vehicle || !Number.isFinite(latitude) || !Number.isFinite(longitude)) return null;
+
+  return {
+    data,
+    vehicleId: String(vehicle),
+    latitude,
+    longitude,
+  };
+}
+
 function TrackingMap({
   centerLat,
   centerLon,
@@ -420,18 +437,28 @@ export default function SatellitScreen() {
     const entityId = authService.getEntityIdFromToken() || authService.getUserIdFromToken() || "";
     socketService.connect(entityId);
 
-    const handleUpdate = (data: any) => {
-      if (!data) return;
+    const handleUpdate = (payload: any) => {
+      const statusData = payload?.data ?? payload;
+      const statusVehicleId = statusData?.vehicleId ?? statusData?.vehicle?._id ?? statusData?.vehicle;
+      if (statusData?.status === "OFFLINE" && statusVehicleId) {
+        setVehiclesState((prev) =>
+          prev.map((item) =>
+            String(item.vehicle._id) === String(statusVehicleId)
+              ? { ...item, status: "OFFLINE", lastCommunicationAt: statusData.lastCommunicationAt || item.lastCommunicationAt }
+              : item
+          )
+        );
+        return;
+      }
 
-      const vId = data.vehicleId || data.vehicle;
-      const lat = data.latitude ?? data.coordinates?.[1];
-      const lon = data.longitude ?? data.coordinates?.[0];
+      const update = getRealtimePosition(payload);
+      if (!update) return;
 
-      if (!vId || !Number.isFinite(lat) || !Number.isFinite(lon)) return;
+      const { data, vehicleId: vId, latitude: lat, longitude: lon } = update;
 
       setVehiclesState((prev) =>
         prev.map((item) => {
-          if (item.vehicle._id === vId) {
+          if (String(item.vehicle._id) === vId) {
             return {
               ...item,
               latitude: lat,
@@ -439,7 +466,10 @@ export default function SatellitScreen() {
               speed: data.speed ?? item.speed,
               heading: data.heading ?? item.heading,
               ignition: data.ignition ?? item.ignition,
-              status: data.status ?? item.status,
+              // Una posición válida recién recibida confirma comunicación en tiempo real.
+              // No usamos STOPPED aquí: ese estado puede corresponder a una posición previa
+              // y dejaba el vehículo como detenido aun cuando seguían llegando ubicaciones.
+              status: "MOVING",
               lastPositionAt: data.lastPositionAt || data.timestamp || item.lastPositionAt,
               lastCommunicationAt: data.lastCommunicationAt || new Date().toISOString(),
             };
@@ -459,9 +489,9 @@ export default function SatellitScreen() {
             vehicle: selectedVehicleId,
             latitude: lat,
             longitude: lon,
-            speed: data.speed || 0,
-            heading: data.heading || 0,
-            ignition: data.ignition || false,
+            speed: Number(data.speed) || 0,
+            heading: Number(data.heading) || 0,
+            ignition: Boolean(data.ignition),
             timestamp: data.lastPositionAt || data.timestamp || new Date().toISOString(),
           };
           return [...prev, newPoint];
