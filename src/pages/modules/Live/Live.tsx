@@ -30,6 +30,8 @@ import cameraService, { Camera, OpenCameraResponse } from "../../../services/cam
 import { LiveStreamPlayer } from "../Cameras/Cameras";
 import Swal from "sweetalert2";
 
+const DRONE_STREAM_URL = import.meta.env.VITE_URI_STREAMING as string | undefined;
+
 /* -------------------------------------------------------------------------- */
 /*                                   Types                                    */
 /* -------------------------------------------------------------------------- */
@@ -372,6 +374,7 @@ export default function Live() {
   const [activeTab, setActiveTab] = useState<TabDerecha>("seguimiento");
   const [showReportPreview, setShowReportPreview] = useState(false);
   const [showTracking, setShowTracking] = useState(false);
+  const [showDroneStream, setShowDroneStream] = useState(false);
   const [bitacoraDraft, setBitacoraDraft] = useState("");
   const [bitacoraPorAlerta, setBitacoraPorAlerta] = useState<
     Record<string, BitacoraEvento[]>
@@ -606,6 +609,7 @@ export default function Live() {
     () => alertas.find((a) => a.id === selectedId) ?? null,
     [alertas, selectedId]
   );
+  const hasActiveAlerts = alertas.some((alert) => alert.estado === "pendiente");
 
   // Regla: Si se cambia de una alerta a otra, o si la alerta seleccionada cambia de estado (en atención o cerrada),
   // el modal/panel flotante de cámaras DEBE cerrarse automáticamente.
@@ -786,6 +790,19 @@ export default function Live() {
 
   return (
     <div className="flex h-screen w-full flex-col bg-slate-50 text-slate-800">
+      {hasActiveAlerts && (
+        <button
+          type="button"
+          onClick={() => setShowDroneStream(true)}
+          className="fixed right-6 top-24 z-40 flex items-center gap-2 rounded-xl bg-red-600 px-4 py-3 text-sm font-semibold text-white shadow-lg transition hover:bg-red-700 focus:outline-none focus:ring-2 focus:ring-red-500 focus:ring-offset-2"
+          title="Ver transmisión en vivo del dron"
+          aria-label="Ver transmisión en vivo del dron"
+        >
+          <FiRadio className="h-5 w-5" />
+          <span>Streaming dron</span>
+        </button>
+      )}
+
       {/* ---------------------------- Top bar ---------------------------- */}
       <header className="flex items-center justify-between  px-6 py-4">
         <div>
@@ -1349,6 +1366,61 @@ export default function Live() {
             <div
               className={`h-96 w-full bg-gradient-to-br ${showFullCamera.gradient}`}
             />
+          </div>
+        </div>
+      )}
+
+      {/* ------------------------- Drone stream modal ------------------------- */}
+      {showDroneStream && (
+        <div
+          className="fixed inset-0 z-[60] flex items-center justify-center bg-slate-950/75 p-4"
+          onClick={() => setShowDroneStream(false)}
+          role="dialog"
+          aria-modal="true"
+          aria-labelledby="drone-stream-title"
+        >
+          <div
+            className="flex h-[min(80vh,760px)] w-full max-w-6xl flex-col overflow-hidden rounded-2xl bg-slate-900 shadow-2xl"
+            onClick={(event) => event.stopPropagation()}
+          >
+            <div className="flex items-center justify-between border-b border-slate-700 px-5 py-4 text-white">
+              <div className="flex items-center gap-2">
+                <FiRadio className="h-5 w-5 text-red-400" />
+                <div>
+                  <h2 id="drone-stream-title" className="text-base font-semibold">
+                    Streaming en vivo del dron
+                  </h2>
+                  <p className="text-xs text-slate-400">Señal de video en tiempo real</p>
+                </div>
+              </div>
+              <button
+                type="button"
+                onClick={() => setShowDroneStream(false)}
+                className="rounded-lg p-2 text-slate-300 transition hover:bg-slate-800 hover:text-white"
+                title="Cerrar streaming"
+                aria-label="Cerrar streaming"
+              >
+                <FiX className="h-5 w-5" />
+              </button>
+            </div>
+
+            <div className="flex min-h-0 flex-1 p-4">
+              {DRONE_STREAM_URL ? (
+                <iframe
+                  src={DRONE_STREAM_URL}
+                  title="Streaming en vivo del dron"
+                  className="h-full w-full rounded-2xl border-0 bg-black"
+                  allow="autoplay; fullscreen; picture-in-picture"
+                  allowFullScreen
+                />
+              ) : (
+                <div className="flex flex-1 flex-col items-center justify-center rounded-2xl border border-dashed border-slate-700 bg-slate-950 p-6 text-center text-slate-300">
+                  <FiVideoOff className="mb-3 h-9 w-9 text-slate-500" />
+                  <p className="font-medium">La señal del dron no está configurada.</p>
+                  <p className="mt-1 text-sm text-slate-500">Define VITE_URI_STREAMING en el archivo .env.</p>
+                </div>
+              )}
+            </div>
           </div>
         </div>
       )}
