@@ -18,6 +18,8 @@ import {
   FiRotateCw,
   FiVideoOff,
   FiMove,
+  FiChevronLeft,
+  FiChevronRight,
 } from "react-icons/fi";
 import html2canvas from "html2canvas";
 import api from "../../../services/api";
@@ -386,7 +388,11 @@ export default function Live() {
   const [userCameras, setUserCameras] = useState<Camera[]>([]);
   const [_loadingUserCameras, setLoadingUserCameras] = useState<boolean>(false);
   const [showUserCamerasGrid, setShowUserCamerasGrid] = useState<boolean>(false);
+  const [cameraPanelOwnerId, setCameraPanelOwnerId] = useState<string | null>(null);
+  const [cameraPanelUserName, setCameraPanelUserName] = useState("");
+  const [cameraPanelCameras, setCameraPanelCameras] = useState<Camera[]>([]);
   const [zoomedCamera, setZoomedCamera] = useState<Camera | null>(null);
+  const [alertsPage, setAlertsPage] = useState(1);
   console.log(zoomedCamera)
 
   const entityId = authService.getEntityIdFromToken?.() || authService.getUserIdFromToken?.() || "";
@@ -537,15 +543,11 @@ export default function Live() {
 
     const handleAlertAttended = (data: any) => {
       console.log("👤 Evento de alerta atendida recibido vía socket en Live:", data);
-      setShowUserCamerasGrid(false);
-      setShowCameras(false);
       void fetchAlerts();
     };
 
     const handleAlertFinalized = (data: any) => {
       console.log("🛑 Evento de alerta finalizada recibido vía socket en Live:", data);
-      setShowUserCamerasGrid(false);
-      setShowCameras(false);
       void fetchAlerts();
     };
 
@@ -610,20 +612,27 @@ export default function Live() {
     [alertas, selectedId]
   );
   const hasActiveAlerts = alertas.some((alert) => alert.estado === "pendiente");
+  const alertsPerPage = 10;
+  const totalAlertsPages = Math.max(1, Math.ceil(alertas.length / alertsPerPage));
+  const paginatedAlerts = useMemo(
+    () => alertas.slice((alertsPage - 1) * alertsPerPage, alertsPage * alertsPerPage),
+    [alertas, alertsPage]
+  );
 
-  // Regla: Si se cambia de una alerta a otra, o si la alerta seleccionada cambia de estado (en atención o cerrada),
-  // el modal/panel flotante de cámaras DEBE cerrarse automáticamente.
   useEffect(() => {
-    setShowUserCamerasGrid(false);
-    setShowCameras(false);
-  }, [selectedId]);
+    setAlertsPage((page) => Math.min(page, totalAlertsPages));
+  }, [totalAlertsPages]);
 
   useEffect(() => {
-    if (selectedAlert && selectedAlert.estado !== "pendiente") {
-      setShowUserCamerasGrid(false);
-      setShowCameras(false);
+    if (
+      showUserCamerasGrid &&
+      cameraPanelOwnerId === selectedId &&
+      cameraPanelCameras.length === 0 &&
+      userCameras.length > 0
+    ) {
+      setCameraPanelCameras(userCameras);
     }
-  }, [selectedAlert?.estado]);
+  }, [cameraPanelCameras.length, cameraPanelOwnerId, selectedId, showUserCamerasGrid, userCameras]);
   const activeAlertsOnMap = useMemo(
     () => alertas.filter((alert) => alert.visibleOnMap),
     [alertas]
@@ -661,16 +670,9 @@ export default function Live() {
   function handleSelectAlert(id: string) {
     setSelectedId(id);
     setShowCameras(false);
-    const targetAlert = alertas.find((a) => a.id === id);
-    if (targetAlert && targetAlert.estado !== "pendiente") {
-      setShowUserCamerasGrid(false);
-    }
   }
 
   async function handleAtender(id: string) {
-    // Al presionar Atender Emergencia, siempre cerrar el contenedor arrastrable de cámaras
-    setShowUserCamerasGrid(false);
-    setShowCameras(false);
     try {
       await api.put(`/api/alerts/${id}/attend`);
       setSelectedId(id);
@@ -687,8 +689,6 @@ export default function Live() {
       alert("Por favor seleccione un colaborador de la lista para transferir la emergencia.");
       return;
     }
-    setShowUserCamerasGrid(false);
-    setShowCameras(false);
     try {
       setIsTransferring(true);
       const response = await api.put(`/api/alerts/${selectedId}/transfer`, {
@@ -711,8 +711,6 @@ export default function Live() {
       alert("La emergencia fue transferida a otro colaborador. Solo el usuario delegado puede cerrarla.");
       return;
     }
-    setShowUserCamerasGrid(false);
-    setShowCameras(false);
     try {
       await api.put(`/api/alerts/${selectedId}/close`);
       
@@ -790,21 +788,8 @@ export default function Live() {
 
   return (
     <div className="flex h-screen w-full flex-col bg-slate-50 text-slate-800">
-      {hasActiveAlerts && (
-        <button
-          type="button"
-          onClick={() => setShowDroneStream(true)}
-          className="fixed right-6 top-24 z-40 flex items-center gap-2 rounded-xl bg-red-600 px-4 py-3 text-sm font-semibold text-white shadow-lg transition hover:bg-red-700 focus:outline-none focus:ring-2 focus:ring-red-500 focus:ring-offset-2"
-          title="Ver transmisión en vivo del dron"
-          aria-label="Ver transmisión en vivo del dron"
-        >
-          <FiRadio className="h-5 w-5" />
-          <span>Streaming dron</span>
-        </button>
-      )}
-
       {/* ---------------------------- Top bar ---------------------------- */}
-      <header className="flex items-center justify-between  px-6 py-4">
+      <header className="flex items-center justify-between px-6 py-4">
         <div>
           <h1 className="flex items-center gap-2 text-xl font-semibold text-slate-900">
             Mapa en vivo <span className="h-2 w-2 rounded-full bg-red-500" />
@@ -813,7 +798,18 @@ export default function Live() {
             Monitoreo y gestión de emergencias en tiempo real
           </p>
         </div>
-
+        {hasActiveAlerts && (
+          <button
+            type="button"
+            onClick={() => setShowDroneStream(true)}
+            className="flex items-center gap-2 rounded-xl bg-red-600 px-4 py-3 text-sm font-semibold text-white shadow-lg transition hover:bg-red-700 focus:outline-none focus:ring-2 focus:ring-red-500 focus:ring-offset-2"
+            title="Ver transmisión en vivo del dron"
+            aria-label="Ver transmisión en vivo del dron"
+          >
+            <FiRadio className="h-5 w-5" />
+            <span>Streaming dron</span>
+          </button>
+        )}
       </header>
 
       {/* ---------------------------- Body ---------------------------- */}
@@ -844,9 +840,13 @@ export default function Live() {
                 onViewCameras={(alertId, cams) => {
                   if (alertId) {
                     setSelectedId(alertId);
-                    if (Array.isArray(cams) && cams.length > 0) {
-                      setUserCameras(cams);
-                    }
+                    const cameras = Array.isArray(cams) ? cams : [];
+                    if (cameras.length > 0) setUserCameras(cameras);
+                    setCameraPanelOwnerId(alertId);
+                    setCameraPanelUserName(
+                      alertas.find((alert) => alert.id === alertId)?.nombre ?? "Usuario"
+                    );
+                    setCameraPanelCameras(cameras);
                     setShowUserCamerasGrid(true);
                   }
                 }}
@@ -928,7 +928,7 @@ export default function Live() {
                 </tr>
               </thead>
               <tbody>
-                {alertas.map((a) => (
+                {paginatedAlerts.map((a) => (
                   <tr
                     key={a.id}
                     onClick={() => handleSelectAlert(a.id)}
@@ -989,10 +989,30 @@ export default function Live() {
               </tbody>
             </table>
 
-            <div className="border-t border-slate-100 py-3 text-center">
-              <button className="inline-flex items-center gap-1 text-sm font-medium text-emerald-600 hover:text-emerald-700">
-                Ver todas las alertas <FiArrowRight className="h-4 w-4" />
-              </button>
+            <div className="flex items-center justify-between border-t border-slate-100 px-5 py-3">
+              <span className="text-xs text-slate-400">
+                Página {alertsPage} de {totalAlertsPages}
+              </span>
+              <div className="flex items-center gap-1">
+                <button
+                  type="button"
+                  onClick={() => setAlertsPage((page) => Math.max(1, page - 1))}
+                  disabled={alertsPage === 1}
+                  className="rounded-lg p-1.5 text-slate-500 hover:bg-slate-100 disabled:cursor-not-allowed disabled:opacity-30"
+                  aria-label="Página anterior"
+                >
+                  <FiChevronLeft className="h-4 w-4" />
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setAlertsPage((page) => Math.min(totalAlertsPages, page + 1))}
+                  disabled={alertsPage === totalAlertsPages}
+                  className="rounded-lg p-1.5 text-slate-500 hover:bg-slate-100 disabled:cursor-not-allowed disabled:opacity-30"
+                  aria-label="Página siguiente"
+                >
+                  <FiChevronRight className="h-4 w-4" />
+                </button>
+              </div>
             </div>
           </div>
         </div>
@@ -1559,10 +1579,10 @@ export default function Live() {
       )}
 
       {/* Panel Flotante de Cámaras Asignadas sobre el Mapa */}
-      {showUserCamerasGrid && selectedAlert && (
+      {showUserCamerasGrid && cameraPanelCameras.length > 0 && (
         <FloatingAssignedCamerasPanel
-          userCameras={userCameras}
-          userName={selectedAlert.nombre}
+          userCameras={cameraPanelCameras}
+          userName={cameraPanelUserName}
           onClose={() => setShowUserCamerasGrid(false)}
           onZoomCamera={(cam) => setZoomedCamera(cam)}
         />
@@ -1587,8 +1607,15 @@ function FloatingAssignedCamerasPanel({
   onZoomCamera: (cam: Camera) => void;
 }) {
   const [position, setPosition] = useState<{ x: number; y: number } | null>(null);
+  const [selectedCameraId, setSelectedCameraId] = useState<string>(userCameras[0]?._id ?? "");
   const [isDragging, setIsDragging] = useState(false);
   const dragRef = useRef<{ startX: number; startY: number; posX: number; posY: number } | null>(null);
+
+  useEffect(() => {
+    if (!userCameras.some((camera) => camera._id === selectedCameraId)) {
+      setSelectedCameraId(userCameras[0]?._id ?? "");
+    }
+  }, [selectedCameraId, userCameras]);
 
   // Posicionar flotante por defecto a la derecha del mapa
   useEffect(() => {
@@ -1680,24 +1707,33 @@ function FloatingAssignedCamerasPanel({
         </button>
       </div>
 
-      {/* Grilla de Cámaras (4 espacios) */}
+      {/* Cámara seleccionada */}
       <div className="p-3 max-h-[460px] overflow-y-auto">
-        <div
-          className={`grid gap-3 ${count === 1
-              ? "grid-cols-1"
-              : count === 2
-                ? "grid-cols-1 sm:grid-cols-2"
-                : "grid-cols-2"
-            }`}
-        >
-          {userCameras.map((cam) => (
+        {count > 1 && (
+          <label className="mb-3 block text-xs font-medium text-slate-600">
+            Seleccionar cámara
+            <select
+              value={selectedCameraId}
+              onChange={(event) => setSelectedCameraId(event.target.value)}
+              className="mt-1.5 w-full rounded-lg border border-slate-200 bg-white px-3 py-2 text-xs text-slate-700 outline-none focus:border-emerald-500"
+            >
+              {userCameras.map((camera) => (
+                <option key={camera._id} value={camera._id}>
+                  {camera.name}
+                </option>
+              ))}
+            </select>
+          </label>
+        )}
+        {userCameras
+          .filter((camera) => camera._id === selectedCameraId)
+          .map((camera) => (
             <LiveCameraGridCell
-              key={cam._id}
-              camera={cam}
-              onZoom={() => onZoomCamera(cam)}
+              key={camera._id}
+              camera={camera}
+              onZoom={() => onZoomCamera(camera)}
             />
           ))}
-        </div>
       </div>
     </div>
   );
