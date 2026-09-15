@@ -88,6 +88,12 @@ interface Camara {
   gradient: string;
 }
 
+interface CameraPanelState {
+  id: string;
+  userName: string;
+  cameras: Camera[];
+}
+
 /* -------------------------------------------------------------------------- */
 /*                           API helpers / normalization                        */
 /* -------------------------------------------------------------------------- */
@@ -342,6 +348,18 @@ const prioridadStyles: Record<Prioridad, string> = {
   Baja: "text-emerald-600 bg-emerald-50",
 };
 
+const estadoOrden: Record<EstadoAlerta, number> = {
+  pendiente: 0,
+  en_atencion: 1,
+  cerrada: 2,
+};
+
+const prioridadOrden: Record<Prioridad, number> = {
+  Alta: 0,
+  Media: 1,
+  Baja: 2,
+};
+
 function EstadoBadge({ estado }: { estado: EstadoAlerta }) {
   if (estado === "en_atencion") {
     return (
@@ -387,10 +405,7 @@ export default function Live() {
 
   const [userCameras, setUserCameras] = useState<Camera[]>([]);
   const [_loadingUserCameras, setLoadingUserCameras] = useState<boolean>(false);
-  const [showUserCamerasGrid, setShowUserCamerasGrid] = useState<boolean>(false);
-  const [cameraPanelOwnerId, setCameraPanelOwnerId] = useState<string | null>(null);
-  const [cameraPanelUserName, setCameraPanelUserName] = useState("");
-  const [cameraPanelCameras, setCameraPanelCameras] = useState<Camera[]>([]);
+  const [cameraPanels, setCameraPanels] = useState<CameraPanelState[]>([]);
   const [zoomedCamera, setZoomedCamera] = useState<Camera | null>(null);
   const [alertsPage, setAlertsPage] = useState(1);
   console.log(zoomedCamera)
@@ -613,10 +628,18 @@ export default function Live() {
   );
   const hasActiveAlerts = alertas.some((alert) => alert.estado === "pendiente");
   const alertsPerPage = 10;
-  const totalAlertsPages = Math.max(1, Math.ceil(alertas.length / alertsPerPage));
+  const orderedAlerts = useMemo(
+    () =>
+      [...alertas].sort((first, second) =>
+        estadoOrden[first.estado] - estadoOrden[second.estado] ||
+        prioridadOrden[first.prioridad] - prioridadOrden[second.prioridad]
+      ),
+    [alertas]
+  );
+  const totalAlertsPages = Math.max(1, Math.ceil(orderedAlerts.length / alertsPerPage));
   const paginatedAlerts = useMemo(
-    () => alertas.slice((alertsPage - 1) * alertsPerPage, alertsPage * alertsPerPage),
-    [alertas, alertsPage]
+    () => orderedAlerts.slice((alertsPage - 1) * alertsPerPage, alertsPage * alertsPerPage),
+    [orderedAlerts, alertsPage]
   );
 
   useEffect(() => {
@@ -624,15 +647,16 @@ export default function Live() {
   }, [totalAlertsPages]);
 
   useEffect(() => {
-    if (
-      showUserCamerasGrid &&
-      cameraPanelOwnerId === selectedId &&
-      cameraPanelCameras.length === 0 &&
-      userCameras.length > 0
-    ) {
-      setCameraPanelCameras(userCameras);
-    }
-  }, [cameraPanelCameras.length, cameraPanelOwnerId, selectedId, showUserCamerasGrid, userCameras]);
+    if (!selectedId || userCameras.length === 0) return;
+
+    setCameraPanels((panels) =>
+      panels.map((panel) =>
+        panel.id === selectedId && panel.cameras.length === 0
+          ? { ...panel, cameras: userCameras }
+          : panel
+      )
+    );
+  }, [selectedId, userCameras]);
   const activeAlertsOnMap = useMemo(
     () => alertas.filter((alert) => alert.visibleOnMap),
     [alertas]
@@ -669,7 +693,6 @@ export default function Live() {
 
   function handleSelectAlert(id: string) {
     setSelectedId(id);
-    setShowCameras(false);
   }
 
   async function handleAtender(id: string) {
@@ -842,12 +865,21 @@ export default function Live() {
                     setSelectedId(alertId);
                     const cameras = Array.isArray(cams) ? cams : [];
                     if (cameras.length > 0) setUserCameras(cameras);
-                    setCameraPanelOwnerId(alertId);
-                    setCameraPanelUserName(
-                      alertas.find((alert) => alert.id === alertId)?.nombre ?? "Usuario"
-                    );
-                    setCameraPanelCameras(cameras);
-                    setShowUserCamerasGrid(true);
+                    setCameraPanels((panels) => {
+                      const userName =
+                        alertas.find((alert) => alert.id === alertId)?.nombre ?? "Usuario";
+                      const existingPanel = panels.find((panel) => panel.id === alertId);
+
+                      if (existingPanel) {
+                        return panels.map((panel) =>
+                          panel.id === alertId
+                            ? { ...panel, userName, cameras: cameras.length > 0 ? cameras : panel.cameras }
+                            : panel
+                        );
+                      }
+
+                      return [...panels, { id: alertId, userName, cameras }];
+                    });
                   }
                 }}
               />
@@ -912,7 +944,31 @@ export default function Live() {
               <h3 className="text-sm font-semibold text-slate-900">
                 Alertas ({alertas.length})
               </h3>
-
+              <div className="flex items-center gap-3">
+                <span className="text-xs text-slate-400">
+                  Página {alertsPage} de {totalAlertsPages}
+                </span>
+                <div className="flex items-center gap-1">
+                  <button
+                    type="button"
+                    onClick={() => setAlertsPage((page) => Math.max(1, page - 1))}
+                    disabled={alertsPage === 1}
+                    className="rounded-lg p-1.5 text-slate-500 hover:bg-slate-100 disabled:cursor-not-allowed disabled:opacity-30"
+                    aria-label="Página anterior"
+                  >
+                    <FiChevronLeft className="h-4 w-4" />
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setAlertsPage((page) => Math.min(totalAlertsPages, page + 1))}
+                    disabled={alertsPage === totalAlertsPages}
+                    className="rounded-lg p-1.5 text-slate-500 hover:bg-slate-100 disabled:cursor-not-allowed disabled:opacity-30"
+                    aria-label="Página siguiente"
+                  >
+                    <FiChevronRight className="h-4 w-4" />
+                  </button>
+                </div>
+              </div>
             </div>
 
             <table className="w-full text-left text-sm">
@@ -989,31 +1045,6 @@ export default function Live() {
               </tbody>
             </table>
 
-            <div className="flex items-center justify-between border-t border-slate-100 px-5 py-3">
-              <span className="text-xs text-slate-400">
-                Página {alertsPage} de {totalAlertsPages}
-              </span>
-              <div className="flex items-center gap-1">
-                <button
-                  type="button"
-                  onClick={() => setAlertsPage((page) => Math.max(1, page - 1))}
-                  disabled={alertsPage === 1}
-                  className="rounded-lg p-1.5 text-slate-500 hover:bg-slate-100 disabled:cursor-not-allowed disabled:opacity-30"
-                  aria-label="Página anterior"
-                >
-                  <FiChevronLeft className="h-4 w-4" />
-                </button>
-                <button
-                  type="button"
-                  onClick={() => setAlertsPage((page) => Math.min(totalAlertsPages, page + 1))}
-                  disabled={alertsPage === totalAlertsPages}
-                  className="rounded-lg p-1.5 text-slate-500 hover:bg-slate-100 disabled:cursor-not-allowed disabled:opacity-30"
-                  aria-label="Página siguiente"
-                >
-                  <FiChevronRight className="h-4 w-4" />
-                </button>
-              </div>
-            </div>
           </div>
         </div>
 
@@ -1578,14 +1609,20 @@ export default function Live() {
         </div>
       )}
 
-      {/* Panel Flotante de Cámaras Asignadas sobre el Mapa */}
-      {showUserCamerasGrid && cameraPanelCameras.length > 0 && (
-        <FloatingAssignedCamerasPanel
-          userCameras={cameraPanelCameras}
-          userName={cameraPanelUserName}
-          onClose={() => setShowUserCamerasGrid(false)}
-          onZoomCamera={(cam) => setZoomedCamera(cam)}
-        />
+      {/* Paneles flotantes de cámaras asignadas sobre el mapa */}
+      {cameraPanels.map((panel, index) =>
+        panel.cameras.length > 0 ? (
+          <FloatingAssignedCamerasPanel
+            key={panel.id}
+            userCameras={panel.cameras}
+            userName={panel.userName}
+            panelIndex={index}
+            onClose={() =>
+              setCameraPanels((panels) => panels.filter((item) => item.id !== panel.id))
+            }
+            onZoomCamera={(cam) => setZoomedCamera(cam)}
+          />
+        ) : null
       )}
     </div>
   );
@@ -1598,11 +1635,13 @@ export default function Live() {
 function FloatingAssignedCamerasPanel({
   userCameras,
   userName,
+  panelIndex,
   onClose,
   onZoomCamera,
 }: {
   userCameras: Camera[];
   userName: string;
+  panelIndex: number;
   onClose: () => void;
   onZoomCamera: (cam: Camera) => void;
 }) {
@@ -1620,11 +1659,11 @@ function FloatingAssignedCamerasPanel({
   // Posicionar flotante por defecto a la derecha del mapa
   useEffect(() => {
     if (position === null) {
-      const initialX = Math.max(20, window.innerWidth - 600);
-      const initialY = 100;
+      const initialX = Math.max(20, window.innerWidth - 600 - panelIndex * 36);
+      const initialY = 100 + panelIndex * 36;
       setPosition({ x: initialX, y: initialY });
     }
-  }, [position]);
+  }, [panelIndex, position]);
 
   const handleMouseDown = (e: React.MouseEvent) => {
     if (!position) return;
