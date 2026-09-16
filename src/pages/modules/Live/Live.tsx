@@ -975,7 +975,7 @@ export default function Live() {
               <thead>
                 <tr className="border-b border-slate-100 text-xs text-slate-400">
                   <th className="px-5 py-2 font-medium">Estado</th>
-                  <th className="px-5 py-2 font-medium">Nombre / Descripción</th>
+                  <th className="px-5 py-2 font-medium">Nombre </th>
                   <th className="px-5 py-2 font-medium">Ubicación</th>
                   <th className="px-5 py-2 font-medium">Hora</th>
                   <th className="px-5 py-2 font-medium">Prioridad</th>
@@ -996,26 +996,13 @@ export default function Live() {
                     </td>
                     <td className="px-5 py-3">
                       <p className="font-medium text-slate-900">{a.nombre}</p>
-                      <p className="text-xs text-slate-500">{a.descripcion}</p>
                     </td>
                     <td className="px-5 py-3 text-slate-600">
                       <p>{a.coords}</p>
-                      <p className="text-xs text-slate-400">{a.direccion}</p>
                     </td>
                     <td className="px-5 py-3 text-slate-600">
                       <p>{a.hora}</p>
-                      <p className="text-xs text-slate-400">
-                        Hace {a.haceMin} min
-                      </p>
-                    </td>
-                    <td className="px-5 py-3">
-                      <span
-                        className={`rounded-md px-2 py-1 text-xs font-medium ${prioridadStyles[a.prioridad]
-                          }`}
-                      >
-                        {a.prioridad}
-                      </span>
-                    </td>
+                      </td>
                     <td className="px-5 py-3 text-slate-600">
                       {a.asignadoA ?? "Sin asignar"}
                     </td>
