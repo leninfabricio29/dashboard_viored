@@ -836,15 +836,15 @@ export default function Live() {
       </header>
 
       {/* ---------------------------- Body ---------------------------- */}
-      <div className="flex flex-1 gap-4 overflow-hidden p-4">
+      <div className="grid min-h-0 flex-1 grid-cols-1 gap-4 overflow-hidden px-6 pb-4 xl:grid-cols-[minmax(0,1fr)_minmax(380px,0.7fr)]">
         {/* -------------------- Left/center column -------------------- */}
-        <div className="flex flex-1 flex-col gap-4 overflow-hidden">
+        <div className="contents">
           {/* Map area */}
-          <div className="relative flex-1 overflow-hidden rounded-2xl border border-slate-200 bg-[#eef1f4]">
+          <div className="relative min-h-[360px] overflow-hidden rounded-2xl border border-slate-200 bg-[#eef1f4] xl:h-full">
 
 
 
-            <div className="absolute inset-0 z-0">
+            <div className="absolute inset-0 z-0 mb-4">
               <MapAlert
                 markers={mapMarkers}
                 selectedAlertId={selectedId}
@@ -939,7 +939,7 @@ export default function Live() {
           </div>
 
           {/* ------------------------ Alerts table ------------------------ */}
-          <div className="max-h-72 overflow-auto rounded-2xl border border-slate-200 bg-white">
+          <div className="min-h-0 overflow-auto rounded-2xl border border-slate-200 bg-white xl:h-full">
             <div className="flex items-center justify-between border-b border-slate-100 px-5 py-3">
               <h3 className="text-sm font-semibold text-slate-900">
                 Alertas ({alertas.length})
@@ -974,12 +974,9 @@ export default function Live() {
             <table className="w-full text-left text-sm">
               <thead>
                 <tr className="border-b border-slate-100 text-xs text-slate-400">
-                  <th className="px-5 py-2 font-medium">Estado</th>
                   <th className="px-5 py-2 font-medium">Nombre </th>
                   <th className="px-5 py-2 font-medium">Ubicación</th>
                   <th className="px-5 py-2 font-medium">Hora</th>
-                  <th className="px-5 py-2 font-medium">Prioridad</th>
-                  <th className="px-5 py-2 font-medium">Asignado a</th>
                   <th className="px-5 py-2 font-medium">Acción</th>
                 </tr>
               </thead>
@@ -991,9 +988,7 @@ export default function Live() {
                     className={`cursor-pointer border-b border-slate-50 hover:bg-slate-50 ${a.id === selectedId ? "bg-slate-50" : ""
                       }`}
                   >
-                    <td className="px-5 py-3">
-                      <EstadoBadge estado={a.estado} />
-                    </td>
+                   
                     <td className="px-5 py-3">
                       <p className="font-medium text-slate-900">{a.nombre}</p>
                     </td>
@@ -1003,9 +998,7 @@ export default function Live() {
                     <td className="px-5 py-3 text-slate-600">
                       <p>{a.hora}</p>
                       </td>
-                    <td className="px-5 py-3 text-slate-600">
-                      {a.asignadoA ?? "Sin asignar"}
-                    </td>
+                    
                     <td className="px-5 py-3">
                       {a.estado === "pendiente" ? (
                         <button
@@ -1035,37 +1028,33 @@ export default function Live() {
           </div>
         </div>
 
-        {/* --------------------------- Right panel --------------------------- */}
-        <aside className="flex w-96 flex-shrink-0 flex-col overflow-hidden rounded-2xl border border-slate-200 bg-white">
-          <div className="flex items-center justify-between border-b border-slate-100 px-5 py-4">
-            <h2 className="text-sm font-semibold text-slate-900">
-              Atención de emergencia
-            </h2>
-            {selectedAlert && (
-              <button
-                onClick={() => setSelectedId(null)}
-                className="text-slate-400 hover:text-slate-600 p-1 rounded-lg hover:bg-slate-100 transition"
-              >
-                <FiX className="h-4 w-4" />
-              </button>
-            )}
-          </div>
-
-          {!selectedAlert ? (
-            /* -------- Disabled / empty state: unlocks only on "Atender" -------- */
-            <div className="flex flex-1 flex-col items-center justify-center gap-3 px-8 py-16 text-center">
-              <div className="rounded-full bg-slate-100 p-4">
-                <FiAlertTriangle className="h-6 w-6 text-slate-400" />
+        {/* El detalle se abre únicamente al seleccionar una alerta. */}
+        {selectedAlert && (
+          <>
+            <button
+              type="button"
+              aria-label="Cerrar atención de emergencia"
+              className="fixed inset-0 z-40 cursor-default bg-slate-950/20"
+              onClick={() => setSelectedId(null)}
+            />
+            <aside
+              role="dialog"
+              aria-modal="true"
+              aria-label="Atención de emergencia"
+              className="fixed inset-y-0 right-0 z-50 flex w-full max-w-md flex-col overflow-hidden border-l border-slate-200 bg-white shadow-2xl transition-transform duration-300"
+            >
+              <div className="flex items-center justify-between border-b border-slate-100 px-5 py-4">
+                <h2 className="text-sm font-semibold text-slate-900">Atención de emergencia</h2>
+                <button
+                  type="button"
+                  onClick={() => setSelectedId(null)}
+                  className="rounded-lg p-1 text-slate-400 transition hover:bg-slate-100 hover:text-slate-600"
+                  aria-label="Cerrar panel"
+                >
+                  <FiX className="h-4 w-4" />
+                </button>
               </div>
-              <p className="text-sm font-medium text-slate-600">
-                Ningún caso seleccionado
-              </p>
-              <p className="text-xs text-slate-400">
-                Selecciona una alerta de la tabla o del mapa para ver su detalle, bitácora y reportes.
-              </p>
-            </div>
-          ) : (
-            <div className="flex flex-1 flex-col overflow-hidden">
+              <div className="flex flex-1 flex-col overflow-hidden">
               {/* Info summary */}
               <div className="space-y-3 border-b border-slate-100 px-5 py-4">
                 <div className="flex items-center justify-between">
@@ -1376,8 +1365,9 @@ export default function Live() {
                 </div>
               </div>
             </div>
-          )}
-        </aside>
+            </aside>
+          </>
+        )}
       </div>
 
       {/* --------------------------- Camera modal --------------------------- */}
