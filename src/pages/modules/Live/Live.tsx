@@ -1055,7 +1055,7 @@ export default function Live() {
                       }`}
                   >
                     {selectedAlert.prioridad}
-                  </span>ajajajsjk
+                  </span>
                 </div>
 
                 <dl className="space-y-1.5 text-sm">
