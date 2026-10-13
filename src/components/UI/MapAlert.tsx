@@ -13,7 +13,6 @@ type MapAlertProps = {
   route?: { lat: number; lng: number }[];
   height?: string;
   width?: string;
-  mapRef?: React.MutableRefObject<any>;
   onAttend?: (
     id: string,
     alertId?: string,
@@ -116,7 +115,6 @@ const MapAlert: React.FC<MapAlertProps> = ({
   alertZoom = 15,
   height = '100vh',
   width = '100%',
-  mapRef,
   onAttend,
   onViewCameras,
 }) => {
@@ -157,8 +155,6 @@ const MapAlert: React.FC<MapAlertProps> = ({
       </div>
 
       <Map
-        ref={mapRef}
-        preserveDrawingBuffer={true}
         mapboxAccessToken={import.meta.env.VITE_MAPBOX_TOKEN}
         initialViewState={{
           longitude: initialCenter.longitude,

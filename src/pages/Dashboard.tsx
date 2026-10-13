@@ -5,7 +5,6 @@ import {
   AlertTriangle,
   Video,
   Clock,
-  Radar,
   MonitorSmartphone,
   FileBarChart,
   BellRing,
@@ -104,14 +103,12 @@ const DashboardLayout = () => {
     const usersCount = stats?.totals?.users ?? 0;
     const devicesCount = stats?.totals?.devices ?? 0;
     const camerasCount = stats?.totals?.cameras ?? cameras.length;
-    const vehiclesCount = 10;
     const logsCount = stats?.latestLogs?.length ?? 0;
 
     return [
       { name: "Alertas registradas", value: alertsCount.toLocaleString(), note: "Total en el sistema", icon: AlertTriangle, accent: "text-red-500", noteColor: "text-red-500" },
       { name: "Usuarios totales", value: usersCount.toLocaleString(), note: "Registrados", icon: Users, accent: "text-slate-700", noteColor: "text-slate-400" },
       { name: "Dispositivos registrados", value: devicesCount.toLocaleString(), note: "Activos en el sistema", icon: Activity, accent: "text-emerald-600", noteColor: "text-slate-400" },
-      { name: "Flota de vehículos", value: vehiclesCount.toLocaleString(), note: "Monitoreo satelital", icon: Radar, accent: "text-violet-600", noteColor: "text-slate-400" },
       { name: "Cámaras registradas", value: camerasCount.toLocaleString(), note: "Equipos de monitoreo", icon: Video, accent: "text-blue-600", noteColor: "text-slate-400" },
       { name: "Eventos registrados", value: logsCount.toLocaleString(), note: "Auditoría del sistema", icon: Clock, accent: "text-slate-700", noteColor: "text-slate-400" },
     ];

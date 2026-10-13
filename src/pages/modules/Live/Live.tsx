@@ -21,7 +21,6 @@ import {
   FiChevronLeft,
   FiChevronRight,
 } from "react-icons/fi";
-import html2canvas from "html2canvas";
 import api from "../../../services/api";
 import authService from "../../../services/auth-service";
 import socketService from "../../../services/socket.service";
@@ -770,25 +769,8 @@ export default function Live() {
       return;
     }
 
-    let mapImageDataUrl = "";
     try {
-      const mapContainer = document.querySelector(".mapboxgl-map") || document.querySelector(".mapboxgl-canvas");
-      if (mapContainer) {
-        const canvas = await html2canvas(mapContainer as HTMLElement, {
-          useCORS: true,
-          logging: false,
-          allowTaint: true,
-        });
-        mapImageDataUrl = canvas.toDataURL("image/png");
-      }
-    } catch (err) {
-      console.warn("⚠️ No se pudo capturar la vista del mapa en Live:", err);
-    }
-
-    try {
-      const response = await api.post(`/api/reports/alerts/${selectedAlert.id}/pdf`, {
-        mapImage: mapImageDataUrl,
-      }, {
+      const response = await api.get(`/api/reports/alerts/${selectedAlert.id}/pdf`, {
         responseType: "blob",
       });
 
@@ -1073,7 +1055,7 @@ export default function Live() {
                       }`}
                   >
                     {selectedAlert.prioridad}
-                  </span>
+                  </span>ajajajsjk
                 </div>
 
                 <dl className="space-y-1.5 text-sm">

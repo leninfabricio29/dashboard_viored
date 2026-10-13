@@ -1,4 +1,4 @@
-import  { useRef,useState, useEffect, useMemo } from "react";
+import { useState, useEffect, useMemo } from "react";
 import {
   FiEye,
   FiX,
@@ -19,7 +19,6 @@ import {
 } from "react-icons/fi";
 import api from "../../../services/api";
 import MapAlert from "../../../components/UI/MapAlert";
-import html2canvas from "html2canvas";
 
 interface Coordinates {
   type: string;
@@ -79,7 +78,6 @@ export default function Alerts() {
   const [selectedAlert, setSelectedAlert] = useState<Alert | null>(null);
   const [loading, setLoading] = useState<boolean>(true);
   const [downloadingId, setDownloadingId] = useState<string | null>(null);
-  const alertMapRef = useRef<any>(null);
 
   // Bitácora para la alerta seleccionada
   const [bitacoraEvents, setBitacoraEvents] = useState<any[]>([]);
@@ -230,38 +228,8 @@ export default function Alerts() {
 
     setDownloadingId(alertId);
 
-    let mapImageDataUrl = "";
     try {
-      if (alertMapRef.current) {
-        const canvas = alertMapRef.current.getCanvas();
-        if (canvas) {
-          mapImageDataUrl = canvas.toDataURL("image/png");
-        }
-      }
-    } catch (err) {
-      console.warn("⚠️ No se pudo obtener canvas desde alertMapRef:", err);
-    }
-
-    if (!mapImageDataUrl) {
-      try {
-        const mapContainer = document.querySelector(".mapboxgl-map") || document.querySelector(".mapboxgl-canvas");
-        if (mapContainer) {
-          const canvas = await html2canvas(mapContainer as HTMLElement, {
-            useCORS: true,
-            logging: false,
-            allowTaint: true,
-          });
-          mapImageDataUrl = canvas.toDataURL("image/png");
-        }
-      } catch (err) {
-        console.warn("⚠️ No se pudo capturar la vista del mapa desde el cliente:", err);
-      }
-    }
-
-    try {
-      const response = await api.post(`/api/reports/alerts/${alertId}/pdf`, {
-        mapImage: mapImageDataUrl,
-      }, {
+      const response = await api.get(`/api/reports/alerts/${alertId}/pdf`, {
         responseType: "blob",
       });
 
@@ -548,7 +516,6 @@ export default function Alerts() {
               <div className="h-60 w-full overflow-hidden rounded-2xl border border-slate-200 shadow-inner relative bg-slate-100">
                 {selectedAlertRoute.length > 0 ? (
                   <MapAlert
-                    mapRef={alertMapRef}
                     markers={selectedAlertMarker}
                     route={selectedAlertRoute}
                     zoom={14}
